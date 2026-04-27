@@ -56,11 +56,12 @@ const MatchPage = ({ socket }) => {
   useEffect(() => {
     let mounted = true;
     const loadContext = async () => {
-      if (self && opponent) return;
+      if (self && opponent && !isSpectator) return;
       try {
         const currentMatch = await getCurrentMatch().catch(() => null);
         if (!mounted) return;
         if (currentMatch?.inMatch && currentMatch.matchId === matchId) {
+          setIsSpectator(false);
           setMatchContext({
             matchId: currentMatch.matchId,
             self: { id: currentMatch.selfId, username: currentMatch.selfName || currentUser?.discordName || 'You', epicName: currentMatch.selfEpicName || currentMatch.selfName || 'You', avatar: currentMatch.selfAvatar, rankingPoints: currentUser?.rankingPoints || 0 },
@@ -87,10 +88,9 @@ const MatchPage = ({ socket }) => {
         }
       } catch { if (mounted) {} }
     };
-    if (location.state?.matchId === matchId) return;
     loadContext();
     return () => { mounted = false; };
-  }, [self, opponent, matchId, navigate, currentUser?.discordName, currentUser?.rankingPoints]);
+  }, [self, opponent, matchId, navigate, isSpectator, currentUser?.discordName, currentUser?.rankingPoints]);
 
   useEffect(() => {
     const selfId = self?.id || currentUserId;
