@@ -3,7 +3,7 @@ import axios from 'axios';
 import './Login.css';
 import { getDiscordAuthUrl, API_BASE_URL } from '../utils/api';
 
-const DISCORD_INVITE_URL = 'https://discord.gg/YOUR_INVITE_CODE';
+const DISCORD_INVITE_URL = 'https://discord.gg/hMA23CEPHZ';
 
 const Login = ({ errorMessage = '', errorType = '' }) => {
   const [tournaments, setTournaments] = useState([]);
