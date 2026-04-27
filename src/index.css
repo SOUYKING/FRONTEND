@@ -82,11 +82,7 @@ html {
 
 body {
   margin: 0;
-  background-color: var(--bg-base);
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(46, 242, 255, 0.04) 0%, transparent 70%),
-    radial-gradient(ellipse 70% 40% at 30% 100%, rgba(168, 85, 247, 0.03) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 70% 80%, rgba(29, 174, 255, 0.03) 0%, transparent 60%);
+  background-color: #0b0f14;
   color: var(--text);
   font-family: var(--font-body);
   line-height: 1.6;

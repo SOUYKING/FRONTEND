@@ -5,16 +5,15 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
+  background-color: #0b0f14;
 }
 
-.animated-bg-gradient {
+.animated-bg::after {
+  content: '';
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse 80% 40% at 20% 30%, rgba(46, 242, 255, 0.03) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 70%, rgba(168, 85, 247, 0.02) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 30% at 50% 80%, rgba(29, 174, 255, 0.02) 0%, transparent 50%);
-  animation: backgroundShift 20s ease-in-out infinite alternate;
+  background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.92) 50%, rgba(0,0,0,0.95) 100%);
+  pointer-events: none;
 }
 
 .bg-float-object {
