@@ -43,7 +43,7 @@ const AnimatedBackground = () => {
 
   const objects = useMemo(() => {
     const items = [];
-    for (let i = 0; i < 35; i++) {
+    for (let i = 0; i < 45; i++) {
       const icon = ICONS[i % ICONS.length];
       const depth = 0.2 + Math.random() * 0.5;
       items.push({
@@ -51,10 +51,10 @@ const AnimatedBackground = () => {
         id: i,
         x: Math.random() * dims.w,
         y: Math.random() * dims.h,
-        size: 32 + Math.random() * 52,
+        size: 40 + Math.random() * 70,
         speed: 0.2 + Math.random() * 0.7,
         delay: Math.random() * 50,
-        opacity: 0.03 + Math.random() * 0.07,
+        opacity: 0.06 + Math.random() * 0.1,
         rotation: Math.random() * 360,
         rotSpeed: -0.4 + Math.random() * 0.8,
         depth,
@@ -88,7 +88,7 @@ const AnimatedBackground = () => {
               height: obj.size,
               opacity: obj.opacity,
               transform: `rotate(${rot}deg)`,
-              filter: `blur(${obj.blur}px) brightness(1.5)`,
+                filter: `blur(${obj.blur}px) brightness(1.8) saturate(0.6)`,
               pointerEvents: 'none',
               willChange: 'transform',
               objectFit: 'contain',
