@@ -7,6 +7,8 @@ const MatchHistoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const perPage = 10;
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -31,6 +33,8 @@ const MatchHistoryPage = () => {
     if (filter === 'disputed') return m.disputed;
     return true;
   });
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const paged = filtered.slice((page - 1) * perPage, page * perPage);
 
   const counts = {
     all: matches.length,
@@ -88,11 +92,11 @@ const MatchHistoryPage = () => {
       {error && <div style={{ padding: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', marginBottom: 16, color: 'var(--red)', fontSize: '0.85rem' }}>{error}</div>}
 
       <div className="filter-tabs" style={{ marginBottom: 20 }}>
-        <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All ({counts.all})</button>
-        <button className={filter === 'win' ? 'active' : ''} onClick={() => setFilter('win')}>Wins ({counts.win})</button>
-        <button className={filter === 'loss' ? 'active' : ''} onClick={() => setFilter('loss')}>Losses ({counts.loss})</button>
-        <button className={filter === 'draw' ? 'active' : ''} onClick={() => setFilter('draw')}>Draws ({counts.draw})</button>
-        <button className={filter === 'disputed' ? 'active' : ''} onClick={() => setFilter('disputed')}>Disputed ({counts.disputed})</button>
+        <button className={filter === 'all' ? 'active' : ''} onClick={() => { setFilter('all'); setPage(1); }}>All ({counts.all})</button>
+        <button className={filter === 'win' ? 'active' : ''} onClick={() => { setFilter('win'); setPage(1); }}>Wins ({counts.win})</button>
+        <button className={filter === 'loss' ? 'active' : ''} onClick={() => { setFilter('loss'); setPage(1); }}>Losses ({counts.loss})</button>
+        <button className={filter === 'draw' ? 'active' : ''} onClick={() => { setFilter('draw'); setPage(1); }}>Draws ({counts.draw})</button>
+        <button className={filter === 'disputed' ? 'active' : ''} onClick={() => { setFilter('disputed'); setPage(1); }}>Disputed ({counts.disputed})</button>
       </div>
 
       {matches.length === 0 ? (
@@ -102,7 +106,7 @@ const MatchHistoryPage = () => {
         </div>
       ) : (
         <div className="match-history-list">
-          {filtered.map((match, idx) => (
+          {paged.map((match, idx) => (
             <div
               key={match.id}
               className="match-history-item"
@@ -129,6 +133,14 @@ const MatchHistoryPage = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>← Prev</button>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{page} / {totalPages}</span>
+          <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next →</button>
         </div>
       )}
 

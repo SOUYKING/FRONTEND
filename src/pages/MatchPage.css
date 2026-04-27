@@ -329,6 +329,34 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: relative;
+}
+
+.chat-scroll-btn {
+  position: sticky;
+  bottom: 8px;
+  align-self: center;
+  padding: 8px 18px;
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glow);
+  border-radius: 100px;
+  color: var(--cyan);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-fast);
+  animation: fadeInUp 0.2s ease;
+}
+.chat-scroll-btn:hover {
+  background: rgba(46, 242, 255, 0.1);
+  border-color: var(--border-glow-strong);
+  transform: translateY(-1px);
 }
 
 .chat-empty {

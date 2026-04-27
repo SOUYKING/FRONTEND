@@ -27,6 +27,8 @@ const MatchPage = ({ socket }) => {
   const [opponentProfileStats, setOpponentProfileStats] = useState(null);
   const [autoResolveAt, setAutoResolveAt] = useState(null);
   const [countdown, setCountdown] = useState(null);
+  const [chatAtBottom, setChatAtBottom] = useState(true);
+  const [newMsg, setNewMsg] = useState(false);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const currentUserId = currentUser?.discordId || currentUser?.id;
   const chatRef = useRef(null);
@@ -110,6 +112,7 @@ const MatchPage = ({ socket }) => {
 
     const onReceiveMessage = (msg) => {
       setMessages((prev) => [...prev, msg]);
+      setNewMsg(true);
     };
 
     const onDisputeOpened = () => {
@@ -160,10 +163,27 @@ const MatchPage = ({ socket }) => {
   }, [matchId, self, opponent, socket, navigate, myName, userRole]);
 
   useEffect(() => {
-    if (chatRef.current) {
+    if (chatRef.current && chatAtBottom) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      setNewMsg(false);
     }
   }, [messages]);
+
+  const handleChatScroll = () => {
+    if (!chatRef.current) return;
+    const el = chatRef.current;
+    const isBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    setChatAtBottom(isBottom);
+    if (isBottom) setNewMsg(false);
+  };
+
+  const scrollToBottom = () => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      setChatAtBottom(true);
+      setNewMsg(false);
+    }
+  };
 
   useEffect(() => {
     if (!autoResolveAt) { setCountdown(null); return; }
@@ -349,7 +369,12 @@ const MatchPage = ({ socket }) => {
           </div>
           {chatOpen && (
             <>
-              <div className="chat-messages" ref={chatRef}>
+              <div className="chat-messages" ref={chatRef} onScroll={handleChatScroll}>
+                {newMsg && !chatAtBottom && (
+                  <button onClick={scrollToBottom} className="chat-scroll-btn">
+                    <i className="fas fa-arrow-down"></i> New messages
+                  </button>
+                )}
                 {messages.length === 0 && <div className="chat-empty">No messages yet. Say something!</div>}
                 {messages.map((msg, index) => {
                   const badge = !msg.isSystem ? getRoleBadge(msg.role) : null;
