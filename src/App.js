@@ -152,6 +152,7 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState('');
+  const [authErrorType, setAuthErrorType] = useState('');
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -159,7 +160,10 @@ const App = () => {
       setAuthError('');
 
       const oauthError = getOAuthErrorFromUrl();
-      if (oauthError) setAuthError(oauthError);
+      if (oauthError) {
+        setAuthError(oauthError.message);
+        setAuthErrorType(oauthError.type || '');
+      }
 
       const registerSocket = () => {
         const storedUser = localStorage.getItem('user');
@@ -267,7 +271,7 @@ const App = () => {
         <div className="app-container">
           <AnimatedBackground />
           <div className="main-content" style={{ marginLeft: 0 }}>
-            <Login errorMessage={authError} />
+            <Login errorMessage={authError} errorType={authErrorType} />
           </div>
         </div>
       )}

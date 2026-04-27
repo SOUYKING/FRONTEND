@@ -326,18 +326,16 @@ export const getOAuthErrorFromUrl = () => {
   if (!error) return null;
 
   const messages = {
-    no_code: "Login failed: missing OAuth code.",
-    oauth_failed: "Login failed during Discord authentication. Please try again.",
-    not_server_member: "You must join the Discord server before logging in.",
-    banned: reason ? `Login blocked: ${decodeURIComponent(reason)}` : "Login blocked: your account is banned.",
-    ip_blocked: reason ? decodeURIComponent(reason) : "Login blocked by IP security policy.",
-    server_error: "Server error, please try again.",
-    rate_limited: retryAfter
-      ? `Too many login attempts. Please wait ${retryAfter} seconds before trying again.`
-      : "Too many login attempts. Please wait and try again.",
+    no_code: { message: "Login failed: missing OAuth code.", type: error },
+    oauth_failed: { message: "Login failed during Discord authentication. Please try again.", type: error },
+    not_server_member: { message: "You must join the Discord server before logging in.", type: error },
+    banned: { message: reason ? `Login blocked: ${decodeURIComponent(reason)}` : "Login blocked: your account is banned.", type: error },
+    ip_blocked: { message: reason ? decodeURIComponent(reason) : "Login blocked by IP security policy.", type: error },
+    server_error: { message: "Server error, please try again.", type: error },
+    rate_limited: { message: retryAfter ? `Too many login attempts. Please wait ${retryAfter} seconds before trying again.` : "Too many login attempts. Please wait and try again.", type: error },
   };
 
-  return messages[error] || `Login failed: ${error}`;
+  return messages[error] || { message: `Login failed: ${error}`, type: error };
 };
 
 export const getAnnouncements = async () => {

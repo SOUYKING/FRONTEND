@@ -392,6 +392,31 @@
 }
 
 /* ===== ERROR ===== */
+.login-join-discord {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 16px;
+  background: rgba(88, 101, 242, 0.06);
+  border: 1px solid rgba(88, 101, 242, 0.15);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.login-join-discord i {
+  color: #5865F2;
+  font-size: 1.1rem;
+}
+.login-join-link {
+  color: #5865F2 !important;
+  font-weight: 700;
+  text-decoration: none;
+}
+.login-join-link:hover {
+  text-decoration: underline;
+}
+
 .login-error-fixed {
   position: fixed;
   bottom: 24px;
@@ -406,6 +431,32 @@
   z-index: 200;
   backdrop-filter: blur(12px);
   animation: fadeInUp 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.login-error-join {
+  background: rgba(88, 101, 242, 0.1);
+  border-color: rgba(88, 101, 242, 0.25);
+  color: var(--text);
+}
+.login-error-join-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #5865F2;
+  border-radius: var(--radius-sm);
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+.login-error-join-btn:hover {
+  background: #4752C4;
+  transform: translateY(-1px);
 }
 
 /* ===== RESPONSIVE ===== */

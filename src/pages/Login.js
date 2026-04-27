@@ -3,7 +3,9 @@ import axios from 'axios';
 import './Login.css';
 import { getDiscordAuthUrl, API_BASE_URL } from '../utils/api';
 
-const Login = ({ errorMessage = '' }) => {
+const DISCORD_INVITE_URL = 'https://discord.gg/YOUR_INVITE_CODE';
+
+const Login = ({ errorMessage = '', errorType = '' }) => {
   const [tournaments, setTournaments] = useState([]);
   const [stats, setStats] = useState({ tournaments: 0, players: 0, matches: 0 });
   const [loading, setLoading] = useState(true);
@@ -96,6 +98,11 @@ const Login = ({ errorMessage = '' }) => {
             <span><i className="fas fa-shield-halved"></i> Secure login</span>
             <span><i className="fas fa-robot"></i> Anti-cheat protected</span>
             <span><i className="fas fa-users"></i> Active community</span>
+          </div>
+          <div className="login-join-discord">
+            <i className="fab fa-discord"></i>
+            <span>Must be in our Discord server to play —</span>
+            <a href={DISCORD_INVITE_URL} target="_blank" rel="noopener noreferrer" className="login-join-link">Join here</a>
           </div>
         </div>
         <div className="login-hero-visual">
@@ -213,8 +220,13 @@ const Login = ({ errorMessage = '' }) => {
       </div>
 
       {errorMessage && (
-        <div className="login-error-fixed">
+        <div className={`login-error-fixed ${errorType === 'not_server_member' ? 'login-error-join' : ''}`}>
           <i className="fas fa-exclamation-circle"></i> {errorMessage}
+          {errorType === 'not_server_member' && (
+            <a href={DISCORD_INVITE_URL} target="_blank" rel="noopener noreferrer" className="login-error-join-btn">
+              <i className="fab fa-discord"></i> Join Server
+            </a>
+          )}
         </div>
       )}
     </div>
