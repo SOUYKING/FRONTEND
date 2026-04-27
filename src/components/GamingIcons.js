@@ -8,26 +8,22 @@ import rifle from '../assets/rifle.png';
 import battle from '../assets/battle.png';
 
 const ICONS = [
-  { src: gameController, name: 'controller' },
-  { src: headphone, name: 'headphone' },
-  { src: keyboardImg, name: 'keyboard' },
-  { src: mouseImg, name: 'mouse' },
-  { src: pistol, name: 'pistol' },
-  { src: rifle, name: 'rifle' },
-  { src: battle, name: 'battle' },
+  gameController, headphone, keyboardImg, mouseImg, pistol, rifle, battle,
 ];
 
 const TINTS = [
-  'sepia(1) hue-rotate(160deg) saturate(2) brightness(1.2)',    // cyan
-  'sepia(1) hue-rotate(240deg) saturate(1.5) brightness(1.2)',   // purple
-  'sepia(1) hue-rotate(300deg) saturate(1.5) brightness(1.2)',   // magenta
-  'sepia(1) hue-rotate(180deg) saturate(2) brightness(1.2)',     // blue
-  'sepia(1) hue-rotate(280deg) saturate(1.5) brightness(1.2)',   // violet
-  'sepia(1) hue-rotate(150deg) saturate(2) brightness(1.2)',     // teal
-  'sepia(1) hue-rotate(250deg) saturate(1.5) brightness(1.2)',   // pink-purple
+  'sepia(1) hue-rotate(160deg) saturate(3) brightness(1.3)',   // cyan
+  'sepia(1) hue-rotate(250deg) saturate(2.5) brightness(1.2)',  // purple
+  'sepia(1) hue-rotate(300deg) saturate(2.5) brightness(1.2)',  // magenta
+  'sepia(1) hue-rotate(195deg) saturate(3) brightness(1.3)',    // blue
+  'sepia(1) hue-rotate(270deg) saturate(2.5) brightness(1.2)',  // violet
+  'sepia(1) hue-rotate(160deg) saturate(3) brightness(1.3)',    // cyan
+  'sepia(1) hue-rotate(250deg) saturate(2.5) brightness(1.2)',  // purple
 ];
 
-const ICON_COUNT = 25;
+const GRID_COLS = 20;
+const GRID_ROWS = 10;
+const TOTAL = GRID_COLS * GRID_ROWS;
 
 const AnimatedBackground = () => {
   const [, forceUpdate] = useState(0);
@@ -37,24 +33,26 @@ const AnimatedBackground = () => {
 
   const objects = useMemo(() => {
     const items = [];
-    for (let i = 0; i < ICON_COUNT; i++) {
-      const icon = ICONS[i % ICONS.length];
+    for (let i = 0; i < TOTAL; i++) {
+      const col = i % GRID_COLS;
+      const row = Math.floor(i / GRID_COLS);
+      const cx = (col + 0.5) / GRID_COLS * 100;
+      const cy = (row + 0.5) / GRID_ROWS * 100;
+      const jitterX = (Math.random() - 0.5) * (100 / GRID_COLS) * 0.6;
+      const jitterY = (Math.random() - 0.5) * (100 / GRID_ROWS) * 0.6;
       items.push({
-        ...icon,
         id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size: 40 + Math.random() * 60,
-        speedX: -0.3 + Math.random() * 0.6,
-        speedY: -0.3 + Math.random() * 0.6,
+        src: ICONS[i % ICONS.length],
+        baseX: cx + jitterX,
+        baseY: cy + jitterY,
+        size: 18 + Math.random() * 24,
+        speed: 0.15 + Math.random() * 0.35,
         phase: Math.random() * Math.PI * 2,
-        opacity: 0.12 + Math.random() * 0.15,
+        opacity: 0.08 + Math.random() * 0.1,
         rotation: Math.random() * 360,
-        rotSpeed: -0.5 + Math.random() * 1,
-        wobbleAmp: 10 + Math.random() * 20,
-        wobbleFreq: 0.3 + Math.random() * 0.5,
+        rotSpeed: -0.3 + Math.random() * 0.6,
+        wobbleAmp: 6 + Math.random() * 10,
         tint: TINTS[i % TINTS.length],
-        layer: Math.floor(i / 5) * 0.15 + 0.1,
       });
     }
     return items;
@@ -63,13 +61,11 @@ const AnimatedBackground = () => {
   useEffect(() => {
     const onMouse = (e) => { mouseRef.current = { x: e.clientX, y: e.clientY }; };
     window.addEventListener('mousemove', onMouse);
-
     const animate = () => {
       forceUpdate(n => n + 1);
       frameRef.current = requestAnimationFrame(animate);
     };
     frameRef.current = requestAnimationFrame(animate);
-
     return () => {
       window.removeEventListener('mousemove', onMouse);
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
@@ -82,13 +78,13 @@ const AnimatedBackground = () => {
     <div className="animated-bg" aria-hidden="true">
       <div className="animated-bg-glow" />
       {objects.map((obj) => {
-        const mx = mouseRef.current.x / window.innerWidth - 0.5;
-        const my = mouseRef.current.y / window.innerHeight - 0.5;
-        const px = obj.x + mx * obj.layer * 8;
-        const py = obj.y + my * obj.layer * 8;
-        const fx = Math.sin(elapsed * 0.0005 * obj.wobbleFreq + obj.phase) * obj.wobbleAmp * 0.01 * obj.layer + elapsed * 0.00005 * obj.speedX * 50;
-        const fy = Math.cos(elapsed * 0.0004 * obj.wobbleFreq + obj.phase * 1.3) * obj.wobbleAmp * 0.01 * obj.layer + elapsed * 0.00005 * obj.speedY * 50;
-        const rot = obj.rotation + elapsed * 0.00005 * obj.rotSpeed;
+        const mx = (mouseRef.current.x / window.innerWidth - 0.5) * 6;
+        const my = (mouseRef.current.y / window.innerHeight - 0.5) * 6;
+        const wave = Math.sin(elapsed * 0.0006 * obj.speed + obj.phase);
+        const wave2 = Math.cos(elapsed * 0.0005 * obj.speed + obj.phase * 1.7);
+        const fx = wave * obj.wobbleAmp * 0.15;
+        const fy = wave2 * obj.wobbleAmp * 0.15;
+        const rot = obj.rotation + elapsed * 0.00003 * obj.rotSpeed;
 
         return (
           <img
@@ -97,15 +93,15 @@ const AnimatedBackground = () => {
             alt=""
             style={{
               position: 'absolute',
-              left: `calc(${px}% + ${fx}px)`,
-              top: `calc(${py}% + ${fy}px)`,
+              left: `calc(${obj.baseX}% + ${fx + mx}px)`,
+              top: `calc(${obj.baseY}% + ${fy + my}px)`,
               width: obj.size,
               height: obj.size,
               opacity: obj.opacity,
               transform: `translate(-50%, -50%) rotate(${rot}deg)`,
               filter: obj.tint,
               pointerEvents: 'none',
-              willChange: 'transform, left, top',
+              willChange: 'transform',
               objectFit: 'contain',
             }}
           />
