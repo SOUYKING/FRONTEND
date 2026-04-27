@@ -50,6 +50,7 @@ const MatchPage = ({ socket }) => {
 
   const opponentAvatar = opponent?.avatarUrl
     || buildDiscordAvatar(opponent?.id, opponent?.avatar)
+    || (opponent?.id ? buildDiscordAvatar(opponent.id, null) : null)
     || DISCORD_AVATAR_FALLBACK;
 
   useEffect(() => {
@@ -71,8 +72,12 @@ const MatchPage = ({ socket }) => {
         const matchInfo = await getActiveMatchInfo(matchId).catch(() => null);
         if (!mounted) return;
         if (matchInfo?.inMatch) {
-          setIsSpectator(true);
-          if (matchInfo.isStaff) setIsStaff(true);
+          if (matchInfo.isStaff) {
+            setIsStaff(true);
+            setIsSpectator(false);
+          } else {
+            setIsSpectator(true);
+          }
           setMatchContext({
             matchId: matchInfo.matchId,
             self: matchInfo.self ? { id: matchInfo.self.id, username: matchInfo.self.username, epicName: matchInfo.self.epicName, avatar: matchInfo.self.avatar } : null,
@@ -111,16 +116,17 @@ const MatchPage = ({ socket }) => {
   }, [self?.id, opponent?.id, currentUserId]);
 
   useEffect(() => {
-    if (!self && !isSpectator) return;
+    if (!isStaff && !isSpectator && !self) return;
 
-    if (isStaff || STAFF_ROLES.includes(userRole)) {
+    const isActuallyStaff = isStaff || STAFF_ROLES.includes(userRole);
+    if (isActuallyStaff) {
       setIsStaff(true);
       socket.emit('staffJoinMatch', { matchId, staffName: myName });
     } else if (!isSpectator) {
       sessionStorage.setItem('currentMatch', JSON.stringify({ matchId, self, opponent }));
       socket.emit('joinMatch', { matchId, playerName: myName });
     } else {
-      socket.emit('joinMatch', { matchId, playerName: currentUser?.discordName || 'Spectator' });
+      socket.emit('joinMatch', { matchId, playerName: (currentUser?.discordName || 'Spectator') + ' (spectating)' });
     }
 
     const onReceiveMessage = (msg) => {
@@ -173,7 +179,7 @@ const MatchPage = ({ socket }) => {
       socket.off('matchCompleted', onMatchCompleted);
       socket.off('winSubmitted', onWinSubmitted);
     };
-  }, [matchId, self, opponent, socket, navigate, myName, userRole]);
+  }, [matchId, self, opponent, socket, navigate, myName, userRole, isStaff, isSpectator]);
 
   useEffect(() => {
     if (chatRef.current && chatAtBottom) {
