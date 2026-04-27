@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { getCurrentMatch, getPublicPlayerProfile, submitMatchResult, resolveMatchDispute, DISCORD_AVATAR_FALLBACK, buildDiscordAvatar } from '../utils/api';
+import { getCurrentMatch, getActiveMatchInfo, getPublicPlayerProfile, submitMatchResult, resolveMatchDispute, DISCORD_AVATAR_FALLBACK, buildDiscordAvatar } from '../utils/api';
 import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
 import './MatchPage.css';
 
@@ -25,6 +25,7 @@ const MatchPage = ({ socket }) => {
   const [chatOpen, setChatOpen] = useState(true);
   const [selfProfileStats, setSelfProfileStats] = useState(null);
   const [opponentProfileStats, setOpponentProfileStats] = useState(null);
+  const [isSpectator, setIsSpectator] = useState(false);
   const [autoResolveAt, setAutoResolveAt] = useState(null);
   const [countdown, setCountdown] = useState(null);
   const [chatAtBottom, setChatAtBottom] = useState(true);
@@ -56,22 +57,32 @@ const MatchPage = ({ socket }) => {
     const loadContext = async () => {
       if (self && opponent) return;
       try {
-        const currentMatch = await getCurrentMatch();
+        const currentMatch = await getCurrentMatch().catch(() => null);
         if (!mounted) return;
-        if (!currentMatch?.inMatch || currentMatch.matchId !== matchId) {
-          navigate('/current-game');
+        if (currentMatch?.inMatch && currentMatch.matchId === matchId) {
+          setMatchContext({
+            matchId: currentMatch.matchId,
+            self: { id: currentMatch.selfId, username: currentMatch.selfName || currentUser?.discordName || 'You', epicName: currentMatch.selfEpicName || currentMatch.selfName || 'You', avatar: currentMatch.selfAvatar, rankingPoints: currentUser?.rankingPoints || 0 },
+            opponent: { id: currentMatch.opponentId, username: currentMatch.opponent || 'Opponent', epicName: currentMatch.opponentEpicName || currentMatch.opponent || 'Opponent', avatar: currentMatch.opponentAvatar, rankingPoints: 0 },
+            mapCode: currentMatch.mapCode || '',
+          });
           return;
         }
-        setMatchContext({
-          matchId: currentMatch.matchId,
-          self: { id: currentMatch.selfId, username: currentMatch.selfName || currentUser?.discordName || 'You', epicName: currentMatch.selfEpicName || currentMatch.selfName || 'You', avatar: currentMatch.selfAvatar, rankingPoints: currentUser?.rankingPoints || 0 },
-          opponent: { id: currentMatch.opponentId, username: currentMatch.opponent || 'Opponent', epicName: currentMatch.opponentEpicName || currentMatch.opponent || 'Opponent', avatar: currentMatch.opponentAvatar, rankingPoints: 0 },
-          mapCode: currentMatch.mapCode || '',
-        });
-      } catch {
-        if (mounted) navigate('/current-game');
-      }
+        const matchInfo = await getActiveMatchInfo(matchId).catch(() => null);
+        if (!mounted) return;
+        if (matchInfo?.inMatch) {
+          setIsSpectator(true);
+          if (matchInfo.isStaff) setIsStaff(true);
+          setMatchContext({
+            matchId: matchInfo.matchId,
+            self: matchInfo.self ? { id: matchInfo.self.id, username: matchInfo.self.username, epicName: matchInfo.self.epicName, avatar: matchInfo.self.avatar } : null,
+            opponent: { id: matchInfo.opponent.id, username: matchInfo.opponent.username, epicName: matchInfo.opponent.epicName, avatar: matchInfo.opponent.avatar },
+            mapCode: matchInfo.mapCode || '',
+          });
+        }
+      } catch { if (mounted) {} }
     };
+    if (location.state?.matchId === matchId) return;
     loadContext();
     return () => { mounted = false; };
   }, [self, opponent, matchId, navigate, currentUser?.discordName, currentUser?.rankingPoints]);
@@ -100,15 +111,17 @@ const MatchPage = ({ socket }) => {
   }, [self?.id, opponent?.id, currentUserId]);
 
   useEffect(() => {
-    if (!self) return;
+    if (!self && !isSpectator) return;
 
-    if (STAFF_ROLES.includes(userRole)) {
+    if (isStaff || STAFF_ROLES.includes(userRole)) {
       setIsStaff(true);
       socket.emit('staffJoinMatch', { matchId, staffName: myName });
+    } else if (!isSpectator) {
+      sessionStorage.setItem('currentMatch', JSON.stringify({ matchId, self, opponent }));
+      socket.emit('joinMatch', { matchId, playerName: myName });
+    } else {
+      socket.emit('joinMatch', { matchId, playerName: currentUser?.discordName || 'Spectator' });
     }
-
-    sessionStorage.setItem('currentMatch', JSON.stringify({ matchId, self, opponent }));
-    socket.emit('joinMatch', { matchId, playerName: myName });
 
     const onReceiveMessage = (msg) => {
       setMessages((prev) => [...prev, msg]);
@@ -305,7 +318,8 @@ const MatchPage = ({ socket }) => {
         </div>
         <span className={`match-status-badge ${disputed ? 'disputed' : reported ? 'reported' : 'live'}`}>
           <i className={`fas ${disputed ? 'fa-gavel' : reported ? 'fa-check-circle' : 'fa-circle'}`}></i>
-          {disputed ? ' Disputed' : reported ? ' Reported' : ' LIVE'}
+          {disputed ? ' Disputed' : reported ? ' Reported' : isSpectator ? ' LIVE' : ' LIVE'}
+          {isSpectator && <span style={{ marginLeft: 6, opacity: 0.6, fontWeight: 400 }}>· Spectator</span>}
         </span>
       </div>
 
@@ -399,10 +413,10 @@ const MatchPage = ({ socket }) => {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type a message..."
-                  disabled={disputed}
+                  placeholder={isSpectator ? "Spectator mode - chat disabled" : "Type a message..."}
+                  disabled={disputed || isSpectator}
                 />
-                <button className="chat-send-btn" onClick={handleSendMessage} disabled={!newMessage.trim() || disputed}>
+                <button className="chat-send-btn" onClick={handleSendMessage} disabled={!newMessage.trim() || disputed || isSpectator}>
                   Send
                 </button>
               </div>
@@ -414,7 +428,12 @@ const MatchPage = ({ socket }) => {
           <div className="match-action-card">
             <div className="match-action-card-header"><i className="fas fa-trophy"></i> Report Result</div>
             <div className="match-action-card-body">
-              {!reported && !disputed ? (
+              {isSpectator ? (
+                <div className="match-status-msg">
+                  <i className="fas fa-eye" style={{ color: 'var(--text-muted)', opacity: 0.5, fontSize: '1.5rem', marginBottom: 8 }}></i>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>You are spectating this match.</p>
+                </div>
+              ) : !reported && !disputed ? (
                 <div className="result-buttons">
                   <button disabled={reporting} onClick={() => handleReportResult(self?.id || currentUserId)} className="result-btn win">
                     <i className="fas fa-check-circle"></i> I Won
@@ -456,7 +475,7 @@ const MatchPage = ({ socket }) => {
             </div>
           </div>
 
-          {isStaff && !disputed && !reported && (
+          {isStaff && !isSpectator && !disputed && !reported && (
             <div className="match-action-card">
               <div className="match-action-card-header"><i className="fas fa-gavel"></i> Staff Tools</div>
               <div className="match-action-card-body">

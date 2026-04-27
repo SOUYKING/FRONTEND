@@ -214,6 +214,16 @@ export const getCurrentMatch = async () => {
   }
 };
 
+export const getActiveMatchInfo = async (matchId) => {
+  try {
+    const res = await apiClient.get(`/match/${matchId}/active-info`);
+    return res.data;
+  } catch (error) {
+    console.error("Get active match info error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
 export const submitMatchResult = async (matchId, winnerDiscordId) => {
   try {
     const res = await apiClient.post(`/match/${matchId}/result`, { winnerDiscordId });
