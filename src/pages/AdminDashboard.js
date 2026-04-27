@@ -408,10 +408,7 @@ const AdminDashboard = () => {
             <span className="nav-label">Anticheat</span>
             <span className="badge danger">{stats?.overview?.flaggedAccounts || 0}</span>
           </button>
-          <button className={activeTab === 'ip-analysis' ? 'active' : ''} onClick={() => { setActiveTab('ip-analysis'); setSidebarOpen(false); }}>
-            <span className="nav-icon">🌐</span>
-            <span className="nav-label">IP Analysis</span>
-          </button>
+
           <button className={activeTab === 'broadcast' ? 'active' : ''} onClick={() => { setActiveTab('broadcast'); setSidebarOpen(false); }}>
             <span className="nav-icon">📢</span>
             <span className="nav-label">Broadcast</span>
@@ -507,7 +504,7 @@ const AdminDashboard = () => {
         )}
         {activeTab === 'anticheat' && <AnticheatTab api={api} />}
         {activeTab === 'matches' && <MatchesTab api={api} notify={showNotification} />}
-        {activeTab === 'ip-analysis' && <IPAnalysisTab api={api} notify={showNotification} />}
+
         {activeTab === 'broadcast' && <BroadcastTab api={api} notify={showNotification} />}
       </main>
 
@@ -628,7 +625,7 @@ const DashboardTab = ({ stats, prevStats, onNavigate }) => (
         <div className="quick-actions">
           <button onClick={() => onNavigate('tournaments')}><span className="qa-icon">🏆</span> Create Tournament</button>
           <button onClick={() => onNavigate('anticheat')}><span className="qa-icon">⚡</span> View Alerts</button>
-          <button onClick={() => onNavigate('ip-analysis')}><span className="qa-icon">🌐</span> IP Scan</button>
+
           <button onClick={() => onNavigate('broadcast')}><span className="qa-icon">📢</span> New Broadcast</button>
         </div>
       </section>
@@ -1197,124 +1194,6 @@ const MatchesTab = ({ api, notify }) => {
           <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next →</button>
         </div>
       )}
-    </div>
-  );
-};
-
-const IPAnalysisTab = ({ api, notify }) => {
-  const [violations, setViolations] = useState([]);
-  const [whitelist, setWhitelist] = useState([]);
-  const [newIP, setNewIP] = useState('');
-  const [newIPNote, setNewIPNote] = useState('');
-  const [loading, setLoading] = useState(true);
-  useEffect(() => { fetchViolations(); fetchWhitelist(); }, []);
-  const fetchViolations = async () => {
-    try { const res = await api.get('/admin/ip-analysis/violations'); setViolations(res.data.violations); } catch (err) { console.error('Failed'); }
-    finally { setLoading(false); }
-  };
-  const fetchWhitelist = async () => {
-    try {
-      const res = await api.get('/admin/ip-analysis/whitelist');
-      setWhitelist(res.data.entries || []);
-    } catch (err) {
-      notify('Failed to load IP whitelist', 'error');
-    }
-  };
-  const scanAll = async () => {
-    try { const res = await api.post('/admin/ip-analysis/flag-suspicious'); notify(res.data.message, 'success'); fetchViolations(); }
-    catch (err) { notify('Scan failed', 'error'); }
-  };
-  const addWhitelistIP = async () => {
-    const ip = newIP.trim();
-    if (!ip) {
-      notify('IP is required', 'error');
-      return;
-    }
-    try {
-      await api.post('/admin/ip-analysis/whitelist', { ip, note: newIPNote.trim() });
-      setNewIP('');
-      setNewIPNote('');
-      notify('IP added to whitelist', 'success');
-      fetchWhitelist();
-    } catch (err) {
-      notify(err.response?.data?.message || 'Failed to add IP', 'error');
-    }
-  };
-  const removeWhitelistIP = async (id) => {
-    try {
-      await api.delete(`/admin/ip-analysis/whitelist/${id}`);
-      notify('IP removed from whitelist', 'success');
-      fetchWhitelist();
-    } catch (err) {
-      notify(err.response?.data?.message || 'Failed to remove IP', 'error');
-    }
-  };
-  if (loading) return <div className="tab-loading">Loading...</div>;
-  return (
-    <div className="ip-analysis-tab">
-      <div className="tab-title-section">
-        <h2>IP Analysis</h2>
-        <button className="create-btn" onClick={scanAll}>Scan All Users</button>
-      </div>
-      <div className="violations-summary">
-        <div className="stat"><span>{violations.length}</span><label>IP Groups</label></div>
-        <div className="stat"><span>{violations.reduce((s, v) => s + v.count, 0)}</span><label>Total Linked</label></div>
-        <div className="stat"><span>{violations.reduce((s, v) => s + v.activeAccounts, 0)}</span><label>Active</label></div>
-      </div>
-      <div className="violations-list">
-        {violations.map((v, i) => (
-          <div key={i} className="violation-card">
-            <div className="violation-header">
-              <span className="ip">{v.ip}</span>
-              <span className="count">{v.count} accounts</span>
-            </div>
-            <div className="accounts">
-              {v.accounts.map((a, j) => (
-                <div key={j} className={`account ${a.isBanned ? 'banned' : ''}`}>
-                  <span>{a.discordName}</span>
-                  <span>{a.isBanned ? 'Banned' : 'Active'}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-        {violations.length === 0 && <p className="no-data">No violations detected</p>}
-      </div>
-
-      <div style={{ marginTop: 20 }}>
-        <h3 style={{ marginBottom: 10 }}>IP Whitelist</h3>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            placeholder="IP address"
-            value={newIP}
-            onChange={(e) => setNewIP(e.target.value)}
-            style={{ minWidth: 220, padding: '10px', borderRadius: 8, border: '1px solid #334155' }}
-          />
-          <input
-            type="text"
-            placeholder="Note (optional)"
-            value={newIPNote}
-            onChange={(e) => setNewIPNote(e.target.value)}
-            style={{ minWidth: 260, padding: '10px', borderRadius: 8, border: '1px solid #334155' }}
-          />
-          <button className="create-btn" onClick={addWhitelistIP}>Add IP</button>
-        </div>
-        <div className="violations-list">
-          {whitelist.map((entry) => (
-            <div key={entry._id} className="violation-card">
-              <div className="violation-header">
-                <span className="ip">{entry.ip}</span>
-                <button className="btn-sm danger" onClick={() => removeWhitelistIP(entry._id)}>Remove</button>
-              </div>
-              <div style={{ color: '#94a3b8', fontSize: 13 }}>
-                {entry.note || 'No note'} - added by {entry.createdByName || 'Unknown'}
-              </div>
-            </div>
-          ))}
-          {whitelist.length === 0 && <p className="no-data">No whitelisted IPs</p>}
-        </div>
-      </div>
     </div>
   );
 };
