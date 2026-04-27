@@ -1,0 +1,188 @@
+.queue-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 80px);
+  animation: fadeInUp 0.5s ease;
+}
+
+.queue-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-2xl);
+  padding: 40px;
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-xl), 0 0 40px rgba(46, 242, 255, 0.05);
+  animation: fadeInScale 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.queue-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 2rem;
+  position: relative;
+}
+.queue-icon-wrapper.searching {
+  background: rgba(46, 242, 255, 0.08);
+  border: 2px solid rgba(46, 242, 255, 0.2);
+  animation: glowPulse 2s infinite;
+}
+.queue-icon-wrapper.matched {
+  background: rgba(34, 197, 94, 0.08);
+  border: 2px solid rgba(34, 197, 94, 0.2);
+  color: var(--green);
+}
+.queue-icon-wrapper.idle {
+  background: rgba(255,255,255,0.03);
+  border: 2px solid var(--border);
+  color: var(--text-muted);
+}
+
+.queue-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.queue-subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 24px;
+}
+
+.queue-status-message {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: 24px;
+  min-height: 24px;
+}
+
+.queue-info-box {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.queue-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+.queue-info-row:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+.queue-info-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.queue-info-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.queue-info-value.finding {
+  color: var(--cyan);
+  animation: pulse 1.5s infinite;
+}
+
+.searching-bars {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.search-bar {
+  width: 6px;
+  height: 24px;
+  border-radius: 3px;
+  background: var(--cyan-glow);
+  animation: searchingBar 1.5s ease-in-out infinite;
+}
+.search-bar:nth-child(1) { animation-delay: 0s; }
+.search-bar:nth-child(2) { animation-delay: 0.15s; }
+.search-bar:nth-child(3) { animation-delay: 0.3s; }
+.search-bar:nth-child(4) { animation-delay: 0.45s; }
+.search-bar:nth-child(5) { animation-delay: 0.6s; }
+
+@keyframes searchingBar {
+  0%, 100% { height: 24px; opacity: 0.3; }
+  50% { height: 40px; opacity: 1; }
+}
+
+.queue-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.queue-btn {
+  width: 100%;
+  padding: 14px 24px;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+.queue-btn.join {
+  background: linear-gradient(135deg, var(--cyan), var(--electric-blue));
+  color: #000;
+  box-shadow: 0 0 30px rgba(46, 242, 255, 0.2);
+}
+.queue-btn.join:hover {
+  box-shadow: 0 0 50px rgba(46, 242, 255, 0.4);
+  transform: translateY(-2px);
+}
+.queue-btn.leave {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--red);
+}
+.queue-btn.leave:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.queue-tournament-info {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.queue-tournament-info .info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 0.85rem;
+}
+.queue-tournament-info .info-row .label {
+  color: var(--text-muted);
+}
+.queue-tournament-info .info-row .value {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.queue-tournament-info .info-row .map-code {
+  color: var(--cyan);
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 480px) {
+  .queue-card {
+    padding: 24px 20px;
+  }
+}

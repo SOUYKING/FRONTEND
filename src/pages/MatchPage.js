@@ -1,0 +1,464 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { getCurrentMatch, getPublicPlayerProfile, submitMatchResult, resolveMatchDispute, DISCORD_AVATAR_FALLBACK, buildDiscordAvatar } from '../utils/api';
+import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
+import './MatchPage.css';
+
+const STAFF_ROLES = ['admin', 'owner', 'staff'];
+
+const MatchPage = ({ socket }) => {
+  const { matchId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [matchContext, setMatchContext] = useState(location.state || null);
+  const { self, opponent, mapCode, matchMode, tournamentName } = matchContext || {};
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [resultMessage, setResultMessage] = useState('');
+  const [reporting, setReporting] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [disputed, setDisputed] = useState(false);
+  const [staffNotified, setStaffNotified] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
+  const [staffForcing, setStaffForcing] = useState(false);
+  const [showProfile, setShowProfile] = useState(null);
+  const [chatOpen, setChatOpen] = useState(true);
+  const [selfProfileStats, setSelfProfileStats] = useState(null);
+  const [opponentProfileStats, setOpponentProfileStats] = useState(null);
+  const [autoResolveAt, setAutoResolveAt] = useState(null);
+  const [countdown, setCountdown] = useState(null);
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUserId = currentUser?.discordId || currentUser?.id;
+  const chatRef = useRef(null);
+
+  const myName = self?.username || currentUser?.discordName || 'You';
+  const opponentName = opponent?.username || opponent?.discordName || 'Opponent';
+  const userRole = currentUser?.role || 'player';
+
+  const myPoints = selfProfileStats?.rankingPoints ?? self?.rankingPoints ?? currentUser?.rankingPoints ?? 0;
+  const opponentPoints = opponentProfileStats?.rankingPoints ?? opponent?.rankingPoints ?? 0;
+  const myRank = getRank(myPoints);
+  const opponentRank = getRank(opponentPoints);
+
+  const selfAvatar = self?.avatarUrl
+    || buildDiscordAvatar(self?.id, self?.avatar)
+    || buildDiscordAvatar(currentUser?.id, currentUser?.discordAvatar)
+    || DISCORD_AVATAR_FALLBACK;
+
+  const opponentAvatar = opponent?.avatarUrl
+    || buildDiscordAvatar(opponent?.id, opponent?.avatar)
+    || DISCORD_AVATAR_FALLBACK;
+
+  useEffect(() => {
+    let mounted = true;
+    const loadContext = async () => {
+      if (self && opponent) return;
+      try {
+        const currentMatch = await getCurrentMatch();
+        if (!mounted) return;
+        if (!currentMatch?.inMatch || currentMatch.matchId !== matchId) {
+          navigate('/current-game');
+          return;
+        }
+        setMatchContext({
+          matchId: currentMatch.matchId,
+          self: { id: currentMatch.selfId, username: currentMatch.selfName || currentUser?.discordName || 'You', epicName: currentMatch.selfEpicName || currentMatch.selfName || 'You', avatar: currentMatch.selfAvatar, rankingPoints: currentUser?.rankingPoints || 0 },
+          opponent: { id: currentMatch.opponentId, username: currentMatch.opponent || 'Opponent', epicName: currentMatch.opponentEpicName || currentMatch.opponent || 'Opponent', avatar: currentMatch.opponentAvatar, rankingPoints: 0 },
+          mapCode: currentMatch.mapCode || '',
+        });
+      } catch {
+        if (mounted) navigate('/current-game');
+      }
+    };
+    loadContext();
+    return () => { mounted = false; };
+  }, [self, opponent, matchId, navigate, currentUser?.discordName, currentUser?.rankingPoints]);
+
+  useEffect(() => {
+    const selfId = self?.id || currentUserId;
+    const opponentId = opponent?.id;
+    if (!selfId && !opponentId) return;
+
+    let cancelled = false;
+    const fetchProfileStats = async () => {
+      try {
+        const tasks = [];
+        if (selfId) tasks.push(getPublicPlayerProfile(selfId));
+        else tasks.push(Promise.resolve(null));
+        if (opponentId) tasks.push(getPublicPlayerProfile(opponentId));
+        else tasks.push(Promise.resolve(null));
+        const [selfStats, opponentStats] = await Promise.all(tasks);
+        if (cancelled) return;
+        setSelfProfileStats(selfStats || null);
+        setOpponentProfileStats(opponentStats || null);
+      } catch {}
+    };
+    fetchProfileStats();
+    return () => { cancelled = true; };
+  }, [self?.id, opponent?.id, currentUserId]);
+
+  useEffect(() => {
+    if (!self) return;
+
+    if (STAFF_ROLES.includes(userRole)) {
+      setIsStaff(true);
+      socket.emit('staffJoinMatch', { matchId, staffName: myName });
+    }
+
+    sessionStorage.setItem('currentMatch', JSON.stringify({ matchId, self, opponent }));
+    socket.emit('joinMatch', { matchId, playerName: myName });
+
+    const onReceiveMessage = (msg) => {
+      setMessages((prev) => [...prev, msg]);
+    };
+
+    const onDisputeOpened = () => {
+      setDisputed(true);
+      setResultMessage('Dispute opened. Staff will review.');
+    };
+
+    const onStaffNotified = (data) => {
+      setStaffNotified(true);
+      setResultMessage(data.message || 'Staff has been notified.');
+    };
+
+    const onStaffJoinedMatch = (data) => {
+      setResultMessage(data.message || 'You joined the match as staff.');
+    };
+
+    const onMatchCompleted = () => {
+      setAutoResolveAt(null);
+      setCountdown(null);
+      setReported(true);
+      setResultMessage('Match completed! Redirecting...');
+      setTimeout(() => {
+        sessionStorage.removeItem('currentMatch');
+        navigate('/dashboard');
+      }, 3000);
+    };
+
+    const onWinSubmitted = (data) => {
+      setAutoResolveAt(data.autoResolveAt);
+      if (data.submittedBy !== myName) setReported(false);
+    };
+
+    socket.on('receiveMessage', onReceiveMessage);
+    socket.on('disputeOpened', onDisputeOpened);
+    socket.on('staffNotified', onStaffNotified);
+    socket.on('staffJoinedMatch', onStaffJoinedMatch);
+    socket.on('matchCompleted', onMatchCompleted);
+    socket.on('winSubmitted', onWinSubmitted);
+
+    return () => {
+      socket.off('receiveMessage', onReceiveMessage);
+      socket.off('disputeOpened', onDisputeOpened);
+      socket.off('staffNotified', onStaffNotified);
+      socket.off('staffJoinedMatch', onStaffJoinedMatch);
+      socket.off('matchCompleted', onMatchCompleted);
+      socket.off('winSubmitted', onWinSubmitted);
+    };
+  }, [matchId, self, opponent, socket, navigate, myName, userRole]);
+
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (!autoResolveAt) { setCountdown(null); return; }
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.floor((new Date(autoResolveAt).getTime() - Date.now()) / 1000));
+      setCountdown(remaining > 0 ? remaining : 0);
+      if (remaining <= 0) { clearInterval(interval); setAutoResolveAt(null); }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [autoResolveAt]);
+
+  const handleSendMessage = () => {
+    if (newMessage.trim()) {
+      socket.emit('sendMessage', { matchId, message: newMessage, sender: myName });
+      setNewMessage('');
+    }
+  };
+
+  const handleReportResult = async (winnerDiscordId) => {
+    if (!self?.id && !currentUserId) return;
+    try {
+      setReporting(true);
+      const res = await submitMatchResult(matchId, winnerDiscordId);
+      setReported(true);
+      setResultMessage(res.message || 'Result submitted');
+      if (res.autoResolveAt) setAutoResolveAt(res.autoResolveAt);
+      if (res.status === 'disputed') setDisputed(true);
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Failed to submit result';
+      setResultMessage(msg);
+      if (error.response?.status === 409) setDisputed(true);
+    } finally { setReporting(false); }
+  };
+
+  const handleForceWin = async (winnerId, winnerName) => {
+    try {
+      setStaffForcing(true);
+      await resolveMatchDispute(matchId, winnerId);
+      setResultMessage(`${winnerName} has been force-win. Match finalized.`);
+      setDisputed(false);
+      setReported(true);
+    } catch (error) {
+      setResultMessage(error.response?.data?.message || 'Failed to force win');
+    } finally { setStaffForcing(false); }
+  };
+
+  const handleCallStaff = () => {
+    if (staffNotified) return;
+    socket.emit('callStaff', { matchId, callerName: myName, reason: 'Requesting staff assistance' });
+    setStaffNotified(true);
+  };
+
+  const handleCopyMapCode = () => {
+    if (!mapCode) return;
+    navigator.clipboard.writeText(mapCode).then(() => setResultMessage('Map code copied!')).catch(() => {});
+  };
+
+  const formatTime = (timeStr) => {
+    try { return new Date(timeStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); }
+    catch { return ''; }
+  };
+
+  const getRoleBadge = (role) => {
+    if (role === 'owner') return { label: 'OWNER', cls: 'role-owner' };
+    if (role === 'admin') return { label: 'ADMIN', cls: 'role-admin' };
+    if (role === 'staff') return { label: 'STAFF', cls: 'role-staff' };
+    if (role === 'content_creator') return { label: 'CREATOR', cls: 'role-creator' };
+    return null;
+  };
+
+  const PlayerProfileModal = ({ player, isSelf, onClose }) => {
+    if (!player) return null;
+    const stats = isSelf ? selfProfileStats : opponentProfileStats;
+    const pts = stats?.rankingPoints ?? player.rankingPoints ?? 0;
+    const rank = getRank(pts);
+    const rankLabel = getRankLabel(pts);
+    const avatar = isSelf ? selfAvatar : opponentAvatar;
+    const name = stats?.discordName || (isSelf ? myName : opponentName);
+    const wins = stats?.wins ?? 0;
+    const losses = stats?.losses ?? 0;
+    const totalMatches = stats?.totalMatches ?? 0;
+    const winRate = totalMatches > 0 ? Number(((wins / totalMatches) * 100).toFixed(1)) : 0;
+
+    return (
+      <div className="profile-modal-overlay" onClick={onClose}>
+        <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="profile-modal-header">
+            <div className="profile-modal-avatar"><img src={avatar} alt={name} /></div>
+            <h3 className="profile-modal-name">{name}</h3>
+            {(stats?.epicGamesName || player.epicName) && <p className="profile-modal-epic">{stats?.epicGamesName || player.epicName}</p>}
+          </div>
+          <div className="profile-modal-rank">
+            <img src={rank.icon} alt={rankLabel} />
+            <span className="profile-modal-rank-label" style={{ color: rank.color }}>{rankLabel}</span>
+          </div>
+          <div className="rank-progress-bar">
+            <div className="rank-progress-fill" style={{ width: `${getRankProgress(pts)}%`, background: rank.color }} />
+          </div>
+          <div className="profile-stats-grid">
+            <div className="profile-stat-card"><strong>{wins}</strong><span>Wins</span></div>
+            <div className="profile-stat-card"><strong>{losses}</strong><span>Losses</span></div>
+            <div className="profile-stat-card"><strong>{totalMatches}</strong><span>Total</span></div>
+            <div className="profile-stat-card"><strong>{winRate}%</strong><span>Win Rate</span></div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="match-page page-wrapper">
+      <div className="match-header">
+        <div className="match-header-left">
+          <h1>MATCH</h1>
+          <div className="match-header-tags">
+            {matchMode && <span className="match-tag mode">{matchMode}</span>}
+            {tournamentName && <span className="match-tag tourney">{tournamentName}</span>}
+          </div>
+        </div>
+        <span className={`match-status-badge ${disputed ? 'disputed' : reported ? 'reported' : 'live'}`}>
+          <i className={`fas ${disputed ? 'fa-gavel' : reported ? 'fa-check-circle' : 'fa-circle'}`}></i>
+          {disputed ? ' Disputed' : reported ? ' Reported' : ' LIVE'}
+        </span>
+      </div>
+
+      <div className="match-arena">
+        <div className="match-player-panel" onClick={() => setShowProfile('self')}>
+          <div className="player-bg" style={{ background: 'linear-gradient(135deg, rgba(46,242,255,0.04), transparent)' }} />
+          <div className="match-player-avatar">
+            <img src={selfAvatar} alt={myName} />
+          </div>
+          <div className="match-player-name">{myName}</div>
+          {self?.epicName && <div className="match-player-epic">{self.epicName}</div>}
+          <div className="match-player-rank" style={{ color: myRank.color }}>
+            <img src={myRank.icon} alt="" className="rank-icon-img" /> {getRankLabel(myPoints)}
+          </div>
+          <div className="match-player-tag self">YOU</div>
+        </div>
+
+        <div className="match-vs-center">
+          <div className="match-vs-badge">VS</div>
+          {mapCode && (
+            <div className="match-map-code" onClick={handleCopyMapCode} title="Click to copy">
+              <i className="fas fa-map-pin"></i>
+              <code>{mapCode}</code>
+              <i className="fas fa-copy"></i>
+            </div>
+          )}
+        </div>
+
+        <div className="match-player-panel" onClick={() => setShowProfile('opponent')}>
+          <div className="player-bg" style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.04), transparent)' }} />
+          <div className="match-player-avatar" style={{ borderColor: 'var(--border-purple)', boxShadow: '0 0 25px var(--purple-glow)' }}>
+            <img src={opponentAvatar} alt={opponentName} />
+          </div>
+          <div className="match-player-name">{opponentName}</div>
+          {opponent?.epicName && <div className="match-player-epic">{opponent.epicName}</div>}
+          <div className="match-player-rank" style={{ color: opponentRank.color }}>
+            <img src={opponentRank.icon} alt="" className="rank-icon-img" /> {getRankLabel(opponentPoints)}
+          </div>
+          <div className="match-player-tag opponent">OPPONENT</div>
+        </div>
+      </div>
+
+      <div className="match-info-bar">
+        <div className="match-info-tags">
+          {mapCode && <span className="match-info-tag"><i className="fas fa-map-pin"></i> {mapCode}</span>}
+        </div>
+        <div className="match-timeline">
+          <span className="timeline-step completed"><i className="fas fa-check-circle"></i> Ready</span>
+          <span className="timeline-step active"><i className="fas fa-play-circle"></i> Live</span>
+        </div>
+      </div>
+
+      <div className="match-bottom">
+        <div className="match-chat-panel">
+          <div className="chat-panel-header" onClick={() => setChatOpen(!chatOpen)}>
+            <div className="chat-panel-title">
+              <i className="fas fa-comments"></i> Match Chat
+              {messages.length > 0 && <span className="chat-message-count">{messages.length}</span>}
+            </div>
+            <i className={`fas fa-chevron-${chatOpen ? 'down' : 'up'}`}></i>
+          </div>
+          {chatOpen && (
+            <>
+              <div className="chat-messages" ref={chatRef}>
+                {messages.length === 0 && <div className="chat-empty">No messages yet. Say something!</div>}
+                {messages.map((msg, index) => {
+                  const badge = !msg.isSystem ? getRoleBadge(msg.role) : null;
+                  return (
+                    <div key={index} className={`chat-message ${msg.isSystem ? 'system' : ''}`}>
+                      <div className="chat-message-header">
+                        <span className="chat-sender">
+                          {msg.isSystem ? 'System' : msg.sender}
+                          {badge && <span className={`chat-role-badge ${badge.cls}`}>{badge.label}</span>}
+                        </span>
+                        <span className="chat-time">{formatTime(msg.time)}</span>
+                      </div>
+                      <div className="chat-text">{msg.message}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="chat-input-area">
+                <input
+                  className="chat-input"
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Type a message..."
+                  disabled={disputed}
+                />
+                <button className="chat-send-btn" onClick={handleSendMessage} disabled={!newMessage.trim() || disputed}>
+                  Send
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="match-action-column">
+          <div className="match-action-card">
+            <div className="match-action-card-header"><i className="fas fa-trophy"></i> Report Result</div>
+            <div className="match-action-card-body">
+              {!reported && !disputed ? (
+                <div className="result-buttons">
+                  <button disabled={reporting} onClick={() => handleReportResult(self?.id || currentUserId)} className="result-btn win">
+                    <i className="fas fa-check-circle"></i> I Won
+                  </button>
+                  <button disabled={reporting} onClick={() => handleReportResult(opponent?.id)} className="result-btn lose">
+                    <i className="fas fa-times-circle"></i> I Lost
+                  </button>
+                  <button disabled={reporting || staffNotified} onClick={handleCallStaff} className="result-btn staff">
+                    <i className="fas fa-headset"></i> Call Staff
+                  </button>
+                </div>
+              ) : disputed ? (
+                <div className="match-status-msg">
+                  <i className="fas fa-gavel" style={{ color: 'var(--red)' }}></i>
+                  <p>Match disputed. Staff will review.</p>
+                  {isStaff && (
+                    <div className="force-buttons">
+                      <button disabled={staffForcing} onClick={() => handleForceWin(self?.id || currentUserId, myName)} className="result-btn win">
+                        Force: {myName}
+                      </button>
+                      <button disabled={staffForcing} onClick={() => handleForceWin(opponent?.id, opponentName)} className="result-btn lose">
+                        Force: {opponentName}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="match-status-msg">
+                  <i className="fas fa-check-circle" style={{ color: 'var(--green)' }}></i>
+                  <p>{resultMessage || 'Result submitted. Waiting...'}</p>
+                  {countdown !== null && countdown > 0 && (
+                    <div className="auto-resolve-timer">
+                      <i className="fas fa-hourglass-half"></i>
+                      Auto in {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {isStaff && !disputed && !reported && (
+            <div className="match-action-card">
+              <div className="match-action-card-header"><i className="fas fa-gavel"></i> Staff Tools</div>
+              <div className="match-action-card-body">
+                <p className="force-hint">Force a win:</p>
+                <div className="force-buttons">
+                  <button disabled={staffForcing} onClick={() => handleForceWin(self?.id || currentUserId, myName)} className="result-btn win">
+                    Win: {myName}
+                  </button>
+                  <button disabled={staffForcing} onClick={() => handleForceWin(opponent?.id, opponentName)} className="result-btn lose">
+                    Win: {opponentName}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showProfile && (
+        <PlayerProfileModal
+          player={showProfile === 'self' ? (self || currentUser) : opponent}
+          isSelf={showProfile === 'self'}
+          onClose={() => setShowProfile(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default MatchPage;
