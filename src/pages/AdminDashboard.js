@@ -1063,10 +1063,19 @@ const AnticheatTab = ({ api }) => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
-  const [userCache, setUserCache] = useState({});
   useEffect(() => { fetchAlerts(); }, []);
   const fetchAlerts = async () => {
-    try { const res = await api.get('/admin/anticheat/alerts'); setAlerts(res.data.alerts); } catch (err) { console.error('Failed to fetch alerts'); }
+    try {
+      const res = await api.get('/admin/anticheat/alerts');
+      const seen = new Set();
+      const deduped = res.data.alerts.filter(a => {
+        const key = `${a.userId}:${a.flag}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      setAlerts(deduped);
+    } catch (err) { console.error('Failed to fetch alerts'); }
     finally { setLoading(false); }
   };
   const resolveFlag = async (userId, flagId) => {
