@@ -772,7 +772,7 @@ const CreateTournamentModal = ({ onClose, onSubmit }) => {
     ['startDate', 'endDate', 'registrationDeadline'].forEach(k => {
       if (fixed[k]) {
         const d = new Date(fixed[k]);
-        fixed[k] = new Date(d.getTime() - offset * 60000).toISOString();
+        fixed[k] = new Date(d.getTime() + offset * 60000).toISOString();
       }
     });
     try { await onSubmit(fixed); } finally { setSubmitting(false); }
