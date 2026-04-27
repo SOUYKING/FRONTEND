@@ -1062,6 +1062,8 @@ const UsersTab = ({ users, selectedUser, onSearch, onSelectUser, onAction, onWhi
 const AnticheatTab = ({ api }) => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+  const [userCache, setUserCache] = useState({});
   useEffect(() => { fetchAlerts(); }, []);
   const fetchAlerts = async () => {
     try { const res = await api.get('/admin/anticheat/alerts'); setAlerts(res.data.alerts); } catch (err) { console.error('Failed to fetch alerts'); }
@@ -1070,31 +1072,112 @@ const AnticheatTab = ({ api }) => {
   const resolveFlag = async (userId, flagId) => {
     try { await api.post(`/admin/anticheat/resolve/${userId}/${flagId}`); fetchAlerts(); } catch (err) { console.error('Failed to resolve'); }
   };
-  if (loading) return <div className="tab-loading">Loading...</div>;
+  const getFlagIcon = (flag) => {
+    const icons = { multiAccounting: 'fa-users-slash', vpnUsage: 'fa-eye-slash', boostingDetected: 'fa-arrow-up', suspiciousActivity: 'fa-question-circle', proxyDetected: 'fa-globe', torUsage: 'fa-mask', vpnDetected: 'fa-shield-halved' };
+    return icons[flag] || 'fa-flag';
+  };
+  const getSeverityColor = (severity) => {
+    const colors = { critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#3b82f6' };
+    return colors[severity] || '#64748b';
+  };
+  const getScoreColor = (score) => {
+    if (score >= 80) return '#22c55e';
+    if (score >= 50) return '#eab308';
+    if (score >= 30) return '#f97316';
+    return '#ef4444';
+  };
+  const filtered = filter === 'all' ? alerts : alerts.filter(a => a.severity === filter);
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 100 }} />)}
+    </div>
+  );
   return (
-    <div className="anticheat-tab">
+    <div>
       <div className="tab-title-section">
-        <h2>Anticheat Alerts</h2>
-        <p className="section-subtitle">{alerts.length} active alert{alerts.length !== 1 ? 's' : ''}</p>
+        <div>
+          <h2>Anticheat Alerts</h2>
+          <p className="section-subtitle">{alerts.length} unresolved alert{alerts.length !== 1 ? 's' : ''}</p>
+        </div>
+        <div className="filter-tabs">
+          <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All ({alerts.length})</button>
+          <button className={filter === 'critical' ? 'active' : ''} onClick={() => setFilter('critical')} style={filter === 'critical' ? { color: '#ef4444' } : {}}>Critical</button>
+          <button className={filter === 'high' ? 'active' : ''} onClick={() => setFilter('high')} style={filter === 'high' ? { color: '#f97316' } : {}}>High</button>
+          <button className={filter === 'medium' ? 'active' : ''} onClick={() => setFilter('medium')} style={filter === 'medium' ? { color: '#eab308' } : {}}>Medium</button>
+          <button className={filter === 'low' ? 'active' : ''} onClick={() => setFilter('low')} style={filter === 'low' ? { color: '#3b82f6' } : {}}>Low</button>
+        </div>
       </div>
-      <div className="alerts-list">
-        {alerts.length === 0 ? (
-          <div className="empty-state"><span>✓</span><p>No active alerts</p></div>
-        ) : alerts.map((alert, i) => (
-          <div key={i} className={`alert-card ${alert.severity}`}>
-            <div className="alert-header">
-              <span className={`severity ${alert.severity}`}>{alert.severity}</span>
-              <span className="flag">{alert.flag}</span>
-              <span className="user">{alert.userName}</span>
+
+      {filtered.length === 0 ? (
+        <div className="empty-state"><span>✓</span><p>No alerts to show</p></div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.map((alert, i) => (
+            <div key={i} style={{
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+              animation: 'fadeInUp 0.3s ease', animationFillMode: 'both',
+              animationDelay: `${i * 0.03}s`,
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px',
+                borderBottom: '1px solid var(--border)',
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 'var(--radius-md)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1rem', background: `${getSeverityColor(alert.severity)}15`,
+                  color: getSeverityColor(alert.severity), flexShrink: 0,
+                }}>
+                  <i className={`fas ${getFlagIcon(alert.flag)}`}></i>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>{alert.userName}</span>
+                    <span style={{
+                      padding: '2px 8px', borderRadius: 100, fontSize: '0.65rem',
+                      fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                      background: `${getSeverityColor(alert.severity)}15`,
+                      color: getSeverityColor(alert.severity),
+                      border: `1px solid ${getSeverityColor(alert.severity)}25`,
+                    }}>{alert.flag}</span>
+                    <span style={{
+                      padding: '2px 8px', borderRadius: 100, fontSize: '0.6rem',
+                      fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em',
+                      background: `${getSeverityColor(alert.severity)}20`,
+                      color: getSeverityColor(alert.severity),
+                    }}>{alert.severity}</span>
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                    {alert.description}
+                  </div>
+                </div>
+                <div style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  flexShrink: 0, padding: '0 12px',
+                }}>
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700,
+                    color: getScoreColor(alert.anticheatScore),
+                  }}>{alert.anticheatScore}</span>
+                  <span style={{ fontSize: '0.6rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Score</span>
+                </div>
+                <button onClick={() => resolveFlag(alert.userId, alert._id)} className="btn btn-ghost btn-sm">
+                  <i className="fas fa-check"></i> Resolve
+                </button>
+              </div>
+              <div style={{
+                padding: '8px 20px', background: 'rgba(0,0,0,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                fontSize: '0.75rem', color: 'var(--text-dim)',
+              }}>
+                <span><i className="far fa-clock"></i> {new Date(alert.createdAt).toLocaleString()}</span>
+                <span>User ID: {alert.userId?.substring(0, 12)}...</span>
+              </div>
             </div>
-            <p className="alert-desc">{alert.description}</p>
-            <div className="alert-footer">
-              <span>{new Date(alert.createdAt).toLocaleString()}</span>
-              <button onClick={() => resolveFlag(alert.userId, alert._id)}>Resolve</button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
