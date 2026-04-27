@@ -767,7 +767,15 @@ const CreateTournamentModal = ({ onClose, onSubmit }) => {
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
-    try { await onSubmit(form); } finally { setSubmitting(false); }
+    const fixed = { ...form };
+    const offset = new Date().getTimezoneOffset();
+    ['startDate', 'endDate', 'registrationDeadline'].forEach(k => {
+      if (fixed[k]) {
+        const d = new Date(fixed[k]);
+        fixed[k] = new Date(d.getTime() - offset * 60000).toISOString();
+      }
+    });
+    try { await onSubmit(fixed); } finally { setSubmitting(false); }
   };
 
   const updateField = (field, value) => {
