@@ -63,10 +63,9 @@ const Tournaments = () => {
   const getStageMeta = (t) => {
     const s = t.lifecycleStage || t.status;
     if (s === 'active') return { label: 'LIVE', cls: 'stage-live' };
-    if (s === 'registration') return { label: 'OPEN', cls: 'stage-open' };
+    if (s === 'waiting') return { label: 'UPCOMING', cls: 'stage-open' };
     if (s === 'completed') return { label: 'ENDED', cls: 'stage-ended' };
     if (s === 'cancelled') return { label: 'CANCELLED', cls: 'stage-cancelled' };
-    if (s === 'registration_closed') return { label: 'CLOSED', cls: 'stage-closed' };
     return { label: s?.toUpperCase() || 'UNKNOWN', cls: '' };
   };
 
@@ -184,24 +183,19 @@ const Tournaments = () => {
                 </div>
 
                 <div className="tournament-card-actions">
-                  {!isRegistered && registrationOpen && (tournament.lifecycleStage || tournament.status) === 'registration' && (
-                    <button onClick={() => handleJoinTournament(tournament._id)} className="btn btn-primary" style={{ flex: 1 }}>
-                      <i className="fas fa-pen"></i> Register
-                    </button>
-                  )}
-                  {isRegistered && queueOpen && !isEnded && (
+                  {queueOpen && !isEnded && (
                     <button onClick={() => handleJoinQueue(tournament._id)} className="btn btn-success" style={{ flex: 1 }}>
                       <i className="fas fa-right-to-bracket"></i> Join Queue
                     </button>
                   )}
-                  {!isRegistered && (!registrationOpen || (tournament.lifecycleStage || tournament.status) !== 'registration') && (
+                  {!queueOpen && !isEnded && (
                     <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
-                      <i className="fas fa-lock"></i> {stageMeta.label === 'ENDED' ? 'Ended' : 'Closed'}
+                      <i className="fas fa-hourglass-half"></i> {countdown ? 'Starts Soon' : 'Not Started'}
                     </button>
                   )}
-                  {isRegistered && !queueOpen && !isEnded && (
+                  {isEnded && (
                     <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
-                      <i className="fas fa-hourglass"></i> Waiting
+                      <i className="fas fa-ban"></i> Ended
                     </button>
                   )}
                   <button onClick={() => handleViewLeaderboard(tournament._id)} className="btn btn-ghost">
