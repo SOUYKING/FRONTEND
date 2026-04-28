@@ -12,6 +12,14 @@ const QueuePage = ({ socket }) => {
   const [queueSize, setQueueSize] = useState(0);
   const [epicName, setEpicName] = useState('');
 
+  const attemptApiQueueJoin = async (user, customEpicName) => {
+    const res = await joinMatchmaking(tournamentId, customEpicName || user.epicGamesName);
+    socket.emit('register', { userId: user.discordId || user.id });
+    setStatus('waiting');
+    setQueueSize(res.queueSize || 0);
+    setMessage(res.message || 'Waiting for opponent...');
+  };
+
   useEffect(() => {
     const fetchTournament = async () => {
       try {
@@ -70,8 +78,23 @@ const QueuePage = ({ socket }) => {
       }, 2000);
     };
 
-    const onSocketError = (data) => {
-      setMessage(data.message);
+    const onSocketError = async (data) => {
+      const msg = data?.message || 'Queue error';
+      const lowerMsg = msg.toLowerCase();
+      // Force no-registration flow: if legacy socket says register first, fallback to API join.
+      if (lowerMsg.includes('must register for this tournament')) {
+        try {
+          const freshUser = JSON.parse(localStorage.getItem('user') || '{}');
+          await attemptApiQueueJoin(freshUser, epicName || freshUser.epicGamesName);
+          return;
+        } catch (err) {
+          const fallbackMsg = err.response?.data?.message || msg;
+          setMessage(fallbackMsg);
+          setStatus('error');
+          return;
+        }
+      }
+      setMessage(msg);
       setStatus('error');
     };
 
@@ -107,11 +130,7 @@ const QueuePage = ({ socket }) => {
     setStatus('joining');
     setMessage('Joining queue...');
     try {
-      const res = await joinMatchmaking(tournamentId, epicName || user.epicGamesName);
-      socket.emit('register', { userId: user.discordId || user.id });
-      setStatus('waiting');
-      setQueueSize(res.queueSize || 0);
-      setMessage(res.message || 'Waiting for opponent...');
+      await attemptApiQueueJoin(user, epicName || user.epicGamesName);
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to join queue';
       const lowerMsg = msg.toLowerCase();

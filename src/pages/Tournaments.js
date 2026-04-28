@@ -29,21 +29,6 @@ const Tournaments = () => {
     }
   };
 
-  const handleJoinTournament = async (tournamentId) => {
-    try {
-      const response = await joinTournament(tournamentId);
-      setSuccess(response.message || 'Registered!');
-      setTimeout(() => setSuccess(''), 3000);
-      setError('');
-      setErrorType('');
-      fetchTournaments();
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to join';
-      setError(msg);
-      setErrorType(err.response?.status === 403 && msg.toLowerCase().includes('epic') ? 'epic' : '');
-    }
-  };
-
   const handleJoinQueue = (tournamentId) => {
     navigate(`/queue/${tournamentId}`);
   };
