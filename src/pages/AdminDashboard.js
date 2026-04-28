@@ -733,9 +733,9 @@ const TournamentsTab = ({ tournaments, selectedTournament, onSelectTournament, o
 };
 
 const CreateTournamentModal = ({ onClose, onSubmit }) => {
-  const [form, setForm] = useState({
+const [form, setForm] = useState({
     title: '', description: '', mapCode: '', mapName: '', type: '1v1',
-    startDate: '', endDate: '', registrationDeadline: '', maxPlayers: 16, prize: '', rules: '',
+    startDate: '', endDate: '', maxPlayers: 16, prize: '', rules: '',
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -748,12 +748,6 @@ const CreateTournamentModal = ({ onClose, onSubmit }) => {
     if (!form.rules.trim()) errs.rules = 'Rules are required';
     if (!form.startDate) errs.startDate = 'Start date is required';
     if (!form.endDate) errs.endDate = 'End date is required';
-    if (!form.registrationDeadline) errs.registrationDeadline = 'Registration deadline is required';
-    if (form.registrationDeadline && form.startDate) {
-      const reg = new Date(form.registrationDeadline);
-      const start = new Date(form.startDate);
-      if (reg >= start) errs.registrationDeadline = 'Deadline must be before start date';
-    }
     if (form.startDate && form.endDate) {
       const start = new Date(form.startDate);
       const end = new Date(form.endDate);
@@ -761,6 +755,21 @@ const CreateTournamentModal = ({ onClose, onSubmit }) => {
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setSubmitting(true);
+    const fixed = { ...form };
+    const offset = new Date().getTimezoneOffset();
+    ['startDate', 'endDate'].forEach(k => {
+      if (fixed[k]) {
+        const d = new Date(fixed[k]);
+        fixed[k] = new Date(d.getTime() + offset * 60000).toISOString();
+      }
+    });
+    try { await onSubmit(fixed); } finally { setSubmitting(false); }
   };
 
   const handleSubmit = async (e) => {
@@ -833,11 +842,6 @@ const CreateTournamentModal = ({ onClose, onSubmit }) => {
             <div className="date-section">
               <h4>📅 Schedule</h4>
               <div className="form-row">
-                <div className="form-group">
-                  <label>Registration Deadline *</label>
-                  <input type="datetime-local" value={form.registrationDeadline} onChange={e => updateField('registrationDeadline', e.target.value)} className={errors.registrationDeadline ? 'error' : ''} />
-                  {errors.registrationDeadline && <span className="error-msg">{errors.registrationDeadline}</span>}
-                </div>
                 <div className="form-group">
                   <label>Start Date *</label>
                   <input type="datetime-local" value={form.startDate} onChange={e => updateField('startDate', e.target.value)} className={errors.startDate ? 'error' : ''} />
