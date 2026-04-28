@@ -10,8 +10,11 @@ export function buildDiscordAvatar(discordId, hash, size = 256) {
 }
 
 const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-const DEFAULT_API_URL = isProduction ? "https://backend-97zg.onrender.com" : "http://localhost:5000";
-const rawApiBaseUrl = process.env.REACT_APP_API_URL || DEFAULT_API_URL;
+const PRODUCTION_API_URL = "https://backend-97zg.onrender.com";
+const LOCAL_API_URL = "http://localhost:5000";
+const rawApiBaseUrl = isProduction
+  ? PRODUCTION_API_URL
+  : (process.env.REACT_APP_API_URL || LOCAL_API_URL);
 
 export const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, "");
 export const SOCKET_BASE_URL = (process.env.REACT_APP_SOCKET_URL || API_BASE_URL).replace(/\/+$/, "");
