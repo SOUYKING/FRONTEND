@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchUserData, getMyRegisteredTournaments, getCurrentMatch, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
 import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
+import './Dashboard.css';
 
 const Dashboard = ({ user }) => {
   const storedUser = user || JSON.parse(localStorage.getItem('user') || '{}');
@@ -167,3 +168,4 @@ const Dashboard = ({ user }) => {
 };
 
 export default Dashboard;
+

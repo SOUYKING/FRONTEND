@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getTournamentById, getCurrentMatch } from '../utils/api';
+import './QueuePage.css';
 
 const QueuePage = ({ socket }) => {
   const { tournamentId } = useParams();
@@ -192,3 +193,4 @@ const QueuePage = ({ socket }) => {
 };
 
 export default QueuePage;
+

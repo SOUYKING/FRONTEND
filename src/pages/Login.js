@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { getDiscordAuthUrl, API_BASE_URL } from '../utils/api';
+import './Login.css';
 
 const DISCORD_INVITE_URL = 'https://discord.gg/hMA23CEPHZ';
 
@@ -216,3 +217,4 @@ const Login = ({ errorMessage = '', errorType = '' }) => {
 };
 
 export default Login;
+

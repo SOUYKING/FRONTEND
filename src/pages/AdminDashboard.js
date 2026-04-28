@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { API_BASE_URL, SOCKET_BASE_URL, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
 import { getRank, getRankLabel } from '../utils/ranks';
+import './AdminDashboard.css';
 
 const MAX_FEED_ITEMS = 100;
 const POLL_INTERVAL = 20000;
@@ -1350,3 +1351,4 @@ const BroadcastTab = ({ api, notify }) => {
 };
 
 export default AdminDashboard;
+

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchProfileData, verifyEpicAccount, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
+import './Account.css';
 import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
 
 const Account = () => {
@@ -232,3 +233,4 @@ const Account = () => {
 };
 
 export default Account;
+

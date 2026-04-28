@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getCurrentMatch, getActiveMatchInfo, getPublicPlayerProfile, submitMatchResult, resolveMatchDispute, DISCORD_AVATAR_FALLBACK, buildDiscordAvatar } from '../utils/api';
+import './MatchPage.css';
 import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
 
 const STAFF_ROLES = ['admin', 'owner', 'staff'];

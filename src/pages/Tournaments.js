@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTournaments, joinTournament } from '../utils/api';
+import './Tournaments.css';
 
 const Tournaments = () => {
   const [tournaments, setTournaments] = useState([]);
@@ -215,3 +216,4 @@ const Tournaments = () => {
 };
 
 export default Tournaments;
+

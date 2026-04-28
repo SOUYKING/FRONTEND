@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentMatch, getMyRegisteredTournaments, leaveTournament, DISCORD_AVATAR_FALLBACK, buildDiscordAvatar } from '../utils/api';
+import './CurrentGame.css';
 import { getRank, getRankLabel } from '../utils/ranks';
 
 const CurrentGame = () => {
@@ -168,3 +169,4 @@ const CurrentGame = () => {
 };
 
 export default CurrentGame;
+

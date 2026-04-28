@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getMatchHistory, getMatchDetail, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
+import './MatchHistoryPage.css';
 
 const MatchHistoryPage = () => {
   const [matches, setMatches] = useState([]);
