@@ -768,6 +768,8 @@ const [form, setForm] = useState({
         fixed[k] = d.toISOString();
       }
     });
+    // Backward-compatible with older backend builds that still require this field.
+    fixed.registrationDeadline = fixed.startDate;
     try { await onSubmit(fixed); } finally { setSubmitting(false); }
   };
 
