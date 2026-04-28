@@ -12,17 +12,17 @@ const ICONS = [
 ];
 
 const TINTS = [
-  'sepia(1) hue-rotate(160deg) saturate(3) brightness(1.3)',   // cyan
-  'sepia(1) hue-rotate(250deg) saturate(2.5) brightness(1.2)',  // purple
-  'sepia(1) hue-rotate(300deg) saturate(2.5) brightness(1.2)',  // magenta
-  'sepia(1) hue-rotate(195deg) saturate(3) brightness(1.3)',    // blue
-  'sepia(1) hue-rotate(270deg) saturate(2.5) brightness(1.2)',  // violet
-  'sepia(1) hue-rotate(160deg) saturate(3) brightness(1.3)',    // cyan
-  'sepia(1) hue-rotate(250deg) saturate(2.5) brightness(1.2)',  // purple
+  'sepia(1) hue-rotate(160deg) saturate(4) brightness(1.5)',   // cyan
+  'sepia(1) hue-rotate(250deg) saturate(3.5) brightness(1.4)',  // purple
+  'sepia(1) hue-rotate(300deg) saturate(3.5) brightness(1.4)',  // magenta
+  'sepia(1) hue-rotate(195deg) saturate(4) brightness(1.5)',    // blue
+  'sepia(1) hue-rotate(270deg) saturate(3.5) brightness(1.4)',  // violet
+  'sepia(1) hue-rotate(160deg) saturate(4) brightness(1.5)',    // cyan
+  'sepia(1) hue-rotate(250deg) saturate(3.5) brightness(1.4)',  // purple
 ];
 
-const GRID_COLS = 10;
-const GRID_ROWS = 6;
+const GRID_COLS = 8;
+const GRID_ROWS = 5;
 const TOTAL = GRID_COLS * GRID_ROWS;
 
 const AnimatedBackground = () => {
@@ -45,10 +45,10 @@ const AnimatedBackground = () => {
         src: ICONS[i % ICONS.length],
         baseX: cx + jitterX,
         baseY: cy + jitterY,
-        size: 60 + Math.random() * 80,
+        size: 80 + Math.random() * 120,
         speed: 0.15 + Math.random() * 0.35,
         phase: Math.random() * Math.PI * 2,
-        opacity: 0.2 + Math.random() * 0.25,
+        opacity: 0.35 + Math.random() * 0.35,
         rotation: Math.random() * 360,
         rotSpeed: -0.3 + Math.random() * 0.6,
         wobbleAmp: 6 + Math.random() * 10,
