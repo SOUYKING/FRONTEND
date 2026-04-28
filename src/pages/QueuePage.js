@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getTournamentById, getCurrentMatch } from '../utils/api';
+import { getTournamentById, getCurrentMatch, joinMatchmaking, leaveMatchmaking } from '../utils/api';
 import './QueuePage.css';
 
 const QueuePage = ({ socket }) => {
@@ -94,7 +94,7 @@ const QueuePage = ({ socket }) => {
     };
   }, [tournamentId, navigate, socket]);
 
-  const handleJoinQueue = () => {
+  const handleJoinQueue = async () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (!user.epicVerified) {
       setMessage('You must verify your Epic Games account first!');
@@ -106,14 +106,24 @@ const QueuePage = ({ socket }) => {
     }
     setStatus('joining');
     setMessage('Joining queue...');
-    socket.emit('joinQueue', {
-      tournamentId: tournamentId,
-      epicName: epicName || user.epicGamesName
-    });
+    try {
+      const res = await joinMatchmaking(tournamentId, epicName || user.epicGamesName);
+      socket.emit('register', { userId: user.discordId || user.id });
+      setStatus('waiting');
+      setQueueSize(res.queueSize || 0);
+      setMessage(res.message || 'Waiting for opponent...');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to join queue';
+      setStatus('error');
+      setMessage(msg);
+    }
   };
 
-  const handleLeaveQueue = () => {
+  const handleLeaveQueue = async () => {
     socket.emit('leaveQueue');
+    try {
+      await leaveMatchmaking();
+    } catch {}
     setStatus('idle');
     setMessage('Left queue');
   };

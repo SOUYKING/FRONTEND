@@ -189,6 +189,27 @@ export const getMyRegisteredTournaments = async () => {
   }
 };
 
+// MATCHMAKING ROUTES
+export const joinMatchmaking = async (tournamentId, epicName) => {
+  try {
+    const res = await apiClient.post(`/matchmaking/join`, { tournamentId, epicName });
+    return res.data;
+  } catch (error) {
+    console.error("Join matchmaking error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const leaveMatchmaking = async () => {
+  try {
+    const res = await apiClient.post(`/matchmaking/leave`);
+    return res.data;
+  } catch (error) {
+    console.error("Leave matchmaking error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
 // MATCH ROUTES
 export const getMatchHistory = async () => {
   try {
