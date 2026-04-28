@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTournaments, joinTournament } from '../utils/api';
+import { getTournaments } from '../utils/api';
 import './Tournaments.css';
 
 const Tournaments = () => {
@@ -44,21 +44,8 @@ const Tournaments = () => {
     }
   };
 
-  const handleJoinQueue = async (tournamentId) => {
-    try {
-      await joinTournament(tournamentId);
-      navigate(`/queue/${tournamentId}`);
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to join queue';
-      const lowerMsg = msg.toLowerCase();
-      if (lowerMsg.includes('registration deadline has passed')) {
-        // Compatibility: older backend may reject /join, but queue join is still valid during live window.
-        navigate(`/queue/${tournamentId}`);
-        return;
-      }
-      setError(msg);
-      setErrorType(err.response?.status === 403 && lowerMsg.includes('epic') ? 'epic' : '');
-    }
+  const handleJoinQueue = (tournamentId) => {
+    navigate(`/queue/${tournamentId}`);
   };
   const handleViewLeaderboard = (tournamentId) => navigate(`/tournament/${tournamentId}/leaderboard`);
 
