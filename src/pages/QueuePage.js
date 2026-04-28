@@ -81,8 +81,13 @@ const QueuePage = ({ socket }) => {
     const onSocketError = async (data) => {
       const msg = data?.message || 'Queue error';
       const lowerMsg = msg.toLowerCase();
-      // Force no-registration flow: if legacy socket says register first, fallback to API join.
-      if (lowerMsg.includes('must register for this tournament')) {
+      // Handle mixed backend deployments by retrying via API for legacy socket errors.
+      const shouldRetryViaApi =
+        lowerMsg.includes('must register for this tournament') ||
+        lowerMsg.includes('tournament is not active') ||
+        lowerMsg.includes('tournament is no longer active');
+
+      if (shouldRetryViaApi) {
         try {
           const freshUser = JSON.parse(localStorage.getItem('user') || '{}');
           await attemptApiQueueJoin(freshUser, epicName || freshUser.epicGamesName);
@@ -123,10 +128,7 @@ const QueuePage = ({ socket }) => {
       setMessage('You must verify your Epic Games account first!');
       return;
     }
-    if (tournament && !tournament.queueOpen) {
-      setMessage('Queue opens when the tournament starts.');
-      return;
-    }
+    // Do not hard-block on client-side queueOpen; backend is the source of truth.
     setStatus('joining');
     setMessage('Joining queue...');
     // Socket-first join avoids stale API validators on some deployments.
