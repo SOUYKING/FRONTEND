@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { API_BASE_URL, SOCKET_BASE_URL, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
 import { getRank, getRankLabel } from '../utils/ranks';
-import './AdminDashboard.css';
 
 const MAX_FEED_ITEMS = 100;
 const POLL_INTERVAL = 20000;
@@ -351,128 +350,127 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="admin-loading">
-        <div className="cyber-loader"></div>
-        <p>INITIALIZING...</p>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] gap-4">
+        <div className="w-8 h-8 border-3 border-[rgba(46,242,255,0.08)] border-t-[var(--cyan)] rounded-full animate-spin"></div>
+        <p className="font-display text-sm text-[var(--text-muted)] uppercase tracking-widest animate-pulse">INITIALIZING...</p>
       </div>
     );
   }
 
   return (
-    <div className={`admin-dashboard ${sidebarOpen ? 'sidebar-open' : ''}`}>
-      <div className="notification-panel">
+    <div className={`flex min-h-[calc(100vh-40px)] relative animate-fade-in ${sidebarOpen ? '' : ''}`}>
+      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2">
         {notifications.map(n => (
-          <div key={n.id} className={`notification ${n.type}`}>
+          <div key={n.id} className={`px-4 py-3 rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] animate-slide-in-right text-sm font-semibold flex items-center gap-2 ${n.type === 'success' ? 'bg-[rgba(34,197,94,0.15)] border border-[rgba(34,197,94,0.3)] text-[var(--green)]' : 'bg-[rgba(239,68,68,0.15)] border border-[rgba(239,68,68,0.3)] text-[var(--red)]'}`}>
             <span>{n.type === 'success' ? '✓' : '✗'}</span>
             {n.message}
           </div>
         ))}
       </div>
 
-      <button className="mobile-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
+      <button className="lg:hidden fixed top-4 left-4 z-[60] w-10 h-10 flex items-center justify-center bg-[var(--bg-glass-strong)] backdrop-blur-xl border border-[var(--border)] rounded-[var(--radius-md)] text-lg cursor-pointer" onClick={() => setSidebarOpen(!sidebarOpen)}>
         {sidebarOpen ? '✕' : '☰'}
       </button>
 
-      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <div className={`socket-indicator ${socketStatus}`} title={`Socket: ${socketStatus}`} />
-          <div className="sidebar-brand">
-            <h2>ADMIN</h2>
-            <span className={`socket-label ${socketStatus}`}>
+      <aside className={`w-[240px] flex-shrink-0 bg-[var(--bg-glass-strong)] backdrop-blur-xl border border-[var(--border)] rounded-[var(--radius-xl)] p-5 px-3 flex flex-col mr-5 sticky top-5 h-fit max-h-[calc(100vh-40px)] overflow-y-auto lg:block ${sidebarOpen ? 'fixed left-0 top-0 bottom-0 z-50 rounded-none' : 'hidden'}`}>
+        <div className="flex items-center gap-2.5 px-2 pb-4 border-b border-[var(--border)] mb-3">
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${socketStatus === 'connected' ? 'bg-[var(--green)] shadow-[0_0_8px_var(--green-glow)]' : socketStatus === 'disconnected' || socketStatus === 'error' ? 'bg-[var(--red)]' : 'bg-[var(--orange)] animate-pulse'}`} title={`Socket: ${socketStatus}`} />
+          <div>
+            <h2 className="font-display text-sm font-bold text-[var(--text)]">ADMIN</h2>
+            <span className={`text-[0.65rem] uppercase tracking-wider ${socketStatus === 'connected' ? 'text-[var(--green)]' : socketStatus === 'disconnected' ? 'text-[var(--red)]' : 'text-[var(--orange)]'}`}>
               {socketStatus === 'connected' ? 'Live' : socketStatus === 'reconnecting' ? 'Reconnecting...' : socketStatus === 'disconnected' ? 'Disconnected' : 'Connecting...'}
             </span>
           </div>
         </div>
 
-        <nav className="sidebar-nav">
-          <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }}>
-            <span className="nav-icon">◈</span>
-            <span className="nav-label">Dashboard</span>
+        <nav className="flex flex-col gap-0.5 flex-1">
+          <button className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium cursor-pointer transition-all duration-fast text-left w-full ${activeTab === 'dashboard' ? 'bg-[rgba(46,242,255,0.06)] text-[var(--cyan)] border border-[rgba(46,242,255,0.08)]' : 'bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }}>
+            <span className="w-5 text-center text-sm">◈</span>
+            <span>Dashboard</span>
           </button>
-          <button className={activeTab === 'tournaments' ? 'active' : ''} onClick={() => { setActiveTab('tournaments'); setSidebarOpen(false); }}>
-            <span className="nav-icon">🏆</span>
-            <span className="nav-label">Tournaments</span>
-            <span className="badge">{stats?.overview?.activeTournaments || 0}</span>
+          <button className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium cursor-pointer transition-all duration-fast text-left w-full ${activeTab === 'tournaments' ? 'bg-[rgba(46,242,255,0.06)] text-[var(--cyan)] border border-[rgba(46,242,255,0.08)]' : 'bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setActiveTab('tournaments'); setSidebarOpen(false); }}>
+            <span className="w-5 text-center text-sm">🏆</span>
+            <span>Tournaments</span>
+            <span className="ml-auto px-2 py-0.5 bg-[rgba(239,68,68,0.12)] rounded-full text-[0.7rem] text-[var(--red)] font-bold">{stats?.overview?.activeTournaments || 0}</span>
           </button>
-          <button className={activeTab === 'users' ? 'active' : ''} onClick={() => { setActiveTab('users'); setSidebarOpen(false); }}>
-            <span className="nav-icon">◎</span>
-            <span className="nav-label">Users</span>
+          <button className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium cursor-pointer transition-all duration-fast text-left w-full ${activeTab === 'users' ? 'bg-[rgba(46,242,255,0.06)] text-[var(--cyan)] border border-[rgba(46,242,255,0.08)]' : 'bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setActiveTab('users'); setSidebarOpen(false); }}>
+            <span className="w-5 text-center text-sm">◎</span>
+            <span>Users</span>
           </button>
-          <button className={`${activeTab === 'matches' ? 'active' : ''} has-alerts`} onClick={() => { setActiveTab('matches'); setSidebarOpen(false); }}>
-            <span className="nav-icon">⚔</span>
-            <span className="nav-label">Matches</span>
-            <span className="badge danger">{staffNotifs.unreadCount > 0 ? staffNotifs.unreadCount : ''}</span>
+          <button className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium cursor-pointer transition-all duration-fast text-left w-full relative ${activeTab === 'matches' ? 'bg-[rgba(46,242,255,0.06)] text-[var(--cyan)] border border-[rgba(46,242,255,0.08)]' : 'bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setActiveTab('matches'); setSidebarOpen(false); }}>
+            <span className="w-5 text-center text-sm">⚔</span>
+            <span>Matches</span>
+            <span className="ml-auto px-2 py-0.5 bg-[rgba(239,68,68,0.15)] rounded-full text-[0.7rem] text-[var(--red)] font-bold">{staffNotifs.unreadCount > 0 ? staffNotifs.unreadCount : ''}</span>
           </button>
-          <button className={activeTab === 'anticheat' ? 'active' : ''} onClick={() => { setActiveTab('anticheat'); setSidebarOpen(false); }}>
-            <span className="nav-icon">⚡</span>
-            <span className="nav-label">Anticheat</span>
-            <span className="badge danger">{stats?.overview?.flaggedAccounts || 0}</span>
+          <button className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium cursor-pointer transition-all duration-fast text-left w-full ${activeTab === 'anticheat' ? 'bg-[rgba(46,242,255,0.06)] text-[var(--cyan)] border border-[rgba(46,242,255,0.08)]' : 'bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setActiveTab('anticheat'); setSidebarOpen(false); }}>
+            <span className="w-5 text-center text-sm">⚡</span>
+            <span>Anticheat</span>
+            <span className="ml-auto px-2 py-0.5 bg-[rgba(239,68,68,0.15)] rounded-full text-[0.7rem] text-[var(--red)] font-bold">{stats?.overview?.flaggedAccounts || 0}</span>
           </button>
-
-          <button className={activeTab === 'broadcast' ? 'active' : ''} onClick={() => { setActiveTab('broadcast'); setSidebarOpen(false); }}>
-            <span className="nav-icon">📢</span>
-            <span className="nav-label">Broadcast</span>
+          <button className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium cursor-pointer transition-all duration-fast text-left w-full ${activeTab === 'broadcast' ? 'bg-[rgba(46,242,255,0.06)] text-[var(--cyan)] border border-[rgba(46,242,255,0.08)]' : 'bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setActiveTab('broadcast'); setSidebarOpen(false); }}>
+            <span className="w-5 text-center text-sm">📢</span>
+            <span>Broadcast</span>
           </button>
         </nav>
 
-        <div className="sidebar-footer">
-          <div className="staff-notif-bell" onClick={() => setStaffNotifOpen(!staffNotifOpen)}>
-            <span className="bell-icon">🔔</span>
-            {staffNotifs.unreadCount > 0 && <span className="bell-count">{staffNotifs.unreadCount}</span>}
-            <span className="bell-label">Staff Alerts</span>
+        <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-2">
+          <div className="flex items-center gap-2 px-3 py-2 cursor-pointer rounded-[var(--radius-md)] transition-colors duration-fast hover:bg-[var(--bg-hover)] relative" onClick={() => setStaffNotifOpen(!staffNotifOpen)}>
+            <span className="text-base">🔔</span>
+            {staffNotifs.unreadCount > 0 && <span className="px-1.5 py-px bg-[var(--red)] rounded-full text-[0.65rem] font-bold text-white">{staffNotifs.unreadCount}</span>}
+            <span className="text-xs text-[var(--text-muted)]">Staff Alerts</span>
           </div>
           {staffNotifOpen && (
-            <div className="staff-notif-dropdown">
-              <div className="notif-dropdown-header">
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-[var(--bg-glass-strong)] backdrop-blur-xl border border-[var(--border)] rounded-[var(--radius-lg)] shadow-[var(--shadow-xl)] z-50 max-h-[400px] flex flex-col">
+              <div className="flex items-center justify-between px-3.5 py-3 border-b border-[var(--border)] text-xs text-[var(--text-secondary)]">
                 <strong>Staff Notifications</strong>
-                <button onClick={handleMarkAllRead}>Mark all read</button>
+                <button onClick={handleMarkAllRead} className="bg-none border-none text-[var(--cyan)] text-xs cursor-pointer font-semibold">Mark all read</button>
               </div>
-              <div className="notif-dropdown-list">
+              <div className="overflow-y-auto max-h-[340px]">
                 {staffNotifs.notifications.length === 0 ? (
-                  <div className="notif-empty">No notifications</div>
+                  <div className="text-center p-6 text-[var(--text-muted)] text-xs">No notifications</div>
                 ) : staffNotifs.notifications.slice(0, 10).map(n => (
-                  <div key={n._id} className={`notif-item ${!n.read ? 'unread' : ''}`} onClick={() => handleNotifClick(n)}>
-                    <div className="notif-item-title">{n.title || n.type}</div>
-                    <div className="notif-item-msg">{n.message}</div>
-                    <div className="notif-item-time">{new Date(n.createdAt).toLocaleString()}</div>
+                  <div key={n._id} className={`px-3.5 py-2.5 border-b border-[var(--border)] cursor-pointer transition-colors duration-fast hover:bg-[var(--bg-hover)] ${!n.read ? 'border-l-3 border-l-[var(--cyan)] bg-[rgba(46,242,255,0.02)]' : ''}`} onClick={() => handleNotifClick(n)}>
+                    <div className="text-xs font-semibold text-[var(--text)] mb-0.5">{n.title || n.type}</div>
+                    <div className="text-xs text-[var(--text-muted)] mb-1 line-clamp-2">{n.message}</div>
+                    <div className="text-[0.65rem] text-[var(--text-dim)]">{new Date(n.createdAt).toLocaleString()}</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-          <button onClick={() => navigate('/')} className="back-btn">← Back to Site</button>
+          <button onClick={() => navigate('/')} className="py-2 px-3 bg-[var(--bg-hover)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text-muted)] text-xs cursor-pointer transition-all duration-fast text-center hover:border-[var(--border-glow)] hover:text-[var(--text)]">← Back to Site</button>
         </div>
       </aside>
 
-      <main className="admin-main">
-        <div className="admin-main-header">
-          <div className="live-feed-toggle" onClick={() => setFeedOpen(!feedOpen)}>
-            <span className={`feed-dot ${feedOpen ? 'active' : ''}`} />
+      <main className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-md)] cursor-pointer text-sm text-[var(--text-muted)] transition-all duration-fast hover:border-[var(--border-glow)]" onClick={() => setFeedOpen(!feedOpen)}>
+            <span className={`w-2 h-2 rounded-full transition-all duration-base ${feedOpen ? 'bg-[var(--green)] shadow-[0_0_8px_var(--green-glow)] animate-pulse' : 'bg-[var(--text-dim)]'}`} />
             <span>Live Feed {liveFeed.length > 0 ? `(${liveFeed.length})` : ''}</span>
-            <span className="feed-arrow">{feedOpen ? '▼' : '▲'}</span>
+            <span>{feedOpen ? '▼' : '▲'}</span>
           </div>
           {socketStatus !== 'connected' && (
-            <div className="reconnect-banner">
-              <span className="reconnect-pulse" />
+            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-[rgba(249,115,22,0.08)] border border-[rgba(249,115,22,0.15)] rounded-[var(--radius-md)] text-xs text-[var(--orange)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--orange)] animate-pulse" />
               {socketStatus === 'reconnecting' ? 'Reconnecting...' : 'Offline mode - updates delayed'}
             </div>
           )}
         </div>
 
         {feedOpen && (
-          <div className="live-feed-panel">
-            <div className="feed-header">
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] mb-5 overflow-hidden animate-fade-in">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] text-sm">
               <strong>Live Activity Feed</strong>
-              <button className="feed-clear-btn" onClick={() => setLiveFeed([])}>Clear</button>
+              <button className="px-3 py-1.5 border border-[var(--border)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--text-muted)] text-xs cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] hover:text-[var(--text)]" onClick={() => setLiveFeed([])}>Clear</button>
             </div>
-            <div className="feed-list">
+            <div className="max-h-[300px] overflow-y-auto p-2 flex flex-col gap-1">
               {liveFeed.length === 0 ? (
-                <div className="feed-empty">Waiting for events...</div>
+                <div className="text-center py-8 text-[var(--text-muted)] text-sm">Waiting for events...</div>
               ) : liveFeed.map((item, i) => (
-                <div key={item._id} className={`feed-item ${i === 0 ? 'fresh' : ''}`}>
-                  <span className="feed-icon">{feedItemIcon(item.type)}</span>
-                  <span className="feed-text">{feedItemLabel(item)}</span>
-                  <span className="feed-time">{new Date(item.time).toLocaleTimeString()}</span>
+                <div key={item._id} className={`flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-sm)] text-xs text-[var(--text-secondary)] transition-colors duration-fast hover:bg-[var(--bg-hover)]`}>
+                  <span className="w-5 text-center flex-shrink-0">{feedItemIcon(item.type)}</span>
+                  <span className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{feedItemLabel(item)}</span>
+                  <span className="text-[0.7rem] text-[var(--text-dim)] flex-shrink-0">{new Date(item.time).toLocaleTimeString()}</span>
                 </div>
               ))}
               <div ref={feedEndRef} />
@@ -508,20 +506,20 @@ const AdminDashboard = () => {
         {activeTab === 'broadcast' && <BroadcastTab api={api} notify={showNotification} />}
       </main>
 
-      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+      {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
       {confirmModal && (
-        <div className="modal-overlay" onClick={confirmModal.onCancel}>
-          <div className="modal-content confirm-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>⚠️ Confirm Action</h3>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] backdrop-blur-sm animate-fade-in" onClick={confirmModal.onCancel}>
+          <div className="w-[90%] max-w-md bg-[var(--bg-glass-strong)] backdrop-blur-2xl border border-[var(--border-glow)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-xl)] animate-scale-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
+              <h3 className="font-display text-lg font-bold">⚠️ Confirm Action</h3>
             </div>
-            <div className="modal-body">
-              <p>{confirmModal.message}</p>
+            <div className="p-5">
+              <p className="text-sm text-[var(--text-secondary)]">{confirmModal.message}</p>
             </div>
-            <div className="modal-footer">
-              <button className="cancel-btn" onClick={confirmModal.onCancel}>Cancel</button>
-              <button className="submit-btn danger" onClick={confirmModal.onConfirm}>Delete</button>
+            <div className="flex justify-end gap-2 p-4 border-t border-[var(--border)]">
+              <button className="px-4 py-2 rounded-[var(--radius-md)] bg-[rgba(255,255,255,0.05)] border border-[var(--border)] text-sm text-[var(--text)] cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)]" onClick={confirmModal.onCancel}>Cancel</button>
+              <button className="px-4 py-2 rounded-[var(--radius-md)] bg-gradient-to-r from-[var(--red)] to-[#dc2626] text-white text-sm font-bold cursor-pointer shadow-[0_0_20px_rgba(239,68,68,0.2)] transition-all duration-base hover:shadow-[0_0_40px_rgba(239,68,68,0.4)]" onClick={confirmModal.onConfirm}>Delete</button>
             </div>
           </div>
         </div>
@@ -542,25 +540,25 @@ const AnimatedStat = ({ value, label, icon, iconBg, color, onClick, trend }) => 
     }
   }, [value]);
   return (
-    <div className={`stat-card ${changed ? 'stat-updated' : ''}`} style={color ? { borderLeftColor: color } : {}} onClick={onClick}>
-      <div className="stat-icon" style={iconBg ? { background: iconBg } : {}}>{icon}</div>
-      <div className="stat-info">
-        <span className="stat-value">{value?.toLocaleString?.() ?? value ?? 0}</span>
-        <span className="stat-label">{label}</span>
+    <div className={`p-5 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] cursor-pointer transition-all duration-base relative overflow-hidden hover:-translate-y-0.5 hover:border-[var(--border-glow)] hover:shadow-[var(--shadow-cyan)] ${changed ? '' : ''}`} style={color ? { borderLeftColor: color } : {}} onClick={onClick}>
+      <div className="text-xl mb-2.5 w-10 h-10 flex items-center justify-center rounded-[var(--radius-md)]" style={iconBg ? { background: iconBg } : {}}>{icon}</div>
+      <div>
+        <span className="font-display text-[1.6rem] font-extrabold block">{value?.toLocaleString?.() ?? value ?? 0}</span>
+        <span className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider mt-0.5 block">{label}</span>
       </div>
-      {trend && <div className={`stat-trend up`}>{trend}</div>}
+      {trend && <div className="text-xs text-[var(--green)] mt-1">{trend}</div>}
     </div>
   );
 };
 
 const DashboardTab = ({ stats, prevStats, onNavigate }) => (
-  <div className="dashboard-tab">
-    <div className="tab-title-section">
-      <h2>Dashboard Overview</h2>
-      <p className="section-subtitle">Real-time platform statistics and activity</p>
+  <div className="animate-fade-in-up">
+    <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+      <h2 className="font-display text-xl font-bold">Dashboard Overview</h2>
+      <p className="text-xs text-[var(--text-muted)] mt-0.5">Real-time platform statistics and activity</p>
     </div>
 
-    <div className="stats-grid">
+    <div className="grid grid-cols-4 gap-4 mb-6 max-lg:grid-cols-2 max-sm:grid-cols-1">
       <AnimatedStat value={stats?.overview?.totalUsers} label="Total Users" icon="◎" iconBg="rgba(46,242,255,0.15)" onClick={() => onNavigate('users')}
         trend={`+${stats?.overview?.activeUsers || 0} active`} />
       <AnimatedStat value={stats?.overview?.totalMatches} label="Total Matches" icon="⚔" iconBg="rgba(249,115,22,0.15)" />
@@ -572,61 +570,60 @@ const DashboardTab = ({ stats, prevStats, onNavigate }) => (
       <AnimatedStat value={stats?.overview?.premiumUsers} label="Premium" icon="★" iconBg="rgba(255,215,0,0.15)" />
     </div>
 
-    <div className="dashboard-sections">
-      <section className="recent-activity">
-        <h3><span className="section-icon">⊘</span> Recent Bans</h3>
+    <div className="grid grid-cols-2 gap-5 max-lg:grid-cols-1">
+      <section className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5">
+        <h3 className="font-display text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3 flex items-center gap-2"><span className="w-6 text-center">⊘</span> Recent Bans</h3>
         {stats?.recentBans?.length > 0 ? stats.recentBans.map((ban, i) => (
-          <div key={i} className="activity-item ban">
-            <span className="activity-icon">⊘</span>
-            <div className="activity-info">
-              <span className="activity-name">{ban.discordName}</span>
-              <span className="activity-reason">{ban.banReason}</span>
+          <div key={i} className="flex items-center gap-2.5 py-2 border-b border-[var(--border)] last:border-none text-sm">
+            <span className="w-6 h-6 flex items-center justify-center rounded-[var(--radius-sm)] text-xs bg-[var(--red-bg)] flex-shrink-0">⊘</span>
+            <div className="flex-1">
+              <span className="font-semibold block text-sm">{ban.discordName}</span>
+              <span className="text-xs text-[var(--text-muted)]">{ban.banReason}</span>
             </div>
-            <span className="activity-time">{new Date(ban.bannedAt).toLocaleDateString()}</span>
+            <span className="text-[0.7rem] text-[var(--text-dim)] flex-shrink-0">{new Date(ban.bannedAt).toLocaleDateString()}</span>
           </div>
-        )) : <p className="no-data">No recent bans</p>}
+        )) : <p className="text-center py-5 text-[var(--text-muted)] text-sm">No recent bans</p>}
       </section>
 
-      <section className="recent-activity">
-        <h3><span className="section-icon">⚡</span> Recent Flags</h3>
+      <section className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5">
+        <h3 className="font-display text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3 flex items-center gap-2"><span className="w-6 text-center">⚡</span> Recent Flags</h3>
         {stats?.recentFlags?.length > 0 ? stats.recentFlags.slice(0, 5).map((user, i) =>
           user.flagHistory?.filter(f => !f.resolved).slice(0, 2).map((flag, fi) => (
-            <div key={`${i}-${fi}`} className="activity-item ban">
-              <span className="activity-icon">⚡</span>
-              <div className="activity-info">
-                <span className="activity-name">{user.discordName}</span>
-                <span className="activity-reason">{flag.flag}: {flag.description?.substring(0, 80)}</span>
+            <div key={`${i}-${fi}`} className="flex items-center gap-2.5 py-2 border-b border-[var(--border)] last:border-none text-sm">
+              <span className="w-6 h-6 flex items-center justify-center rounded-[var(--radius-sm)] text-xs bg-[var(--red-bg)] flex-shrink-0">⚡</span>
+              <div className="flex-1">
+                <span className="font-semibold block text-sm">{user.discordName}</span>
+                <span className="text-xs text-[var(--text-muted)]">{flag.flag}: {flag.description?.substring(0, 80)}</span>
               </div>
-              <span className="activity-time" style={{ color: flag.severity === 'high' || flag.severity === 'critical' ? '#ef4444' : '#eab308' }}>
+              <span className="text-[0.7rem] flex-shrink-0 font-semibold" style={{ color: flag.severity === 'high' || flag.severity === 'critical' ? '#ef4444' : '#eab308' }}>
                 {flag.severity}
               </span>
             </div>
           ))
-        ) : <p className="no-data">No recent flags</p>}
+        ) : <p className="text-center py-5 text-[var(--text-muted)] text-sm">No recent flags</p>}
       </section>
 
-      <section className="top-players">
-        <h3><span className="section-icon">★</span> Top Players</h3>
+      <section className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5">
+        <h3 className="font-display text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3 flex items-center gap-2"><span className="w-6 text-center">★</span> Top Players</h3>
         {stats?.topPlayers?.slice(0, 5).map((player, i) => (
-          <div key={i} className="leaderboard-item">
-            <span className="rank">#{i + 1}</span>
-            <span className="player-avatar">
-              <img src={buildDiscordAvatar(player.discordId, player.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="player-avatar" />
+          <div key={i} className="flex items-center gap-2.5 py-2 border-b border-[var(--border)] last:border-none text-sm">
+            <span className="font-display text-sm font-bold text-[var(--text-muted)] w-6 text-center">#{i + 1}</span>
+            <span className="w-7 h-7 rounded-full overflow-hidden border border-[var(--border)] flex-shrink-0">
+              <img src={buildDiscordAvatar(player.discordId, player.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="w-full h-full object-cover" />
             </span>
-            <span className="player-name">{player.discordName}</span>
-            <span className="player-stats">{player.wins}W / {player.losses}L</span>
-            <span className="player-points">{getRankLabel(player.rankingPoints || 0)}</span>
+            <span className="flex-1 font-semibold">{player.discordName}</span>
+            <span className="text-xs text-[var(--text-muted)] mr-2">{player.wins}W / {player.losses}L</span>
+            <span className="font-display text-sm font-bold text-[var(--cyan)]">{getRankLabel(player.rankingPoints || 0)}</span>
           </div>
         ))}
       </section>
 
-      <section className="anticheat-summary">
-        <h3><span className="section-icon">⚡</span> Quick Actions</h3>
-        <div className="quick-actions">
-          <button onClick={() => onNavigate('tournaments')}><span className="qa-icon">🏆</span> Create Tournament</button>
-          <button onClick={() => onNavigate('anticheat')}><span className="qa-icon">⚡</span> View Alerts</button>
-
-          <button onClick={() => onNavigate('broadcast')}><span className="qa-icon">📢</span> New Broadcast</button>
+      <section className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5">
+        <h3 className="font-display text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3 flex items-center gap-2"><span className="w-6 text-center">⚡</span> Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={() => onNavigate('tournaments')} className="flex items-center gap-2 p-3 bg-[rgba(0,0,0,0.2)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text-secondary)] text-sm font-medium cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)]"><span className="text-lg">🏆</span> Create Tournament</button>
+          <button onClick={() => onNavigate('anticheat')} className="flex items-center gap-2 p-3 bg-[rgba(0,0,0,0.2)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text-secondary)] text-sm font-medium cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)]"><span className="text-lg">⚡</span> View Alerts</button>
+          <button onClick={() => onNavigate('broadcast')} className="flex items-center gap-2 p-3 bg-[rgba(0,0,0,0.2)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text-secondary)] text-sm font-medium cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)]"><span className="text-lg">📢</span> New Broadcast</button>
         </div>
       </section>
     </div>
@@ -645,57 +642,57 @@ const TournamentsTab = ({ tournaments, selectedTournament, onSelectTournament, o
   };
 
   return (
-    <div className="tournaments-tab">
-      <div className="tab-title-section">
+    <div>
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
-          <h2>Tournament Management</h2>
-          <p className="section-subtitle">{tournaments.length} total tournaments</p>
+          <h2 className="font-display text-xl font-bold">Tournament Management</h2>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">{tournaments.length} total tournaments</p>
         </div>
-        <button className="create-btn" onClick={() => setShowCreateModal(true)}>
+        <button className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--cyan)] to-[var(--electric-blue)] border-none rounded-[var(--radius-md)] text-black font-bold text-sm cursor-pointer whitespace-nowrap transition-all duration-base hover:shadow-[0_0_25px_rgba(46,242,255,0.3)] hover:-translate-y-0.5" onClick={() => setShowCreateModal(true)}>
           + Create Tournament
         </button>
       </div>
 
-      <div className="filter-tabs">
-        <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All ({tournaments.length})</button>
-        <button className={filter === 'registration' ? 'active' : ''} onClick={() => setFilter('registration')}>Registration</button>
-        <button className={filter === 'active' ? 'active' : ''} onClick={() => setFilter('active')}>Active</button>
-        <button className={filter === 'completed' ? 'active' : ''} onClick={() => setFilter('completed')}>Completed</button>
-        <button className={filter === 'cancelled' ? 'active' : ''} onClick={() => setFilter('cancelled')}>Cancelled</button>
+      <div className="flex gap-2 mb-5 flex-wrap">
+        <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'all' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => setFilter('all')}>All ({tournaments.length})</button>
+        <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'registration' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => setFilter('registration')}>Registration</button>
+        <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'active' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => setFilter('active')}>Active</button>
+        <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'completed' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => setFilter('completed')}>Completed</button>
+        <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'cancelled' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => setFilter('cancelled')}>Cancelled</button>
       </div>
 
-      <div className="tournaments-grid">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
         {filteredTournaments.map(tournament => (
-          <div key={tournament._id} className="tournament-card" onClick={() => { onSelectTournament(tournament._id); setShowDetailModal(true); }}>
-            <div className="tcard-top">
-              <span className="tcard-status" style={{ background: getStatusColor(tournament.status) }}>{tournament.status}</span>
-              <span className="tcard-type">{tournament.type || '1v1'}</span>
+          <div key={tournament._id} className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] overflow-hidden cursor-pointer transition-all duration-base hover:border-[var(--border-glow)] hover:shadow-[var(--shadow-cyan)] hover:-translate-y-0.5" onClick={() => { onSelectTournament(tournament._id); setShowDetailModal(true); }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+              <span className="px-2.5 py-0.5 rounded-full text-[0.7rem] font-bold uppercase tracking-wider" style={{ background: getStatusColor(tournament.status) }}>{tournament.status}</span>
+              <span className="text-xs text-[var(--text-muted)]">{tournament.type || '1v1'}</span>
             </div>
-            <div className="tcard-body">
-              <h3>{tournament.title}</h3>
-              <p>{tournament.description?.substring(0, 100)}...</p>
-              <div className="tcard-meta">
-                <span><span className="meta-icon">📍</span> {tournament.mapCode}</span>
-                <span><span className="meta-icon">👥</span> {tournament.participantCount || 0}/{tournament.maxPlayers}</span>
-                <span><span className="meta-icon">🏁</span> {new Date(tournament.startDate).toLocaleDateString()}</span>
+            <div className="p-4">
+              <h3 className="font-display text-sm font-bold mb-1.5">{tournament.title}</h3>
+              <p className="text-xs text-[var(--text-muted)] mb-3">{tournament.description?.substring(0, 100)}...</p>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">📍 {tournament.mapCode}</span>
+                <span className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">👥 {tournament.participantCount || 0}/{tournament.maxPlayers}</span>
+                <span className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">🏁 {new Date(tournament.startDate).toLocaleDateString()}</span>
               </div>
             </div>
-            <div className="tcard-actions" onClick={e => e.stopPropagation()}>
+            <div className="flex gap-1.5 p-3 px-4 border-t border-[var(--border)] flex-wrap" onClick={e => e.stopPropagation()}>
               {tournament.status === 'registration' && (
-                <button className="btn-sm success" onClick={() => handleAction(tournament._id, 'activate')}>▶ Activate</button>
+                <button className="px-3 py-1.5 border border-[rgba(34,197,94,0.2)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--green)] text-xs font-semibold cursor-pointer transition-all duration-fast hover:bg-[var(--green-bg)]" onClick={() => handleAction(tournament._id, 'activate')}>▶ Activate</button>
               )}
               {tournament.status === 'active' && (
-                <button className="btn-sm primary" onClick={() => handleAction(tournament._id, 'complete')}>✓ Complete</button>
+                <button className="px-3 py-1.5 border border-[rgba(46,242,255,0.15)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--cyan)] text-xs font-semibold cursor-pointer transition-all duration-fast hover:bg-[rgba(46,242,255,0.08)]" onClick={() => handleAction(tournament._id, 'complete')}>✓ Complete</button>
               )}
               {(tournament.status === 'registration' || tournament.status === 'active') && (
-                <button className="btn-sm warning" onClick={() => {
+                <button className="px-3 py-1.5 border border-[rgba(249,115,22,0.15)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--orange)] text-xs font-semibold cursor-pointer transition-all duration-fast hover:bg-[rgba(249,115,22,0.08)]" onClick={() => {
                   if (window.confirm('Cancel this tournament? This will end all ongoing matches.')) {
                     handleAction(tournament._id, 'cancel');
                   }
                 }}>✕ Cancel</button>
               )}
-              <button className="btn-sm" onClick={() => { onSelectTournament(tournament._id); setShowDetailModal(true); }}>👁 View</button>
-              <button className="btn-sm danger" onClick={() => handleAction(tournament._id, 'delete')}>🗑 Delete</button>
+              <button className="px-3 py-1.5 border border-[var(--border)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--text-secondary)] text-xs font-semibold cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] hover:text-[var(--text)]" onClick={() => { onSelectTournament(tournament._id); setShowDetailModal(true); }}>👁 View</button>
+              <button className="px-3 py-1.5 border border-[rgba(239,68,68,0.15)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--red)] text-xs font-semibold cursor-pointer transition-all duration-fast hover:bg-[var(--red-bg)]" onClick={() => handleAction(tournament._id, 'delete')}>🗑 Delete</button>
             </div>
           </div>
         ))}
@@ -705,7 +702,7 @@ const TournamentsTab = ({ tournaments, selectedTournament, onSelectTournament, o
         <div className="empty-state">
           <span>🏆</span>
           <p>No tournaments found</p>
-          <button onClick={() => setShowCreateModal(true)}>Create your first tournament</button>
+          <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">Create your first tournament</button>
         </div>
       )}
 
@@ -784,82 +781,82 @@ const CreateTournamentModal = ({ onClose, onSubmit }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content large" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Create New Tournament</h3>
-          <button onClick={onClose} className="close-btn">✕</button>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="w-[90%] max-w-3xl bg-[var(--bg-glass-strong)] backdrop-blur-2xl border border-[var(--border-glow)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-xl)] animate-scale-in max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+          <h3 className="font-display text-lg font-bold">Create New Tournament</h3>
+          <button onClick={onClose} className="text-[var(--text-muted)] text-xl cursor-pointer bg-transparent border-none">✕</button>
         </div>
-        <div className="modal-body modal-body-scroll">
-          <form id="create-tournament-form" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Tournament Title *</label>
-              <input type="text" value={form.title} onChange={e => updateField('title', e.target.value)} placeholder="Enter tournament name..." className={errors.title ? 'error' : ''} />
-              {errors.title && <span className="error-msg">{errors.title}</span>}
+        <div className="p-6 overflow-y-auto flex-1">
+          <form id="create-tournament-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Tournament Title *</label>
+              <input type="text" value={form.title} onChange={e => updateField('title', e.target.value)} placeholder="Enter tournament name..." className={`p-3 bg-[rgba(0,0,0,0.3)] border rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)] ${errors.title ? 'border-[var(--red)]' : 'border-[var(--border)]'}`} />
+              {errors.title && <span className="text-xs text-[var(--red)]">{errors.title}</span>}
             </div>
-            <div className="form-group">
-              <label>Description *</label>
-              <textarea value={form.description} onChange={e => updateField('description', e.target.value)} placeholder="Describe your tournament..." className={errors.description ? 'error' : ''} />
-              {errors.description && <span className="error-msg">{errors.description}</span>}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Description *</label>
+              <textarea value={form.description} onChange={e => updateField('description', e.target.value)} placeholder="Describe your tournament..." className={`p-3 bg-[rgba(0,0,0,0.3)] border rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)] min-h-[80px] ${errors.description ? 'border-[var(--red)]' : 'border-[var(--border)]'}`} />
+              {errors.description && <span className="text-xs text-[var(--red)]">{errors.description}</span>}
             </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Map Code *</label>
-                <input type="text" value={form.mapCode} onChange={e => updateField('mapCode', e.target.value)} placeholder="e.g. FN-1234" className={errors.mapCode ? 'error' : ''} />
-                {errors.mapCode && <span className="error-msg">{errors.mapCode}</span>}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Map Code *</label>
+                <input type="text" value={form.mapCode} onChange={e => updateField('mapCode', e.target.value)} placeholder="e.g. FN-1234" className={`p-3 bg-[rgba(0,0,0,0.3)] border rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)] ${errors.mapCode ? 'border-[var(--red)]' : 'border-[var(--border)]'}`} />
+                {errors.mapCode && <span className="text-xs text-[var(--red)]">{errors.mapCode}</span>}
               </div>
-              <div className="form-group">
-                <label>Map Name</label>
-                <input type="text" value={form.mapName} onChange={e => updateField('mapName', e.target.value)} placeholder="Optional map name" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Map Name</label>
+                <input type="text" value={form.mapName} onChange={e => updateField('mapName', e.target.value)} placeholder="Optional map name" className="p-3 bg-[rgba(0,0,0,0.3)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)]" />
               </div>
             </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Type</label>
-                <select value={form.type} onChange={e => updateField('type', e.target.value)}>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Type</label>
+                <select value={form.type} onChange={e => updateField('type', e.target.value)} className="p-3 bg-[rgba(0,0,0,0.3)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)]">
                   <option value="1v1">1v1</option>
                   <option value="2v2">2v2</option> <option value="3v3">3v3</option> <option value="4v4">4v4</option>
                 </select>
               </div>
-              <div className="form-group">
-                <label>Max Players</label>
-                <input type="number" value={form.maxPlayers} onChange={e => updateField('maxPlayers', parseInt(e.target.value))} min="2" max="128" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Max Players</label>
+                <input type="number" value={form.maxPlayers} onChange={e => updateField('maxPlayers', parseInt(e.target.value))} min="2" max="128" className="p-3 bg-[rgba(0,0,0,0.3)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)]" />
               </div>
-              <div className="form-group">
-                <label>Prize Pool</label>
-                <input type="text" value={form.prize} onChange={e => updateField('prize', e.target.value)} placeholder="e.g. $100, V-Bucks" />
-              </div>
-            </div>
-            <div className="date-section">
-              <h4>📅 Schedule</h4>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Registration Deadline *</label>
-                  <input type="datetime-local" value={form.registrationDeadline} onChange={e => updateField('registrationDeadline', e.target.value)} className={errors.registrationDeadline ? 'error' : ''} />
-                  {errors.registrationDeadline && <span className="error-msg">{errors.registrationDeadline}</span>}
-                </div>
-                <div className="form-group">
-                  <label>Start Date *</label>
-                  <input type="datetime-local" value={form.startDate} onChange={e => updateField('startDate', e.target.value)} className={errors.startDate ? 'error' : ''} />
-                  {errors.startDate && <span className="error-msg">{errors.startDate}</span>}
-                </div>
-                <div className="form-group">
-                  <label>End Date *</label>
-                  <input type="datetime-local" value={form.endDate} onChange={e => updateField('endDate', e.target.value)} className={errors.endDate ? 'error' : ''} />
-                  {errors.endDate && <span className="error-msg">{errors.endDate}</span>}
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Prize Pool</label>
+                <input type="text" value={form.prize} onChange={e => updateField('prize', e.target.value)} placeholder="e.g. $100, V-Bucks" className="p-3 bg-[rgba(0,0,0,0.3)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)]" />
               </div>
             </div>
-            <div className="form-group">
-              <label>Rules *</label>
-              <textarea value={form.rules} onChange={e => updateField('rules', e.target.value)} placeholder="Enter competition rules..." className={errors.rules ? 'error' : ''} />
-              {errors.rules && <span className="error-msg">{errors.rules}</span>}
+            <div>
+              <h4 className="font-display text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">📅 Schedule</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Registration Deadline *</label>
+                  <input type="datetime-local" value={form.registrationDeadline} onChange={e => updateField('registrationDeadline', e.target.value)} className={`p-3 bg-[rgba(0,0,0,0.3)] border rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)] ${errors.registrationDeadline ? 'border-[var(--red)]' : 'border-[var(--border)]'}`} />
+                  {errors.registrationDeadline && <span className="text-xs text-[var(--red)]">{errors.registrationDeadline}</span>}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Start Date *</label>
+                  <input type="datetime-local" value={form.startDate} onChange={e => updateField('startDate', e.target.value)} className={`p-3 bg-[rgba(0,0,0,0.3)] border rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)] ${errors.startDate ? 'border-[var(--red)]' : 'border-[var(--border)]'}`} />
+                  {errors.startDate && <span className="text-xs text-[var(--red)]">{errors.startDate}</span>}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">End Date *</label>
+                  <input type="datetime-local" value={form.endDate} onChange={e => updateField('endDate', e.target.value)} className={`p-3 bg-[rgba(0,0,0,0.3)] border rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)] ${errors.endDate ? 'border-[var(--red)]' : 'border-[var(--border)]'}`} />
+                  {errors.endDate && <span className="text-xs text-[var(--red)]">{errors.endDate}</span>}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Rules *</label>
+              <textarea value={form.rules} onChange={e => updateField('rules', e.target.value)} placeholder="Enter competition rules..." className={`p-3 bg-[rgba(0,0,0,0.3)] border rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)] min-h-[80px] ${errors.rules ? 'border-[var(--red)]' : 'border-[var(--border)]'}`} />
+              {errors.rules && <span className="text-xs text-[var(--red)]">{errors.rules}</span>}
             </div>
           </form>
         </div>
-        <div className="modal-footer">
-          <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
-          <button type="submit" form="create-tournament-form" className="submit-btn" disabled={submitting}>
+        <div className="flex justify-end gap-3 p-4 border-t border-[var(--border)]">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-[var(--radius-md)] bg-[rgba(255,255,255,0.05)] border border-[var(--border)] text-sm text-[var(--text)] cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)]">Cancel</button>
+          <button type="submit" form="create-tournament-form" className="px-6 py-2 rounded-[var(--radius-md)] bg-gradient-to-r from-[var(--cyan)] to-[var(--electric-blue)] text-black text-sm font-bold cursor-pointer shadow-[0_0_20px_rgba(46,242,255,0.2)] transition-all duration-base hover:shadow-[0_0_40px_rgba(46,242,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed" disabled={submitting}>
             {submitting ? 'Creating...' : 'Create Tournament'}
           </button>
         </div>
@@ -869,46 +866,46 @@ const CreateTournamentModal = ({ onClose, onSubmit }) => {
 };
 
 const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getStatusColor }) => (
-  <div className="modal-overlay" onClick={onClose}>
-    <div className="modal-content detail-modal" onClick={e => e.stopPropagation()}>
-      <div className="modal-header">
-        <div>
-          <h3>{tournament.title}</h3>
-          <span className="status-badge" style={{ background: getStatusColor(tournament.status) }}>{tournament.status}</span>
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="w-[90%] max-w-[640px] bg-[var(--bg-glass-strong)] backdrop-blur-2xl border border-[var(--border-glow)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-xl)] animate-scale-in max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+        <div className="flex items-center gap-3">
+          <h3 className="font-display text-lg font-bold">{tournament.title}</h3>
+          <span className="px-2.5 py-0.5 rounded-full text-[0.7rem] font-semibold flex items-center gap-1" style={{ background: getStatusColor(tournament.status) }}>{tournament.status}</span>
         </div>
-        <button onClick={onClose} className="close-btn">✕</button>
+        <button onClick={onClose} className="text-[var(--text-muted)] text-xl cursor-pointer bg-transparent border-none">✕</button>
       </div>
-      <div className="modal-body">
-        <div className="detail-grid">
-          <div className="detail-item"><label>Map Code</label><span>{tournament.mapCode}</span></div>
-          <div className="detail-item"><label>Type</label><span>{tournament.type}</span></div>
-          <div className="detail-item"><label>Max Players</label><span>{tournament.maxPlayers}</span></div>
-          <div className="detail-item"><label>Prize</label><span>{tournament.prize || 'None'}</span></div>
-          <div className="detail-item"><label>Start</label><span>{new Date(tournament.startDate).toLocaleString()}</span></div>
-          <div className="detail-item"><label>End</label><span>{new Date(tournament.endDate).toLocaleString()}</span></div>
+      <div className="p-6 overflow-y-auto">
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><label className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Map Code</label><span className="text-sm font-semibold">{tournament.mapCode}</span></div>
+          <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><label className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Type</label><span className="text-sm font-semibold">{tournament.type}</span></div>
+          <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><label className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Max Players</label><span className="text-sm font-semibold">{tournament.maxPlayers}</span></div>
+          <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><label className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Prize</label><span className="text-sm font-semibold">{tournament.prize || 'None'}</span></div>
+          <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><label className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Start</label><span className="text-sm font-semibold">{new Date(tournament.startDate).toLocaleString()}</span></div>
+          <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><label className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">End</label><span className="text-sm font-semibold">{new Date(tournament.endDate).toLocaleString()}</span></div>
         </div>
-        <div className="detail-section"><label>Description</label><p>{tournament.description}</p></div>
-        <div className="detail-section"><label>Rules</label><p className="rules">{tournament.rules}</p></div>
-        <div className="detail-section">
-          <label>Participants ({tournament.participants?.length || 0})</label>
-          <div className="participants-list">
+        <div className="mb-4"><label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold block mb-2">Description</label><p className="text-sm text-[var(--text-secondary)] leading-relaxed">{tournament.description}</p></div>
+        <div className="mb-4"><label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold block mb-2">Rules</label><p className="text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">{tournament.rules}</p></div>
+        <div className="mb-4">
+          <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold block mb-2">Participants ({tournament.participants?.length || 0})</label>
+          <div className="flex flex-col gap-1.5 max-h-[200px] overflow-y-auto">
             {tournament.participants?.length > 0 ? tournament.participants.map((p, i) => (
-              <div key={i} className="participant-item">
-                <span className="name">{p.discordName || p.userId}</span>
-                <span className="epic">{p.epicName || '—'}</span>
+              <div key={i} className="flex items-center justify-between p-2 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-sm)] text-sm">
+                <span className="font-semibold">{p.discordName || p.userId}</span>
+                <span className="text-xs text-[var(--text-muted)] font-mono">{p.epicName || '—'}</span>
               </div>
-            )) : <p className="no-data">No participants yet</p>}
+            )) : <p className="text-sm text-[var(--text-muted)] text-center py-4">No participants yet</p>}
           </div>
         </div>
       </div>
-      <div className="modal-footer actions">
-        {tournament.status === 'registration' && <button className="btn success" onClick={() => onAction(tournament._id, 'activate')}>▶ Activate</button>}
-        {tournament.status === 'active' && <button className="btn primary" onClick={() => onAction(tournament._id, 'complete')}>✓ Complete</button>}
+      <div className="flex flex-wrap gap-2 p-4 border-t border-[var(--border)]">
+        {tournament.status === 'registration' && <button className="btn btn-success btn-sm" onClick={() => onAction(tournament._id, 'activate')}>▶ Activate</button>}
+        {tournament.status === 'active' && <button className="btn btn-primary btn-sm" onClick={() => onAction(tournament._id, 'complete')}>✓ Complete</button>}
         {(tournament.status === 'registration' || tournament.status === 'active') && (
-          <button className="btn warning" onClick={() => { if (window.confirm('Cancel this tournament?')) onAction(tournament._id, 'cancel'); }}>✕ Cancel</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { if (window.confirm('Cancel this tournament?')) onAction(tournament._id, 'cancel'); }}>✕ Cancel</button>
         )}
-        <button className="btn danger" onClick={() => onAction(tournament._id, 'delete')}>🗑 Delete</button>
-        <button className="btn" onClick={onClose}>Close</button>
+        <button className="btn btn-danger btn-sm" onClick={() => onAction(tournament._id, 'delete')}>🗑 Delete</button>
+        <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
       </div>
     </div>
   </div>
@@ -926,50 +923,53 @@ const UsersTab = ({ users, selectedUser, onSearch, onSelectUser, onAction, onWhi
   };
 
   return (
-    <div className="users-tab">
-      <div className="tab-title-section">
-        <h2>User Management <span style={{ fontSize: 14, color: '#94a3b8', fontWeight: 400 }}>({users.pagination?.total || 0} total)</span></h2>
-        <div className="search-box">
+    <div>
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <h2 className="font-display text-xl font-bold">User Management <span className="text-sm text-[#94a3b8] font-normal">({users.pagination?.total || 0} total)</span></h2>
+        <div className="flex gap-2">
           <input type="text" placeholder="Search by name, Discord ID..." value={search}
-            onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch(1)} />
-          <button onClick={() => handleSearch(1)}>Search</button>
+            onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch(1)}
+            className="p-2.5 bg-[rgba(0,0,0,0.3)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)] min-w-[200px]" />
+          <button onClick={() => handleSearch(1)} className="px-4 py-2 rounded-[var(--radius-md)] bg-[rgba(46,242,255,0.1)] border border-[rgba(46,242,255,0.2)] text-[var(--cyan)] text-sm font-semibold cursor-pointer transition-all duration-fast hover:bg-[rgba(46,242,255,0.15)]">Search</button>
         </div>
       </div>
 
-      <div className="users-content">
-        <div className="users-table-wrap">
-          <table>
+      <div className="flex gap-5">
+        <div className="flex-1 overflow-x-auto">
+          <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th>User</th>
-                <th>Role</th>
-                <th>Score</th>
-                <th>Rating</th>
-                <th>Matches</th>
-                <th>Status</th>
+                <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">User</th>
+                <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Role</th>
+                <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Score</th>
+                <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Rating</th>
+                <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Matches</th>
+                <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody>
               {users.users?.map(user => (
-                <tr key={user.discordId} onClick={() => { onSelectUser(user.discordId); setShowDetail(true); }}>
-                  <td className="user-cell">
-                    <img src={buildDiscordAvatar(user.discordId, user.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="avatar" />
-                    <div className="user-info">
-                      <span className="name">{user.discordName}</span>
-                      <span className="epic">{user.epicGamesName || 'Not verified'}</span>
+                <tr key={user.discordId} onClick={() => { onSelectUser(user.discordId); setShowDetail(true); }} className="cursor-pointer transition-colors duration-fast hover:bg-[var(--bg-hover)]">
+                  <td className="px-4 py-3 border-b border-[var(--border)] text-sm">
+                    <div className="flex items-center gap-2.5">
+                      <img src={buildDiscordAvatar(user.discordId, user.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="w-8 h-8 rounded-full border border-[var(--border)]" />
+                      <div>
+                        <span className="font-semibold block">{user.discordName}</span>
+                        <span className="text-xs text-[var(--text-muted)] font-mono">{user.epicGamesName || 'Not verified'}</span>
+                      </div>
                     </div>
                   </td>
-                  <td><span className={`role-badge ${user.role}`}>{user.role}</span></td>
-                  <td>
-                    <div className="score-bar">
-                      <div className="score-fill" style={{ width: `${user.anticheatScore ?? 100}%`, background: getRiskColor(user.anticheatScore ?? 100) }}></div>
-                      <span>{user.anticheatScore ?? 100}</span>
+                  <td className="px-4 py-3 border-b border-[var(--border)] text-sm"><span className={`px-2.5 py-0.5 rounded-full text-[0.7rem] font-semibold ${user.role === 'admin' || user.role === 'owner' ? 'bg-[rgba(46,242,255,0.1)] text-[var(--cyan)]' : user.role === 'staff' ? 'bg-[rgba(168,85,247,0.1)] text-[var(--purple)]' : 'bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)]'}`}>{user.role}</span></td>
+                  <td className="px-4 py-3 border-b border-[var(--border)] text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 rounded-sm w-[60px]" style={{ background: getRiskColor(user.anticheatScore ?? 100) }}></div>
+                      <span className="text-xs font-semibold">{user.anticheatScore ?? 100}</span>
                     </div>
                   </td>
-                  <td>{getRankLabel(user.rankingPoints || 0)}</td>
-                  <td>{user.wins || 0}W / {user.losses || 0}L</td>
-                  <td>
-                    <span className={`status-badge ${user.isBanned ? 'banned' : 'active'}`}>
+                  <td className="px-4 py-3 border-b border-[var(--border)] text-sm">{getRankLabel(user.rankingPoints || 0)}</td>
+                  <td className="px-4 py-3 border-b border-[var(--border)] text-sm">{user.wins || 0}W / {user.losses || 0}L</td>
+                  <td className="px-4 py-3 border-b border-[var(--border)] text-sm">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[0.7rem] font-semibold ${user.isBanned ? 'bg-[var(--red-bg)] text-[var(--red)]' : 'bg-[var(--green-bg)] text-[var(--green)]'}`}>
                       {user.isBanned ? 'Banned' : 'Active'}
                     </span>
                   </td>
@@ -977,76 +977,76 @@ const UsersTab = ({ users, selectedUser, onSearch, onSelectUser, onAction, onWhi
               ))}
             </tbody>
           </table>
-          {users.users?.length === 0 && <p className="no-data">No users found</p>}
+          {users.users?.length === 0 && <p className="text-center py-5 text-[var(--text-muted)] text-sm">No users found</p>}
 
           {totalPages > 1 && (
-            <div className="pagination" style={{ marginTop: 16, justifyContent: 'center' }}>
-              <button disabled={page <= 1} onClick={() => handleSearch(page - 1)}>← Prev</button>
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <button disabled={page <= 1} onClick={() => handleSearch(page - 1)} className="px-3 py-1.5 rounded-[var(--radius-md)] bg-[var(--bg-card)] border border-[var(--border)] text-xs text-[var(--text-muted)] cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] disabled:opacity-40">← Prev</button>
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                 const start = Math.max(1, page - 2);
                 const p = start + i;
                 if (p > totalPages) return null;
                 return (
-                  <button key={p} className={p === page ? 'active-page' : ''} onClick={() => handleSearch(p)}>
+                  <button key={p} className={`px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold cursor-pointer border ${p === page ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)]'}`} onClick={() => handleSearch(p)}>
                     {p}
                   </button>
                 );
               })}
-              <button disabled={page >= totalPages} onClick={() => handleSearch(page + 1)}>Next →</button>
+              <button disabled={page >= totalPages} onClick={() => handleSearch(page + 1)} className="px-3 py-1.5 rounded-[var(--radius-md)] bg-[var(--bg-card)] border border-[var(--border)] text-xs text-[var(--text-muted)] cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] disabled:opacity-40">Next →</button>
             </div>
           )}
         </div>
 
         {showDetail && selectedUser && (
-          <div className="user-detail-panel">
-            <div className="detail-header">
-              <img src={buildDiscordAvatar(selectedUser.user?.discordId, selectedUser.user?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="large-avatar" />
+          <div className="w-[320px] flex-shrink-0 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5 sticky top-5 max-h-[calc(100vh-80px)] overflow-y-auto animate-slide-in-right">
+            <div className="flex items-center gap-3 mb-4">
+              <img src={buildDiscordAvatar(selectedUser.user?.discordId, selectedUser.user?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="w-12 h-12 rounded-full border-2 border-[var(--border-glow)]" />
               <div>
-                <h3>{selectedUser.user?.discordName}</h3>
-                <span className="risk-level" style={{ color: getRiskColor(selectedUser.user?.anticheatScore ?? 100) }}>
+                <h3 className="text-base font-bold">{selectedUser.user?.discordName}</h3>
+                <span className="text-xs font-semibold" style={{ color: getRiskColor(selectedUser.user?.anticheatScore ?? 100) }}>
                   {selectedUser.riskLevel?.toUpperCase() || 'UNKNOWN'} RISK
                 </span>
               </div>
-              <button onClick={() => setShowDetail(false)} className="close-detail">✕</button>
+              <button onClick={() => setShowDetail(false)} className="ml-auto text-[var(--text-muted)] cursor-pointer bg-transparent border-none text-lg">✕</button>
             </div>
-            <div className="stats-grid-mini">
-              <div className="stat"><span>Wins</span><strong>{selectedUser.user?.wins || 0}</strong></div>
-              <div className="stat"><span>Losses</span><strong>{selectedUser.user?.losses || 0}</strong></div>
-              <div className="stat"><span>Rank</span><strong>{getRankLabel(selectedUser.user?.rankingPoints || 0)}</strong></div>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="text-center p-2.5 bg-[rgba(0,0,0,0.2)] border border-[var(--border)] rounded-[var(--radius-sm)]"><span className="text-[0.65rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Wins</span><strong className="font-display text-base font-bold text-[var(--cyan)]">{selectedUser.user?.wins || 0}</strong></div>
+              <div className="text-center p-2.5 bg-[rgba(0,0,0,0.2)] border border-[var(--border)] rounded-[var(--radius-sm)]"><span className="text-[0.65rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Losses</span><strong className="font-display text-base font-bold text-[var(--cyan)]">{selectedUser.user?.losses || 0}</strong></div>
+              <div className="text-center p-2.5 bg-[rgba(0,0,0,0.2)] border border-[var(--border)] rounded-[var(--radius-sm)]"><span className="text-[0.65rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Rank</span><strong className="font-display text-base font-bold text-[var(--cyan)]">{getRankLabel(selectedUser.user?.rankingPoints || 0)}</strong></div>
             </div>
-            <div className="detail-section"><label>Epic Games</label><p>{selectedUser.user?.epicGamesName || 'Not verified'} {selectedUser.user?.epicVerified ? '✓' : ''}</p></div>
+            <div className="mb-4"><label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold block mb-2">Epic Games</label><p className="text-sm text-[var(--text-secondary)]">{selectedUser.user?.epicGamesName || 'Not verified'} {selectedUser.user?.epicVerified ? '✓' : ''}</p></div>
             {selectedUser.user?.ipAddresses?.length > 0 && (
-              <div className="detail-section">
-                <label>IP Addresses</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+              <div className="mb-4">
+                <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold block mb-2">IP Addresses</label>
+                <div className="flex flex-col gap-2">
                   {selectedUser.user.ipAddresses.slice(0, 8).map((ipEntry, i) => (
-                    <div key={`${ipEntry.ip}-${i}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, background: 'rgba(15,23,42,0.45)', border: '1px solid #334155', borderRadius: 8, padding: '8px 10px' }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{ipEntry.ip}</span>
-                      <button className="btn btn-sm" onClick={() => onWhitelistIP(ipEntry.ip)}>Whitelist</button>
+                    <div key={`${ipEntry.ip}-${i}`} className="flex justify-between items-center gap-2.5 bg-[rgba(15,23,42,0.45)] border border-[#334155] rounded-lg p-2 px-2.5">
+                      <span className="font-mono text-xs">{ipEntry.ip}</span>
+                      <button className="px-2 py-1 border border-[var(--border)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--text-muted)] text-xs cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] hover:text-[var(--text)] btn-sm" onClick={() => onWhitelistIP(ipEntry.ip)}>Whitelist</button>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            <div className="action-buttons">
-              <button className="btn" onClick={() => {
+            <div className="flex flex-wrap gap-1.5 mt-4">
+              <button className="btn btn-sm" onClick={() => {
                 const reason = window.prompt('Warning reason:');
                 if (reason) onAction(selectedUser.user?.discordId, 'warn', { type: 'other', reason, daysUntilExpiry: 30 });
               }}>Warn</button>
-              <button className="btn" onClick={() => {
+              <button className="btn btn-sm" onClick={() => {
                 const reason = window.prompt('Strike reason:');
                 if (reason) onAction(selectedUser.user?.discordId, 'strike', { reason });
               }}>Strike</button>
-              <button className="btn reset" onClick={() => {
+              <button className="btn btn-sm" onClick={() => {
                 if (window.confirm('Reset this user\'s profile? This cannot be undone.')) {
                   onAction(selectedUser.user?.discordId, 'reset', { resetType: 'full' });
                 }
               }}>Reset</button>
-              <button className="btn" onClick={() => onAction(selectedUser.user?.discordId, 'remove-premium')}>Remove Premium</button>
+              <button className="btn btn-sm" onClick={() => onAction(selectedUser.user?.discordId, 'remove-premium')}>Remove Premium</button>
               {selectedUser.user?.isBanned ? (
-                <button className="btn unban" onClick={() => onAction(selectedUser.user?.discordId, 'unban')}>Unban</button>
+                <button className="btn btn-success btn-sm" onClick={() => onAction(selectedUser.user?.discordId, 'unban')}>Unban</button>
               ) : (
-                <button className="btn ban" onClick={() => {
+                <button className="btn btn-danger btn-sm" onClick={() => {
                   const reason = window.prompt('Ban reason:');
                   if (reason) onAction(selectedUser.user?.discordId, 'ban', { reason });
                 }}>Ban</button>
@@ -1097,89 +1097,57 @@ const AnticheatTab = ({ api }) => {
   };
   const filtered = filter === 'all' ? alerts : alerts.filter(a => a.severity === filter);
   if (loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className="flex flex-col gap-3">
       {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 100 }} />)}
     </div>
   );
   return (
     <div>
-      <div className="tab-title-section">
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
-          <h2>Anticheat Alerts</h2>
-          <p className="section-subtitle">{alerts.length} unresolved alert{alerts.length !== 1 ? 's' : ''}</p>
+          <h2 className="font-display text-xl font-bold">Anticheat Alerts</h2>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">{alerts.length} unresolved alert{alerts.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="filter-tabs">
-          <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All ({alerts.length})</button>
-          <button className={filter === 'critical' ? 'active' : ''} onClick={() => setFilter('critical')} style={filter === 'critical' ? { color: '#ef4444' } : {}}>Critical</button>
-          <button className={filter === 'high' ? 'active' : ''} onClick={() => setFilter('high')} style={filter === 'high' ? { color: '#f97316' } : {}}>High</button>
-          <button className={filter === 'medium' ? 'active' : ''} onClick={() => setFilter('medium')} style={filter === 'medium' ? { color: '#eab308' } : {}}>Medium</button>
-          <button className={filter === 'low' ? 'active' : ''} onClick={() => setFilter('low')} style={filter === 'low' ? { color: '#3b82f6' } : {}}>Low</button>
+        <div className="flex gap-2 flex-wrap">
+          <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'all' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => setFilter('all')}>All ({alerts.length})</button>
+          <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'critical' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[#ef4444]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => setFilter('critical')}>Critical</button>
+          <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'high' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[#f97316]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => setFilter('high')}>High</button>
+          <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'medium' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[#eab308]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => setFilter('medium')}>Medium</button>
+          <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'low' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[#3b82f6]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => setFilter('low')}>Low</button>
         </div>
       </div>
 
       {filtered.length === 0 ? (
         <div className="empty-state"><span>✓</span><p>No alerts to show</p></div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="flex flex-col gap-2.5">
           {filtered.map((alert, i) => (
-            <div key={i} style={{
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-              animation: 'fadeInUp 0.3s ease', animationFillMode: 'both',
-              animationDelay: `${i * 0.03}s`,
-            }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px',
-                borderBottom: '1px solid var(--border)',
-              }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 'var(--radius-md)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1rem', background: `${getSeverityColor(alert.severity)}15`,
-                  color: getSeverityColor(alert.severity), flexShrink: 0,
-                }}>
+            <div key={i} className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] overflow-hidden animate-fade-in-up"
+              style={{ animationFillMode: 'both', animationDelay: `${i * 0.03}s` }}>
+              <div className="flex items-center gap-3.5 p-4 px-5 border-b border-[var(--border)]">
+                <div className="w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center text-base flex-shrink-0"
+                  style={{ background: `${getSeverityColor(alert.severity)}15`, color: getSeverityColor(alert.severity) }}>
                   <i className={`fas ${getFlagIcon(alert.flag)}`}></i>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>{alert.userName}</span>
-                    <span style={{
-                      padding: '2px 8px', borderRadius: 100, fontSize: '0.65rem',
-                      fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
-                      background: `${getSeverityColor(alert.severity)}15`,
-                      color: getSeverityColor(alert.severity),
-                      border: `1px solid ${getSeverityColor(alert.severity)}25`,
-                    }}>{alert.flag}</span>
-                    <span style={{
-                      padding: '2px 8px', borderRadius: 100, fontSize: '0.6rem',
-                      fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em',
-                      background: `${getSeverityColor(alert.severity)}20`,
-                      color: getSeverityColor(alert.severity),
-                    }}>{alert.severity}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-semibold text-sm text-[var(--text)]">{alert.userName}</span>
+                    <span className="px-2 py-0.5 rounded-full text-[0.65rem] font-bold uppercase tracking-wider"
+                      style={{ background: `${getSeverityColor(alert.severity)}15`, color: getSeverityColor(alert.severity), border: `1px solid ${getSeverityColor(alert.severity)}25` }}>{alert.flag}</span>
+                    <span className="px-2 py-0.5 rounded-full text-[0.6rem] font-extrabold uppercase tracking-widest"
+                      style={{ background: `${getSeverityColor(alert.severity)}20`, color: getSeverityColor(alert.severity) }}>{alert.severity}</span>
                   </div>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                    {alert.description}
-                  </div>
+                  <div className="text-xs text-[var(--text-muted)] leading-relaxed">{alert.description}</div>
                 </div>
-                <div style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  flexShrink: 0, padding: '0 12px',
-                }}>
-                  <span style={{
-                    fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700,
-                    color: getScoreColor(alert.anticheatScore),
-                  }}>{alert.anticheatScore}</span>
-                  <span style={{ fontSize: '0.6rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Score</span>
+                <div className="flex flex-col items-center flex-shrink-0 px-3">
+                  <span className="font-display text-lg font-bold" style={{ color: getScoreColor(alert.anticheatScore) }}>{alert.anticheatScore}</span>
+                  <span className="text-[0.6rem] text-[var(--text-dim)] uppercase tracking-wider">Score</span>
                 </div>
                 <button onClick={() => resolveFlag(alert.userId, alert._id)} className="btn btn-ghost btn-sm">
                   <i className="fas fa-check"></i> Resolve
                 </button>
               </div>
-              <div style={{
-                padding: '8px 20px', background: 'rgba(0,0,0,0.15)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                fontSize: '0.75rem', color: 'var(--text-dim)',
-              }}>
+              <div className="flex items-center justify-between px-5 py-2 bg-[rgba(0,0,0,0.15)] text-xs text-[var(--text-dim)]">
                 <span><i className="far fa-clock"></i> {new Date(alert.createdAt).toLocaleString()}</span>
                 <span>User ID: {alert.userId?.substring(0, 12)}...</span>
               </div>
@@ -1217,81 +1185,83 @@ const MatchesTab = ({ api, notify }) => {
     catch (err) { notify('Failed to override match', 'error'); }
   };
 
-  if (loading) return <div className="tab-loading">Loading...</div>;
+  if (loading) return <div className="text-center py-10 text-[var(--text-muted)]">Loading...</div>;
 
   return (
-    <div className="matches-tab">
-      <div className="tab-title-section">
-        <h2>Match History</h2>
-        <div className="filter-tabs sm">
-          <button className={filter === 'all' ? 'active' : ''} onClick={() => { setFilter('all'); setPage(1); }}>All</button>
-          <button className={filter === 'completed' ? 'active' : ''} onClick={() => { setFilter('completed'); setPage(1); }}>Completed</button>
-          <button className={filter === 'disputed' ? 'active' : ''} onClick={() => { setFilter('disputed'); setPage(1); }}>Disputed</button>
-          <button className={filter === 'pending' ? 'active' : ''} onClick={() => { setFilter('pending'); setPage(1); }}>Pending</button>
+    <div>
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <h2 className="font-display text-xl font-bold">Match History</h2>
+        <div className="flex gap-2 flex-wrap">
+          <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'all' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setFilter('all'); setPage(1); }}>All</button>
+          <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'completed' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setFilter('completed'); setPage(1); }}>Completed</button>
+          <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'disputed' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setFilter('disputed'); setPage(1); }}>Disputed</button>
+          <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'pending' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setFilter('pending'); setPage(1); }}>Pending</button>
         </div>
       </div>
 
-      <div className="matches-table-wrap">
-        <table>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Player 1</th>
-              <th>Player 2</th>
-              <th>Result</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Date</th>
+              <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Player 1</th>
+              <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Player 2</th>
+              <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Result</th>
+              <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Status</th>
+              <th className="text-left px-4 py-3 text-[0.7rem] uppercase tracking-wider text-[var(--text-muted)] font-bold border-b border-[var(--border)] whitespace-nowrap">Actions</th>
             </tr>
           </thead>
           <tbody>
             {matches.map(m => (
-              <tr key={m._id} className={m.disputed ? 'disputed-row' : ''}>
-                <td className="cell-date">{new Date(m.date).toLocaleDateString()}</td>
-                <td className="cell-player">
-                  <img src={buildDiscordAvatar(m.player1?.discordId, m.player1?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="mini-avatar" />
+              <tr key={m._id} className={m.disputed ? 'bg-[rgba(249,115,22,0.02)]' : ''}>
+                <td className="px-4 py-3 border-b border-[var(--border)] text-sm">{new Date(m.date).toLocaleDateString()}</td>
+                <td className="px-4 py-3 border-b border-[var(--border)] text-sm">
+                  <img src={buildDiscordAvatar(m.player1?.discordId, m.player1?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="w-6 h-6 rounded-full align-middle mr-1.5 inline-block" />
                   <span>{m.player1?.discordName || 'Unknown'}</span>
                 </td>
-                <td className="cell-player">
-                  <img src={buildDiscordAvatar(m.player2?.discordId, m.player2?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="mini-avatar" />
+                <td className="px-4 py-3 border-b border-[var(--border)] text-sm">
+                  <img src={buildDiscordAvatar(m.player2?.discordId, m.player2?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="w-6 h-6 rounded-full align-middle mr-1.5 inline-block" />
                   <span>{m.player2?.discordName || 'Unknown'}</span>
                 </td>
-                <td>
-                  <span className={`match-result ${m.result === 'player1' ? 'p1' : m.result === 'player2' ? 'p2' : ''}`}>
+                <td className="px-4 py-3 border-b border-[var(--border)] text-sm font-semibold">
+                  <span className={`${m.result === 'player1' ? 'text-[var(--cyan)]' : m.result === 'player2' ? 'text-[var(--purple)]' : ''}`}>
                     {m.result === 'player1' ? `${m.player1?.discordName || 'P1'} Win` :
                      m.result === 'player2' ? `${m.player2?.discordName || 'P2'} Win` :
                      m.result || '—'}
                   </span>
                 </td>
-                <td>
-                  <span className={`match-status-badge ${m.disputed ? 'disputed' : m.status || 'completed'}`}>
+                <td className="px-4 py-3 border-b border-[var(--border)] text-sm">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[0.7rem] font-semibold ${m.disputed ? 'bg-[rgba(249,115,22,0.12)] text-[var(--orange)]' : m.status === 'completed' ? 'bg-[var(--green-bg)] text-[var(--green)]' : 'bg-[rgba(255,255,255,0.04)] text-[var(--text-muted)]'}`}>
                     {m.disputed ? '⚠ Disputed' : m.status || 'completed'}
                   </span>
                 </td>
-                <td className="cell-actions">
-                  {m.disputed || m.status === 'pending' ? (
-                    <>
-                      <button className="btn-tiny success" onClick={() => overrideMatch(m._id, 'player1')}>
-                        {m.player1?.discordName?.split(' ')[0] || 'P1'}
-                      </button>
-                      <button className="btn-tiny danger" onClick={() => overrideMatch(m._id, 'player2')}>
-                        {m.player2?.discordName?.split(' ')[0] || 'P2'}
-                      </button>
-                      <button className="btn-tiny" onClick={() => overrideMatch(m._id, 'draw')}>Draw</button>
-                    </>
-                  ) : <span className="text-muted">—</span>}
+                <td className="px-4 py-3 border-b border-[var(--border)] text-sm">
+                  <div className="flex gap-1">
+                    {m.disputed || m.status === 'pending' ? (
+                      <>
+                        <button className="px-2.5 py-1 border border-[rgba(34,197,94,0.2)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--green)] text-[0.7rem] cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] hover:text-[var(--text)]" onClick={() => overrideMatch(m._id, 'player1')}>
+                          {m.player1?.discordName?.split(' ')[0] || 'P1'}
+                        </button>
+                        <button className="px-2.5 py-1 border border-[rgba(239,68,68,0.15)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--red)] text-[0.7rem] cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] hover:text-[var(--text)]" onClick={() => overrideMatch(m._id, 'player2')}>
+                          {m.player2?.discordName?.split(' ')[0] || 'P2'}
+                        </button>
+                        <button className="px-2.5 py-1 border border-[var(--border)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--text-muted)] text-[0.7rem] cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] hover:text-[var(--text)]" onClick={() => overrideMatch(m._id, 'draw')}>Draw</button>
+                      </>
+                    ) : <span className="text-[var(--text-muted)]">—</span>}
+                  </div>
                 </td>
               </tr>
             ))}
-            {matches.length === 0 && <tr><td colSpan="6"><p className="no-data">No matches found</p></td></tr>}
+            {matches.length === 0 && <tr><td colSpan="6" className="text-center py-5 text-[var(--text-muted)] text-sm">No matches found</td></tr>}
           </tbody>
         </table>
       </div>
 
       {totalPages > 1 && (
-        <div className="pagination">
-          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Prev</button>
-          <span>{page} / {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next →</button>
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-4 py-2 rounded-[var(--radius-md)] bg-[var(--bg-card)] border border-[var(--border)] text-sm text-[var(--text-muted)] cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] disabled:opacity-40">← Prev</button>
+          <span className="text-sm text-[var(--text-muted)]">{page} / {totalPages}</span>
+          <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="px-4 py-2 rounded-[var(--radius-md)] bg-[var(--bg-card)] border border-[var(--border)] text-sm text-[var(--text-muted)] cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] disabled:opacity-40">Next →</button>
         </div>
       )}
     </div>
@@ -1316,32 +1286,32 @@ const BroadcastTab = ({ api, notify }) => {
   const handleDelete = async (id) => { try { await api.delete(`/admin/announcements/${id}`); notify('Deleted', 'success'); fetchAnnouncements(); } catch (err) { notify('Failed to delete', 'error'); } };
   const handleToggleActive = async (id, current) => { try { await api.put(`/admin/announcements/${id}`, { active: !current }); fetchAnnouncements(); } catch (err) { notify('Failed to update', 'error'); } };
   const typeColors = { info: '#3b82f6', warning: '#eab308', update: '#22c55e', maintenance: '#f97316', event: '#a78bfa' };
-  if (loading) return <div className="tab-loading">Loading...</div>;
+  if (loading) return <div className="text-center py-10 text-[var(--text-muted)]">Loading...</div>;
   return (
-    <div className="broadcast-tab">
-      <div className="tab-title-section">
-        <h2>Broadcast Center</h2>
-        <button className="create-btn" onClick={() => setShowCreate(true)}>+ New Announcement</button>
+    <div>
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <h2 className="font-display text-xl font-bold">Broadcast Center</h2>
+        <button className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--cyan)] to-[var(--electric-blue)] border-none rounded-[var(--radius-md)] text-black font-bold text-sm cursor-pointer whitespace-nowrap transition-all duration-base hover:shadow-[0_0_25px_rgba(46,242,255,0.3)] hover:-translate-y-0.5" onClick={() => setShowCreate(true)}>+ New Announcement</button>
       </div>
-      <div className="announcements-list">
+      <div className="flex flex-col gap-3">
         {announcements.length === 0 ? (
           <div className="empty-state"><span>📢</span><p>No announcements yet</p></div>
         ) : announcements.map(a => (
-          <div key={a._id} className={`announcement-card ${!a.active ? 'inactive' : ''}`}>
-            <div className="announcement-card-header">
-              <span className="announcement-type" style={{ background: typeColors[a.type] || '#64748b' }}>{a.type}</span>
-              <span className={`announcement-priority ${a.priority}`}>{a.priority}</span>
-              <span className="announcement-date">{new Date(a.createdAt).toLocaleDateString()}</span>
-              <button className="announcement-toggle" onClick={() => handleToggleActive(a._id, a.active)}>
+          <div key={a._id} className={`bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] overflow-hidden transition-all duration-base hover:border-[var(--border-glow)] ${!a.active ? 'opacity-60' : ''}`}>
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)] flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-full text-[0.65rem] font-bold text-white" style={{ background: typeColors[a.type] || '#64748b' }}>{a.type}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase tracking-wider ${a.priority === 'urgent' ? 'bg-[rgba(239,68,68,0.15)] text-[var(--red)]' : a.priority === 'high' ? 'bg-[rgba(249,115,22,0.12)] text-[var(--orange)]' : a.priority === 'low' ? 'bg-[rgba(255,255,255,0.03)] text-[var(--text-muted)]' : 'bg-[rgba(255,255,255,0.05)] text-[var(--text-secondary)]'}`}>{a.priority}</span>
+              <span className="text-xs text-[var(--text-muted)] ml-auto">{new Date(a.createdAt).toLocaleDateString()}</span>
+              <button className="px-2.5 py-1 border border-[var(--border)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--text-muted)] text-xs cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)] hover:text-[var(--text)]" onClick={() => handleToggleActive(a._id, a.active)}>
                 {a.active ? 'Active' : 'Inactive'}
               </button>
-              <button className="announcement-delete" onClick={() => handleDelete(a._id)}>🗑</button>
+              <button className="px-2 py-1 border border-[rgba(239,68,68,0.15)] rounded-[var(--radius-sm)] bg-[rgba(0,0,0,0.2)] text-[var(--red)] text-xs cursor-pointer transition-all duration-fast hover:bg-[var(--red-bg)]" onClick={() => handleDelete(a._id)}>🗑</button>
             </div>
-            <div className="announcement-body">
-              <h4>{a.title}</h4>
-              <p>{a.body}</p>
+            <div className="p-4">
+              <h4 className="font-display text-sm font-bold mb-1">{a.title}</h4>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{a.body}</p>
             </div>
-            <div className="announcement-footer">
+            <div className="flex items-center gap-4 px-4 py-2 border-t border-[var(--border)] text-xs text-[var(--text-dim)]">
               <span>By {a.createdBy?.discordName || 'Unknown'}</span>
               {a.expiresAt && <span>Expires {new Date(a.expiresAt).toLocaleDateString()}</span>}
             </div>
@@ -1349,23 +1319,29 @@ const BroadcastTab = ({ api, notify }) => {
         ))}
       </div>
       {showCreate && (
-        <div className="modal-overlay" onClick={() => setShowCreate(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><h3>New Announcement</h3><button onClick={() => setShowCreate(false)} className="close-btn">✕</button></div>
-            <div className="modal-body">
-              <div className="form-group"><label>Title *</label><input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Announcement title..." /></div>
-              <div className="form-group"><label>Body *</label><textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))} placeholder="Write your announcement..." rows={5} /></div>
-              <div className="form-row">
-                <div className="form-group"><label>Type</label><select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] backdrop-blur-sm animate-fade-in" onClick={() => setShowCreate(false)}>
+          <div className="w-[90%] max-w-md bg-[var(--bg-glass-strong)] backdrop-blur-2xl border border-[var(--border-glow)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-xl)] animate-scale-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+              <h3 className="font-display text-lg font-bold">New Announcement</h3>
+              <button onClick={() => setShowCreate(false)} className="text-[var(--text-muted)] text-xl cursor-pointer bg-transparent border-none">✕</button>
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5"><label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Title *</label><input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Announcement title..." className="p-3 bg-[rgba(0,0,0,0.3)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)]" /></div>
+              <div className="flex flex-col gap-1.5"><label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Body *</label><textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))} placeholder="Write your announcement..." rows={5} className="p-3 bg-[rgba(0,0,0,0.3)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)]" /></div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1.5"><label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Type</label><select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} className="p-3 bg-[rgba(0,0,0,0.3)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)]">
                   <option value="info">Info</option><option value="warning">Warning</option><option value="update">Update</option><option value="maintenance">Maintenance</option><option value="event">Event</option>
                 </select></div>
-                <div className="form-group"><label>Priority</label><select value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value }))}>
+                <div className="flex flex-col gap-1.5"><label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Priority</label><select value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value }))} className="p-3 bg-[rgba(0,0,0,0.3)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)]">
                   <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
                 </select></div>
-                <div className="form-group"><label>Expires At</label><input type="datetime-local" value={form.expiresAt} onChange={e => setForm(p => ({ ...p, expiresAt: e.target.value }))} /></div>
+                <div className="flex flex-col gap-1.5"><label className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Expires At</label><input type="datetime-local" value={form.expiresAt} onChange={e => setForm(p => ({ ...p, expiresAt: e.target.value }))} className="p-3 bg-[rgba(0,0,0,0.3)] border border-[var(--border)] rounded-[var(--radius-md)] text-[var(--text)] text-sm outline-none transition-colors duration-fast focus:border-[var(--border-glow-strong)]" /></div>
               </div>
             </div>
-            <div className="modal-footer"><button className="cancel-btn" onClick={() => setShowCreate(false)}>Cancel</button><button className="submit-btn" onClick={handleCreate}>Publish</button></div>
+            <div className="flex justify-end gap-3 p-4 border-t border-[var(--border)]">
+              <button className="px-4 py-2 rounded-[var(--radius-md)] bg-[rgba(255,255,255,0.05)] border border-[var(--border)] text-sm text-[var(--text)] cursor-pointer transition-all duration-fast hover:border-[var(--border-glow)]" onClick={() => setShowCreate(false)}>Cancel</button>
+              <button className="px-6 py-2 rounded-[var(--radius-md)] bg-gradient-to-r from-[var(--cyan)] to-[var(--electric-blue)] text-black text-sm font-bold cursor-pointer shadow-[0_0_20px_rgba(46,242,255,0.2)] transition-all duration-base hover:shadow-[0_0_40px_rgba(46,242,255,0.4)]" onClick={handleCreate}>Publish</button>
+            </div>
           </div>
         </div>
       )}

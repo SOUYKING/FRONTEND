@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/api';
-import './NotificationPage.css';
 
 const NotificationPage = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -34,15 +33,15 @@ const NotificationPage = () => {
   };
 
   const getIconClass = (type) => {
-    const classes = { info: 'info', warning: 'warning', success: 'match', error: 'warning' };
-    return classes[type] || 'info';
+    const classes = { info: 'bg-[rgba(46,242,255,0.08)] text-[var(--cyan)]', warning: 'bg-[rgba(249,115,22,0.08)] text-[var(--orange)]', success: 'bg-[rgba(168,85,247,0.08)] text-[var(--purple)]', error: 'bg-[rgba(249,115,22,0.08)] text-[var(--orange)]' };
+    return classes[type] || 'bg-[rgba(46,242,255,0.08)] text-[var(--cyan)]';
   };
 
   const typeToIcon = { info: 'fa-info-circle', warning: 'fa-exclamation-triangle', update: 'fa-rotate', maintenance: 'fa-wrench', event: 'fa-calendar-alt' };
 
   if (loading) {
     return (
-      <div className="notifications-page page-wrapper">
+      <div className="page-wrapper animate-fade-in-up">
         <div className="page-header"><h1>Notifications</h1></div>
         {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 60, marginBottom: 8 }} />)}
       </div>
@@ -52,7 +51,7 @@ const NotificationPage = () => {
   const hasContent = announcements.length > 0 || localNotifications.length > 0;
 
   return (
-    <div className="notifications-page page-wrapper">
+    <div className="page-wrapper animate-fade-in-up">
       <div className="page-header">
         <div>
           <h1>Notifications</h1>
@@ -67,28 +66,28 @@ const NotificationPage = () => {
 
       {announcements.length > 0 && (
         <>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <i className="fas fa-bullhorn" style={{ color: 'var(--cyan)' }}></i> Announcements
+          <h3 className="font-display text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i className="fas fa-bullhorn text-[var(--cyan)]"></i> Announcements
           </h3>
-          <div className="notifications-list" style={{ marginBottom: 24 }}>
+          <div className="flex flex-col gap-2 mb-6">
             {announcements.map((a) => (
-              <div key={a._id} className="notification-item">
-                <div className={`notif-icon ${getIconClass(a.type)}`}>
+              <div key={a._id} className="flex items-center gap-3.5 p-4 px-5 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] transition-all duration-base animate-fade-in-up hover:border-[var(--border-glow)] hover:bg-[var(--bg-card-hover)] hover:translate-x-1" style={{ animationFillMode: 'both' }}>
+                <div className={`w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center text-lg flex-shrink-0 ${getIconClass(a.type)}`}>
                   <i className={`fas ${typeToIcon[a.type] || 'fa-info-circle'}`}></i>
                 </div>
-                <div className="notif-content">
-                  <span className="notif-title">{a.title}</span>
-                  <span className="notif-message">{a.body}</span>
+                <div className="flex-1">
+                  <span className="font-semibold text-sm block">{a.title}</span>
+                  <span className="text-xs text-[var(--text-muted)] mt-0.5 block">{a.body}</span>
                 </div>
-                <span className="notif-time">{new Date(a.createdAt).toLocaleDateString()}</span>
+                <span className="text-[0.7rem] text-[var(--text-dim)] flex-shrink-0">{new Date(a.createdAt).toLocaleDateString()}</span>
               </div>
             ))}
           </div>
         </>
       )}
 
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <i className="fas fa-bell" style={{ color: 'var(--purple)' }}></i> Activity
+      <h3 className="font-display text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3 flex items-center gap-2">
+        <i className="fas fa-bell text-[var(--purple)]"></i> Activity
       </h3>
 
       {!hasContent ? (
@@ -102,16 +101,16 @@ const NotificationPage = () => {
           <p>No recent activity notifications</p>
         </div>
       ) : (
-        <div className="notifications-list">
+        <div className="flex flex-col gap-2">
           {[...localNotifications].reverse().map((n, index) => (
-            <div key={n.id || index} className="notification-item">
-              <div className={`notif-icon ${getIconClass(n.type)}`}>
+            <div key={n.id || index} className="flex items-center gap-3.5 p-4 px-5 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] transition-all duration-base animate-fade-in-up hover:border-[var(--border-glow)] hover:bg-[var(--bg-card-hover)] hover:translate-x-1" style={{ animationFillMode: 'both' }}>
+              <div className={`w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center text-lg flex-shrink-0 ${getIconClass(n.type)}`}>
                 <i className={`fas ${getIcon(n.type)}`}></i>
               </div>
-              <div className="notif-content">
-                <span className="notif-message">{n.message}</span>
+              <div className="flex-1">
+                <span className="text-xs text-[var(--text-muted)] block">{n.message}</span>
               </div>
-              {n.time && <span className="notif-time">{n.time}</span>}
+              {n.time && <span className="text-[0.7rem] text-[var(--text-dim)] flex-shrink-0">{n.time}</span>}
             </div>
           ))}
         </div>

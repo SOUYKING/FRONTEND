@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { getMatchHistory, getMatchDetail, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
-import './MatchHistoryPage.css';
 
 const MatchHistoryPage = () => {
   const [matches, setMatches] = useState([]);
@@ -73,7 +72,7 @@ const MatchHistoryPage = () => {
 
   if (loading) {
     return (
-      <div className="match-history-page page-wrapper">
+      <div className="page-wrapper animate-fade-in-up">
         <div className="page-header"><h1>Match History</h1></div>
         {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 60, marginBottom: 8 }} />)}
       </div>
@@ -81,7 +80,7 @@ const MatchHistoryPage = () => {
   }
 
   return (
-    <div className="match-history-page page-wrapper">
+    <div className="page-wrapper animate-fade-in-up">
       <div className="page-header">
         <div>
           <h1>Match History</h1>
@@ -89,14 +88,14 @@ const MatchHistoryPage = () => {
         </div>
       </div>
 
-      {error && <div style={{ padding: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', marginBottom: 16, color: 'var(--red)', fontSize: '0.85rem' }}>{error}</div>}
+      {error && <div className="p-3 bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-[var(--radius-md)] mb-4 text-[var(--red)] text-sm">{error}</div>}
 
-      <div className="filter-tabs" style={{ marginBottom: 20 }}>
-        <button className={filter === 'all' ? 'active' : ''} onClick={() => { setFilter('all'); setPage(1); }}>All ({counts.all})</button>
-        <button className={filter === 'win' ? 'active' : ''} onClick={() => { setFilter('win'); setPage(1); }}>Wins ({counts.win})</button>
-        <button className={filter === 'loss' ? 'active' : ''} onClick={() => { setFilter('loss'); setPage(1); }}>Losses ({counts.loss})</button>
-        <button className={filter === 'draw' ? 'active' : ''} onClick={() => { setFilter('draw'); setPage(1); }}>Draws ({counts.draw})</button>
-        <button className={filter === 'disputed' ? 'active' : ''} onClick={() => { setFilter('disputed'); setPage(1); }}>Disputed ({counts.disputed})</button>
+      <div className="flex gap-2 mb-5 flex-wrap">
+        <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'all' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setFilter('all'); setPage(1); }}>All ({counts.all})</button>
+        <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'win' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setFilter('win'); setPage(1); }}>Wins ({counts.win})</button>
+        <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'loss' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setFilter('loss'); setPage(1); }}>Losses ({counts.loss})</button>
+        <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'draw' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setFilter('draw'); setPage(1); }}>Draws ({counts.draw})</button>
+        <button className={`px-4 py-2 rounded-[var(--radius-md)] text-sm font-semibold cursor-pointer transition-all duration-base border ${filter === 'disputed' ? 'bg-[rgba(46,242,255,0.06)] border-[var(--border-glow)] text-[var(--cyan)]' : 'bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-glow)] hover:text-[var(--text-secondary)]'}`} onClick={() => { setFilter('disputed'); setPage(1); }}>Disputed ({counts.disputed})</button>
       </div>
 
       {matches.length === 0 ? (
@@ -105,30 +104,24 @@ const MatchHistoryPage = () => {
           <p>No matches played yet. Join a tournament to start!</p>
         </div>
       ) : (
-        <div className="match-history-list">
+        <div className="flex flex-col gap-2">
           {paged.map((match, idx) => (
             <div
               key={match.id}
-              className="match-history-item"
-              style={{ animationDelay: `${idx * 0.03}s` }}
+              className="flex items-center p-4 px-5 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] transition-all duration-base cursor-pointer animate-fade-in-up hover:border-[var(--border-glow)] hover:bg-[var(--bg-card-hover)] hover:translate-x-1"
+              style={{ animationDelay: `${idx * 0.03}s`, animationFillMode: 'both' }}
               onClick={() => handleRowClick(match)}
             >
-              <div className="match-history-avatars">
-                <div className="match-history-avatar self">
-                  <img src={buildDiscordAvatar(JSON.parse(localStorage.getItem('user') || '{}')?.discordId || JSON.parse(localStorage.getItem('user') || '{}')?.id, JSON.parse(localStorage.getItem('user') || '{}')?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
-                </div>
-                <span className="match-history-vs">VS</span>
-                <div className="match-history-avatar opponent">
-                  <img src={buildDiscordAvatar(match.opponentId, match.opponentAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
-                </div>
+              <div className="flex items-center gap-2 flex-shrink-0 mr-4">
+                <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-[var(--border-glow)]"><img src={buildDiscordAvatar(JSON.parse(localStorage.getItem('user') || '{}')?.discordId || JSON.parse(localStorage.getItem('user') || '{}')?.id, JSON.parse(localStorage.getItem('user') || '{}')?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="w-full h-full object-cover" /></div>
+                <span className="text-[0.7rem] text-[var(--text-muted)] font-bold flex-shrink-0">VS</span>
+                <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-[var(--border-purple)]"><img src={buildDiscordAvatar(match.opponentId, match.opponentAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="w-full h-full object-cover" /></div>
               </div>
-              <div className="match-history-info">
-                <div className="match-history-players">
-                  You <span className="vs-text">vs</span> {match.opponent}
-                </div>
-                <div className="match-history-date">{new Date(match.date).toLocaleDateString()}</div>
+              <div className="flex-1 ml-4">
+                <div className="text-sm font-semibold mb-0.5">You <span className="text-[var(--text-muted)] font-normal mx-1">vs</span> {match.opponent}</div>
+                <div className="text-xs text-[var(--text-muted)]">{new Date(match.date).toLocaleDateString()}</div>
               </div>
-              <div className={`match-history-result ${resultClass(match.result, match.disputed)}`}>
+              <div className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex-shrink-0 ml-3 ${resultClass(match.result, match.disputed) === 'win' ? 'bg-[var(--green-bg)] text-[var(--green)]' : resultClass(match.result, match.disputed) === 'loss' ? 'bg-[var(--red-bg)] text-[var(--red)]' : resultClass(match.result, match.disputed) === 'disputed' ? 'bg-[rgba(249,115,22,0.12)] text-[var(--orange)]' : 'bg-[rgba(255,255,255,0.05)] text-[var(--text-muted)]'}`}>
                 {resultLabel(match.result)}
               </div>
             </div>
@@ -137,104 +130,71 @@ const MatchHistoryPage = () => {
       )}
 
       {totalPages > 1 && (
-        <div className="pagination">
-          <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>← Prev</button>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{page} / {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next →</button>
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="px-4 py-2 rounded-[var(--radius-md)] bg-[var(--bg-card)] border border-[var(--border)] text-sm text-[var(--text-muted)] cursor-pointer transition-all duration-base hover:border-[var(--border-glow)] disabled:opacity-40">← Prev</button>
+          <span className="text-sm text-[var(--text-muted)]">{page} / {totalPages}</span>
+          <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="px-4 py-2 rounded-[var(--radius-md)] bg-[var(--bg-card)] border border-[var(--border)] text-sm text-[var(--text-muted)] cursor-pointer transition-all duration-base hover:border-[var(--border-glow)] disabled:opacity-40">Next →</button>
         </div>
       )}
 
       {selectedMatch && (
-        <div className="modal-overlay" onClick={() => { setSelectedMatch(null); setDetail(null); }}>
-          <div className="match-history-detail-modal modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Match Details</h3>
-              <button className="close-btn" onClick={() => { setSelectedMatch(null); setDetail(null); }}>&times;</button>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] backdrop-blur-sm animate-fade-in" onClick={() => { setSelectedMatch(null); setDetail(null); }}>
+          <div className="max-w-[600px] w-[90%] bg-[var(--bg-glass-strong)] backdrop-blur-2xl border border-[var(--border-glow)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-xl)] animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
+              <h3 className="font-display text-lg font-bold">Match Details</h3>
+              <button onClick={() => { setSelectedMatch(null); setDetail(null); }} className="text-[var(--text-muted)] text-xl cursor-pointer bg-transparent border-none">&times;</button>
             </div>
-            <div className="modal-body">
+            <div className="p-5">
               {detailLoading ? (
-                <div style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>Loading match details...</div>
+                <div className="text-center py-8 text-[var(--text-muted)]">Loading match details...</div>
               ) : detail?.error ? (
-                <div style={{ color: 'var(--red)', textAlign: 'center', padding: 20 }}>{detail.error}</div>
+                <div className="text-[var(--red)] text-center py-5">{detail.error}</div>
               ) : detail ? (
                 <>
-                  <div className="match-detail-header">
-                    <div className="match-detail-players">
-                      <div className="match-detail-player">
-                        <img src={buildDiscordAvatar(detail.self?.discordId, detail.self?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
-                        <span className="name">{detail.self?.discordName || 'You'}</span>
+                  <div className="text-center pb-6 border-b border-[var(--border)] mb-5">
+                    <div className="flex items-center justify-center gap-5 mb-3">
+                      <div className="text-center">
+                        <img src={buildDiscordAvatar(detail.self?.discordId, detail.self?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="w-12 h-12 rounded-full mx-auto mb-1.5 border-2 border-[var(--border)]" />
+                        <span className="block text-sm font-semibold">{detail.self?.discordName || 'You'}</span>
                       </div>
-                      <div className="match-detail-vs">VS</div>
-                      <div className="match-detail-player">
-                        <img src={buildDiscordAvatar(detail.opponent?.discordId, detail.opponent?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
-                        <span className="name">{detail.opponent?.discordName || 'Opponent'}</span>
+                      <div className="font-display text-xl font-black text-[var(--cyan)]">VS</div>
+                      <div className="text-center">
+                        <img src={buildDiscordAvatar(detail.opponent?.discordId, detail.opponent?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="w-12 h-12 rounded-full mx-auto mb-1.5 border-2 border-[var(--border)]" />
+                        <span className="block text-sm font-semibold">{detail.opponent?.discordName || 'Opponent'}</span>
                       </div>
                     </div>
-                    <span className={`match-detail-result-badge ${resultClass(detail.result, detail.disputed)}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold ${resultClass(detail.result, detail.disputed) === 'win' ? 'bg-[var(--green-bg)] text-[var(--green)] border border-[rgba(34,197,94,0.2)]' : resultClass(detail.result, detail.disputed) === 'loss' ? 'bg-[var(--red-bg)] text-[var(--red)] border border-[rgba(239,68,68,0.2)]' : resultClass(detail.result, detail.disputed) === 'disputed' ? 'bg-[rgba(249,115,22,0.12)] text-[var(--orange)] border border-[rgba(249,115,22,0.2)]' : 'bg-[rgba(255,255,255,0.05)] text-[var(--text-muted)]'}`}>
                       {resultLabel(detail.result)}
                     </span>
                   </div>
 
-                  <div className="match-detail-info-grid">
-                    <div className="match-detail-info-item">
-                      <span className="label">Date</span>
-                      <span className="value">{new Date(detail.date).toLocaleString()}</span>
-                    </div>
-                    <div className="match-detail-info-item">
-                      <span className="label">Winner</span>
-                      <span className="value">{detail.winnerDiscordId === detail.self?.discordId ? detail.self?.discordName : detail.opponent?.discordName}</span>
-                    </div>
-                    <div className="match-detail-info-item">
-                      <span className="label">Loser</span>
-                      <span className="value">{detail.loserDiscordId === detail.self?.discordId ? detail.self?.discordName : (detail.loserDiscordId === detail.opponent?.discordId ? detail.opponent?.discordName : '—')}</span>
-                    </div>
-                    <div className="match-detail-info-item">
-                      <span className="label">Status</span>
-                      <span className="value" style={{ color: detail.disputed ? 'var(--orange)' : 'var(--green)' }}>
-                        {detail.disputed ? 'Disputed' : detail.status || 'Completed'}
-                      </span>
-                    </div>
-                    <div className="match-detail-info-item">
-                      <span className="label">Reports</span>
-                      <span className="value">{Object.keys(detail.reports || {}).length}/2</span>
-                    </div>
+                  <div className="grid grid-cols-2 gap-3 mb-5">
+                    <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><span className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Date</span><span className="text-sm font-semibold">{new Date(detail.date).toLocaleString()}</span></div>
+                    <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><span className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Winner</span><span className="text-sm font-semibold">{detail.winnerDiscordId === detail.self?.discordId ? detail.self?.discordName : detail.opponent?.discordName}</span></div>
+                    <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><span className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Loser</span><span className="text-sm font-semibold">{detail.loserDiscordId === detail.self?.discordId ? detail.self?.discordName : (detail.loserDiscordId === detail.opponent?.discordId ? detail.opponent?.discordName : '—')}</span></div>
+                    <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><span className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Status</span><span className="text-sm font-semibold" style={{ color: detail.disputed ? 'var(--orange)' : 'var(--green)' }}>{detail.disputed ? 'Disputed' : detail.status || 'Completed'}</span></div>
+                    <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><span className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Reports</span><span className="text-sm font-semibold">{Object.keys(detail.reports || {}).length}/2</span></div>
                     {detail.tournamentId && (
-                      <div className="match-detail-info-item">
-                        <span className="label">Tournament</span>
-                        <span className="value" style={{ fontSize: '0.75rem' }}>{detail.tournamentId.substring(0, 12)}...</span>
-                      </div>
+                      <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]"><span className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Tournament</span><span className="text-[0.75rem] font-semibold">{detail.tournamentId.substring(0, 12)}...</span></div>
                     )}
-                    <div className="match-detail-info-item" style={{ gridColumn: 'span 2' }}>
-                      <span className="label">Match ID</span>
-                      <span className="value" style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)' }}>{detail.id}</span>
-                    </div>
+                    <div className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)] col-span-2"><span className="text-[0.7rem] text-[var(--text-muted)] uppercase tracking-wider block mb-1">Match ID</span><span className="text-[0.7rem] font-semibold font-mono">{detail.id}</span></div>
                   </div>
 
                   {Object.keys(detail.reports || {}).length > 0 && (
-                    <div className="detail-section" style={{ marginTop: 16 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                        <i className="fas fa-vote-yea" style={{ color: 'var(--cyan)' }}></i> Player Votes
-                      </label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div className="mb-4">
+                      <label className="flex items-center gap-1.5 mb-2.5 text-sm"><i className="fas fa-vote-yea text-[var(--cyan)]"></i> Player Votes</label>
+                      <div className="flex flex-col gap-1.5">
                         {Object.entries(detail.reports).map(([playerId, report]) => {
                           const isSelf = playerId === detail.self?.discordId;
                           const playerName = isSelf ? detail.self?.discordName : detail.opponent?.discordName;
                           const votedForSelf = report.winnerDiscordId === playerId;
                           return (
-                            <div key={playerId} style={{
-                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                              padding: '10px 14px', background: 'rgba(0,0,0,0.15)',
-                              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <img src={buildDiscordAvatar(playerId, '') || DISCORD_AVATAR_FALLBACK} alt="" style={{ width: 28, height: 28, borderRadius: '50%' }} />
-                                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{playerName}</span>
+                            <div key={playerId} className="flex items-center justify-between p-2.5 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]">
+                              <div className="flex items-center gap-2.5">
+                                <img src={buildDiscordAvatar(playerId, '') || DISCORD_AVATAR_FALLBACK} alt="" className="w-7 h-7 rounded-full" />
+                                <span className="text-sm font-semibold">{playerName}</span>
                               </div>
-                              <span style={{
-                                fontSize: '0.8rem', fontWeight: 600, padding: '4px 10px',
-                                borderRadius: 100, background: votedForSelf ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                                color: votedForSelf ? 'var(--green)' : 'var(--red)',
-                              }}>
+                              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${votedForSelf ? 'bg-[rgba(34,197,94,0.1)] text-[var(--green)]' : 'bg-[rgba(239,68,68,0.1)] text-[var(--red)]'}`}>
                                 <i className={`fas ${votedForSelf ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
                                 {' '}{votedForSelf ? 'Claimed Win' : 'Admitted Loss'}
                               </span>
@@ -246,29 +206,13 @@ const MatchHistoryPage = () => {
                   )}
 
                   {detail.chatLogs?.length > 0 && (
-                    <div className="detail-section" style={{ marginTop: 16 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                        <i className="fas fa-comments" style={{ color: 'var(--purple)' }}></i> Match Chat ({detail.chatLogs.length})
-                      </label>
-                      <div style={{
-                        maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4,
-                        padding: '8px', background: 'rgba(0,0,0,0.1)', borderRadius: 'var(--radius-md)',
-                      }}>
+                    <div className="mb-4">
+                      <label className="flex items-center gap-1.5 mb-2.5 text-sm"><i className="fas fa-comments text-[var(--purple)]"></i> Match Chat ({detail.chatLogs.length})</label>
+                      <div className="max-h-60 overflow-y-auto flex flex-col gap-1 p-2 bg-[rgba(0,0,0,0.1)] rounded-[var(--radius-md)]">
                         {detail.chatLogs.map((msg, i) => (
-                          <div key={i} style={{
-                            padding: '6px 10px', borderRadius: 'var(--radius-sm)',
-                            background: msg.isSystem ? 'rgba(46,242,255,0.03)' : 'transparent',
-                            fontSize: '0.82rem',
-                          }}>
-                            <span style={{
-                              color: msg.isSystem ? 'var(--text-muted)' : 'var(--cyan)',
-                              fontWeight: 600, fontSize: '0.75rem', marginRight: 8,
-                            }}>
-                              {msg.isSystem ? 'System' : msg.sender}:
-                            </span>
-                            <span style={{ color: msg.isSystem ? 'var(--text-dim)' : 'var(--text-secondary)' }}>
-                              {typeof msg.message === 'string' ? msg.message.substring(0, 200) : ''}
-                            </span>
+                          <div key={i} className={`px-2.5 py-1.5 rounded-[var(--radius-sm)] text-sm ${msg.isSystem ? 'bg-[rgba(46,242,255,0.03)]' : ''}`}>
+                            <span className={`font-semibold text-xs mr-2 ${msg.isSystem ? 'text-[var(--text-muted)]' : 'text-[var(--cyan)]'}`}>{msg.isSystem ? 'System' : msg.sender}:</span>
+                            <span className={`${msg.isSystem ? 'text-[var(--text-dim)]' : 'text-[var(--text-secondary)]'}`}>{typeof msg.message === 'string' ? msg.message.substring(0, 200) : ''}</span>
                           </div>
                         ))}
                       </div>
@@ -276,39 +220,24 @@ const MatchHistoryPage = () => {
                   )}
 
                   {detail.evidence?.length > 0 && (
-                    <div className="detail-section" style={{ marginTop: 16 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                        <i className="fas fa-paperclip" style={{ color: 'var(--orange)' }}></i> Evidence ({detail.evidence.length})
-                      </label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div className="mb-4">
+                      <label className="flex items-center gap-1.5 mb-2.5 text-sm"><i className="fas fa-paperclip text-[var(--orange)]"></i> Evidence ({detail.evidence.length})</label>
+                      <div className="flex flex-col gap-2">
                         {detail.evidence.map((ev, i) => (
-                          <div key={i} style={{
-                            padding: 12, background: 'rgba(0,0,0,0.15)',
-                            border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-                          }}>
-                            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 8 }}>
-                              <i className="fas fa-user"></i> Submitted by: {ev.playerDiscordId === detail.self?.discordId ? detail.self?.discordName : detail.opponent?.discordName}
-                            </div>
-                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <div key={i} className="p-3 bg-[rgba(0,0,0,0.15)] border border-[var(--border)] rounded-[var(--radius-md)]">
+                            <div className="text-[var(--text-muted)] text-xs mb-2"><i className="fas fa-user"></i> Submitted by: {ev.playerDiscordId === detail.self?.discordId ? detail.self?.discordName : detail.opponent?.discordName}</div>
+                            <div className="flex gap-2 flex-wrap">
                               {ev.screenshots?.map((url, j) => (
-                                <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                                  <i className="fas fa-image"></i> Screenshot {j + 1}
-                                </a>
+                                <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm"><i className="fas fa-image"></i> Screenshot {j + 1}</a>
                               ))}
                               {ev.videoLinks?.map((url, j) => (
-                                <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                                  <i className="fas fa-video"></i> Video {j + 1}
-                                </a>
+                                <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm"><i className="fas fa-video"></i> Video {j + 1}</a>
                               ))}
                               {ev.replayCodes?.map((code, j) => (
-                                <span key={j} className="btn btn-ghost btn-sm">
-                                  <i className="fas fa-code"></i> Replay: {code}
-                                </span>
+                                <span key={j} className="btn btn-ghost btn-sm"><i className="fas fa-code"></i> Replay: {code}</span>
                               ))}
                               {ev.streamLinks?.map((url, j) => (
-                                <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                                  <i className="fas fa-broadcast-tower"></i> Stream
-                                </a>
+                                <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm"><i className="fas fa-broadcast-tower"></i> Stream</a>
                               ))}
                             </div>
                           </div>
