@@ -21,8 +21,8 @@ const TINTS = [
   'sepia(1) hue-rotate(250deg) saturate(2.5) brightness(1.2)',  // purple
 ];
 
-const GRID_COLS = 20;
-const GRID_ROWS = 10;
+const GRID_COLS = 10;
+const GRID_ROWS = 6;
 const TOTAL = GRID_COLS * GRID_ROWS;
 
 const AnimatedBackground = () => {
@@ -45,10 +45,10 @@ const AnimatedBackground = () => {
         src: ICONS[i % ICONS.length],
         baseX: cx + jitterX,
         baseY: cy + jitterY,
-        size: 18 + Math.random() * 24,
+        size: 60 + Math.random() * 80,
         speed: 0.15 + Math.random() * 0.35,
         phase: Math.random() * Math.PI * 2,
-        opacity: 0.08 + Math.random() * 0.1,
+        opacity: 0.2 + Math.random() * 0.25,
         rotation: Math.random() * 360,
         rotSpeed: -0.3 + Math.random() * 0.6,
         wobbleAmp: 6 + Math.random() * 10,
