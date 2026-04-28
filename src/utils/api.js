@@ -195,6 +195,16 @@ export const getMatchHistory = async () => {
   }
 };
 
+export const getMatchChat = async (matchId) => {
+  try {
+    const res = await apiClient.get(`/match/${matchId}/match-chat`);
+    return res.data.chatLogs || [];
+  } catch (error) {
+    console.error("Get match chat error:", error.response?.data || error.message);
+    return [];
+  }
+};
+
 export const getMatchDetail = async (matchId) => {
   try {
     const res = await apiClient.get(`/match/${matchId}/details`);
