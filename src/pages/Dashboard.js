@@ -45,118 +45,121 @@ const Dashboard = ({ user }) => {
     profile?.discordAvatar || storedUser?.discordAvatar
   ) || DISCORD_AVATAR_FALLBACK;
   const isInMatch = currentMatch?.inMatch;
+  const nextRankPts = rank.nextRankPoints || points;
   const progressPct = rank.nextRankPoints ? (points / rank.nextRankPoints) * 100 : 100;
 
   if (loading) {
     return (
-      <div className="animate-fade-in-up">
-        <div className="flex items-center gap-5 p-6 bg-[var(--bg-card)] border border-[var(--border-glow)] rounded-[var(--radius-xl)] shadow-cyan mb-6">
-          <div className="skeleton w-[72px] h-[72px] rounded-full" />
-          <div className="flex-1">
-            <div className="skeleton w-[200px] h-6 mb-2" />
-            <div className="skeleton w-[120px] h-4" />
+      <div className="dashboard-page">
+        <div className="profile-rank-card">
+          <div className="skeleton" style={{ width: 72, height: 72, borderRadius: '50%' }} />
+          <div style={{ flex: 1 }}>
+            <div className="skeleton" style={{ width: 200, height: 24, marginBottom: 8 }} />
+            <div className="skeleton" style={{ width: 120, height: 16 }} />
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-4 max-md:grid-cols-2">
-          {[1,2,3,4].map(i => <div key={i} className="skeleton h-[100px]" />)}
+        <div className="stat-cards">
+          {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 100 }} />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="animate-fade-in-up page-wrapper">
-      <div className="flex items-center gap-5 p-6 bg-[var(--bg-card)] border border-[var(--border-glow)] rounded-[var(--radius-xl)] shadow-cyan mb-6 max-md:flex-col max-md:text-center">
-        <div className="relative w-[72px] h-[72px] rounded-full overflow-hidden border-2 border-[var(--border-glow-strong)] shadow-[0_0_20px_var(--cyan-glow)] shrink-0">
-          <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+    <div className="dashboard-page page-wrapper">
+      <div className="profile-rank-card">
+        <div className="profile-rank-avatar">
+          <img src={avatarUrl} alt="" />
         </div>
-        <div className="flex-1">
-          <h2 className="font-display text-[1.2rem] font-bold">{displayName}</h2>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.75rem] font-semibold mt-1" style={{ background: `${rank.color}15`, color: rank.color }}>
+        <div className="profile-rank-info">
+          <h2 className="profile-rank-name">{displayName}</h2>
+          <div className="profile-rank-tag" style={{ background: `${rank.color}15`, color: rank.color }}>
             <img src={rank.icon} alt="" className="rank-icon-img" /> {rankLabel}
           </div>
         </div>
-        <div className="flex gap-5 shrink-0 max-md:w-full max-md:justify-center">
-          <div className="text-center">
-            <div className="font-display text-[1.1rem] font-bold" style={{ color: rank.color }}>{wins}</div>
-            <div className="text-[0.65rem] text-[var(--text-muted)] uppercase tracking-[0.08em]">Wins</div>
+        <div className="profile-rank-stats">
+          <div className="profile-stat-mini">
+            <div className="value" style={{ color: rank.color }}>{wins}</div>
+            <div className="label">Wins</div>
           </div>
-          <div className="text-center">
-            <div className="font-display text-[1.1rem] font-bold">{totalMatches}</div>
-            <div className="text-[0.65rem] text-[var(--text-muted)] uppercase tracking-[0.08em]">Matches</div>
+          <div className="profile-stat-mini">
+            <div className="value">{totalMatches}</div>
+            <div className="label">Matches</div>
           </div>
-          <div className="text-center">
-            <div className="font-display text-[1.1rem] font-bold" style={{ color: winRate >= 50 ? 'var(--green)' : 'var(--red)' }}>{winRate}%</div>
-            <div className="text-[0.65rem] text-[var(--text-muted)] uppercase tracking-[0.08em]">Win Rate</div>
+          <div className="profile-stat-mini">
+            <div className="value" style={{ color: winRate >= 50 ? 'var(--green)' : 'var(--red)' }}>{winRate}%</div>
+            <div className="label">Win Rate</div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-6 max-md:grid-cols-2 max-md:gap-3">
-        <div className="p-5 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] text-center transition-all duration-[250ms] hover:border-[var(--border-glow)] hover:shadow-cyan hover:-translate-y-0.5 animate-fade-in-up">
-          <div className="text-[1.5rem] mb-2" style={{ color: 'var(--cyan)' }}>⚔</div>
-          <span className="font-display text-[1.5rem] font-extrabold block max-md:text-[1.2rem]">{totalMatches}</span>
-          <span className="text-[0.75rem] text-[var(--text-muted)] uppercase tracking-[0.08em] block mt-1">Total Matches</span>
+      <div className="stat-cards">
+        <div className="stat-card">
+          <div className="stat-icon" style={{ color: 'var(--cyan)' }}>⚔</div>
+          <span className="stat-value">{totalMatches}</span>
+          <span className="stat-label">Total Matches</span>
         </div>
-        <div className="p-5 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] text-center transition-all duration-[250ms] hover:border-[var(--border-glow)] hover:shadow-cyan hover:-translate-y-0.5 animate-fade-in-up">
-          <div className="text-[1.5rem] mb-2" style={{ color: 'var(--green)' }}>🏆</div>
-          <span className="font-display text-[1.5rem] font-extrabold block max-md:text-[1.2rem]">{wins}</span>
-          <span className="text-[0.75rem] text-[var(--text-muted)] uppercase tracking-[0.08em] block mt-1">Wins</span>
+        <div className="stat-card">
+          <div className="stat-icon" style={{ color: 'var(--green)' }}>🏆</div>
+          <span className="stat-value">{wins}</span>
+          <span className="stat-label">Wins</span>
         </div>
-        <div className="p-5 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] text-center transition-all duration-[250ms] hover:border-[var(--border-glow)] hover:shadow-cyan hover:-translate-y-0.5 animate-fade-in-up">
-          <div className="text-[1.5rem] mb-2" style={{ color: 'var(--purple)' }}>📈</div>
-          <span className="font-display text-[1.5rem] font-extrabold block max-md:text-[1.2rem]">{winRate}%</span>
-          <span className="text-[0.75rem] text-[var(--text-muted)] uppercase tracking-[0.08em] block mt-1">Win Rate</span>
+        <div className="stat-card">
+          <div className="stat-icon" style={{ color: 'var(--purple)' }}>📈</div>
+          <span className="stat-value">{winRate}%</span>
+          <span className="stat-label">Win Rate</span>
         </div>
-        <div className="p-5 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] text-center transition-all duration-[250ms] hover:border-[var(--border-glow)] hover:shadow-cyan hover:-translate-y-0.5 animate-fade-in-up">
-          <div className="text-[1.5rem] mb-2" style={{ color: 'var(--orange)' }}>⭐</div>
-          <span className="font-display text-[1.5rem] font-extrabold block max-md:text-[1.2rem]">{points}</span>
-          <span className="text-[0.75rem] text-[var(--text-muted)] uppercase tracking-[0.08em] block mt-1">Rank Points</span>
+        <div className="stat-card">
+          <div className="stat-icon" style={{ color: 'var(--orange)' }}>⭐</div>
+          <span className="stat-value">{points}</span>
+          <span className="stat-label">Rank Points</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-5 mb-6 max-md:grid-cols-1">
-        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5 transition-all duration-[250ms] hover:border-[var(--border-glow)] hover:shadow-cyan">
-          <div className="flex items-center justify-between mb-4">
-            <span className="font-display text-[0.85rem] font-semibold text-[var(--text-secondary)] uppercase tracking-[0.08em]">Active Tournaments</span>
-            <div className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-sm)] text-[0.95rem]" style={{ background: 'rgba(46,242,255,0.08)', color: 'var(--cyan)' }}>
+      <div className="dashboard-grid">
+        <div className="dashboard-card">
+          <div className="dashboard-card-header">
+            <span className="dashboard-card-title">Active Tournaments</span>
+            <div className="dashboard-card-icon" style={{ background: 'rgba(46,242,255,0.08)', color: 'var(--cyan)' }}>
               <i className="fas fa-trophy"></i>
             </div>
           </div>
           {activeTournaments.length > 0 ? (
-            <div className="flex flex-col gap-2">
+            <div className="tournament-mini-list">
               {activeTournaments.slice(0, 5).map(t => (
-                <div key={t._id} className="flex items-center justify-between px-3.5 py-2.5 bg-[rgba(255,255,255,0.02)] border border-[var(--border)] rounded-[var(--radius-md)] transition-all duration-[150ms] cursor-pointer hover:bg-[var(--bg-hover)] hover:border-[var(--border-glow)]">
-                  <span className="text-[0.85rem] font-semibold">{t.title}</span>
-                  <div className="flex items-center gap-2.5 text-[0.75rem] text-[var(--text-muted)]">{t.status}</div>
+                <div key={t._id} className="tournament-mini-item">
+                  <span className="tournament-mini-name">{t.title}</span>
+                  <div className="tournament-mini-meta">
+                    <span>{t.status}</span>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-[0.85rem] text-[var(--text-muted)] mb-3">No active tournaments yet.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 12 }}>No active tournaments yet.</p>
           )}
-          <Link to="/tournaments" className="text-[var(--cyan)] text-[0.85rem] font-semibold mt-3 inline-flex items-center gap-1.5">
+          <Link to="/tournaments" style={{ color: 'var(--cyan)', fontSize: '0.85rem', fontWeight: 600, marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             Browse Tournaments <i className="fas fa-arrow-right"></i>
           </Link>
         </div>
 
-        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5 transition-all duration-[250ms] hover:border-[var(--border-glow)] hover:shadow-cyan">
-          <div className="flex items-center justify-between mb-4">
-            <span className="font-display text-[0.85rem] font-semibold text-[var(--text-secondary)] uppercase tracking-[0.08em]">Recent Activity</span>
-            <div className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-sm)] text-[0.95rem]" style={{ background: 'rgba(168,85,247,0.08)', color: 'var(--purple)' }}>
+        <div className="dashboard-card">
+          <div className="dashboard-card-header">
+            <span className="dashboard-card-title">Recent Activity</span>
+            <div className="dashboard-card-icon" style={{ background: 'rgba(168,85,247,0.08)', color: 'var(--purple)' }}>
               <i className="fas fa-bolt"></i>
             </div>
           </div>
-          <Link to="/match-history" className="text-[var(--text-muted)] text-[0.85rem]">
+          <Link to="/match-history" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             View your match history and track your progress.
           </Link>
-          <div className="mt-4">
+          <div style={{ marginTop: 16 }}>
             {isInMatch ? (
-              <Link to={`/match/${currentMatch.matchId}`} className="flex items-center justify-center gap-2.5 w-full p-4 bg-gradient-to-r from-[rgba(46,242,255,0.1)] to-[rgba(168,85,247,0.1)] border border-[var(--border-glow)] rounded-[var(--radius-lg)] text-[var(--cyan)] font-display text-[0.95rem] font-bold cursor-pointer transition-all duration-[250ms] uppercase tracking-[0.08em] hover:from-[rgba(46,242,255,0.2)] hover:to-[rgba(168,85,247,0.2)] hover:border-[var(--border-glow-strong)] hover:shadow-[0_0_30px_rgba(46,242,255,0.15)] hover:-translate-y-0.5">
+              <Link to={`/match/${currentMatch.matchId}`} className="quick-join-btn">
                 <i className="fas fa-gamepad"></i> Resume Match
               </Link>
             ) : (
-              <Link to="/current-game" className="flex items-center justify-center gap-2.5 w-full p-4 bg-gradient-to-r from-[rgba(46,242,255,0.1)] to-[rgba(168,85,247,0.1)] border border-[var(--border-glow)] rounded-[var(--radius-lg)] text-[var(--cyan)] font-display text-[0.95rem] font-bold cursor-pointer transition-all duration-[250ms] uppercase tracking-[0.08em] hover:from-[rgba(46,242,255,0.2)] hover:to-[rgba(168,85,247,0.2)] hover:border-[var(--border-glow-strong)] hover:shadow-[0_0_30px_rgba(46,242,255,0.15)] hover:-translate-y-0.5">
+              <Link to="/current-game" className="quick-join-btn">
                 <i className="fas fa-right-to-bracket"></i> Join Game
               </Link>
             )}
@@ -168,4 +171,3 @@ const Dashboard = ({ user }) => {
 };
 
 export default Dashboard;
-

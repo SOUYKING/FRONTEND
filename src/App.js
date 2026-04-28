@@ -122,9 +122,10 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="app-container">
+      <AnimatedBackground />
       <Sidebar onLogout={handleLogout} />
-      <div className="flex-1 p-[clamp(20px,2.5vw,36px)] min-h-screen overflow-y-auto relative z-10 ml-[260px] transition-all duration-[250ms] max-md:ml-0 max-md:p-4 max-md:pt-20">
+      <div className="main-content">
         <Routes>
           <Route path="/dashboard" element={<Dashboard user={user} />} />
           <Route path="/tournaments" element={<Tournaments user={user} />} />
@@ -239,16 +240,23 @@ const App = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#05081c] text-white">
-        <div className="w-[50px] h-[50px] border-[3px] border-solid border-[rgba(46,242,255,0.08)] border-t-[#2EF2FF] rounded-full animate-spin mb-5" />
-        <p className="font-display text-[0.85rem] text-white/50 uppercase tracking-[0.15em]">Loading Arena...</p>
+      <div style={{
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+        height: '100vh', backgroundColor: '#05081c', color: 'white',
+      }}>
+        <div style={{
+          width: 50, height: 50, border: '3px solid rgba(46,242,255,0.08)',
+          borderTopColor: '#2EF2FF', borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite', marginBottom: 20,
+        }} />
+        <p style={{ fontFamily: "'Orbitron',sans-serif", fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Loading Arena...</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       </div>
     );
   }
 
   return (
     <Router>
-      <AnimatedBackground />
       {isAuthenticated ? (
         <AuthenticatedApp
           user={user}
@@ -260,8 +268,9 @@ const App = () => {
           setCurrentMatchId={setCurrentMatchId}
         />
       ) : (
-        <div className="flex min-h-screen relative z-10">
-          <div className="flex-1 p-[clamp(20px,2.5vw,36px)] min-h-screen overflow-y-auto relative z-10">
+        <div className="app-container">
+          <AnimatedBackground />
+          <div className="main-content" style={{ marginLeft: 0 }}>
             <Login errorMessage={authError} errorType={authErrorType} />
           </div>
         </div>
