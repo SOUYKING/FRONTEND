@@ -735,7 +735,7 @@ const TournamentsTab = ({ tournaments, selectedTournament, onSelectTournament, o
 const CreateTournamentModal = ({ onClose, onSubmit }) => {
 const [form, setForm] = useState({
     title: '', description: '', mapCode: '', mapName: '', type: '1v1',
-    startDate: '', endDate: '', maxPlayers: 16, prize: '', rules: '',
+    bannerImage: '', startDate: '', endDate: '', maxPlayers: 16, prize: '', rules: '',
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -762,26 +762,10 @@ const [form, setForm] = useState({
     if (!validate()) return;
     setSubmitting(true);
     const fixed = { ...form };
-    const offset = new Date().getTimezoneOffset();
     ['startDate', 'endDate'].forEach(k => {
       if (fixed[k]) {
         const d = new Date(fixed[k]);
-        fixed[k] = new Date(d.getTime() + offset * 60000).toISOString();
-      }
-    });
-    try { await onSubmit(fixed); } finally { setSubmitting(false); }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-    setSubmitting(true);
-    const fixed = { ...form };
-    const offset = new Date().getTimezoneOffset();
-    ['startDate', 'endDate', 'registrationDeadline'].forEach(k => {
-      if (fixed[k]) {
-        const d = new Date(fixed[k]);
-        fixed[k] = new Date(d.getTime() + offset * 60000).toISOString();
+        fixed[k] = d.toISOString();
       }
     });
     try { await onSubmit(fixed); } finally { setSubmitting(false); }
@@ -810,6 +794,15 @@ const [form, setForm] = useState({
               <label>Description *</label>
               <textarea value={form.description} onChange={e => updateField('description', e.target.value)} placeholder="Describe your tournament..." className={errors.description ? 'error' : ''} />
               {errors.description && <span className="error-msg">{errors.description}</span>}
+            </div>
+            <div className="form-group">
+              <label>Banner Image URL</label>
+              <input
+                type="url"
+                value={form.bannerImage}
+                onChange={e => updateField('bannerImage', e.target.value)}
+                placeholder="https://example.com/tournament-banner.jpg"
+              />
             </div>
             <div className="form-row">
               <div className="form-group">

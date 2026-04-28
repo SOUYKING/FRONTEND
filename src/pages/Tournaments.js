@@ -44,7 +44,16 @@ const Tournaments = () => {
     }
   };
 
-  const handleJoinQueue = (tournamentId) => navigate(`/queue/${tournamentId}`);
+  const handleJoinQueue = async (tournamentId) => {
+    try {
+      await joinTournament(tournamentId);
+      navigate(`/queue/${tournamentId}`);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to join queue';
+      setError(msg);
+      setErrorType(err.response?.status === 403 && msg.toLowerCase().includes('epic') ? 'epic' : '');
+    }
+  };
   const handleViewLeaderboard = (tournamentId) => navigate(`/tournament/${tournamentId}/leaderboard`);
 
   const formatDate = (dateStr) => {
@@ -124,10 +133,6 @@ const Tournaments = () => {
             const startDate = new Date(tournament.startDate);
             const endDate = new Date(tournament.endDate);
             const isEnded = now > endDate;
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
-            const userId = user.id || user.discordId;
-            const isRegistered = tournament.participants?.some((p) => p.userId === userId);
-            const registrationOpen = tournament.registrationOpen;
             const queueOpen = tournament.queueOpen;
             const stageMeta = getStageMeta(tournament);
             const countdown = formatDate(tournament.startDate);
