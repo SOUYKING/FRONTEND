@@ -50,8 +50,14 @@ const Tournaments = () => {
       navigate(`/queue/${tournamentId}`);
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to join queue';
+      const lowerMsg = msg.toLowerCase();
+      if (lowerMsg.includes('registration deadline has passed')) {
+        // Compatibility: older backend may reject /join, but queue join is still valid during live window.
+        navigate(`/queue/${tournamentId}`);
+        return;
+      }
       setError(msg);
-      setErrorType(err.response?.status === 403 && msg.toLowerCase().includes('epic') ? 'epic' : '');
+      setErrorType(err.response?.status === 403 && lowerMsg.includes('epic') ? 'epic' : '');
     }
   };
   const handleViewLeaderboard = (tournamentId) => navigate(`/tournament/${tournamentId}/leaderboard`);
