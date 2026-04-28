@@ -114,6 +114,21 @@ const QueuePage = ({ socket }) => {
       setMessage(res.message || 'Waiting for opponent...');
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to join queue';
+      const lowerMsg = msg.toLowerCase();
+      const shouldTrySocketFallback =
+        lowerMsg.includes('tournament is not active') ||
+        lowerMsg.includes('registration deadline has passed') ||
+        lowerMsg.includes('must register for this tournament');
+
+      if (shouldTrySocketFallback) {
+        setMessage('Retrying queue via live socket...');
+        socket.emit('joinQueue', {
+          tournamentId,
+          epicName: epicName || user.epicGamesName,
+        });
+        return;
+      }
+
       setStatus('error');
       setMessage(msg);
     }
