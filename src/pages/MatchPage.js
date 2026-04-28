@@ -185,6 +185,18 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
       if (data.submittedBy !== myName) setReported(false);
     };
 
+    const onChatError = (data) => {
+      setResultMessage(data?.message || 'Chat action failed.');
+    };
+
+    const onChatWarning = (data) => {
+      setResultMessage(data?.message || 'Message was filtered.');
+    };
+
+    const onReportSubmitted = (data) => {
+      setResultMessage(data?.message || 'Report submitted. Staff will review.');
+    };
+
     socket.on('receiveMessage', onReceiveMessage);
     socket.on('chatHistory', onChatHistory);
     socket.on('disputeOpened', onDisputeOpened);
@@ -192,6 +204,9 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
     socket.on('staffJoinedMatch', onStaffJoinedMatch);
     socket.on('matchCompleted', onMatchCompleted);
     socket.on('winSubmitted', onWinSubmitted);
+    socket.on('chatError', onChatError);
+    socket.on('chatWarning', onChatWarning);
+    socket.on('reportSubmitted', onReportSubmitted);
 
     return () => {
       socket.off('receiveMessage', onReceiveMessage);
@@ -201,6 +216,9 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
       socket.off('staffJoinedMatch', onStaffJoinedMatch);
       socket.off('matchCompleted', onMatchCompleted);
       socket.off('winSubmitted', onWinSubmitted);
+      socket.off('chatError', onChatError);
+      socket.off('chatWarning', onChatWarning);
+      socket.off('reportSubmitted', onReportSubmitted);
     };
   }, [matchId, self, opponent, socket, navigate, myName, currentUser, isStaff, isSpectator, contextLoaded]);
 

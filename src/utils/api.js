@@ -73,9 +73,14 @@ export const updateEpicGamesName = async (epicGamesName) => {
 };
 
 // EPIC VERIFICATION
-export const verifyEpicAccount = async (epicId, epicName) => {
+export const verifyEpicAccount = async (epicIdOrName, epicName) => {
+  const normalizedEpicName = (epicName || epicIdOrName || '').trim();
+  const normalizedEpicId = (epicIdOrName || epicName || '').trim();
   try {
-    const res = await apiClient.post(`/auth/verify-epic`, { epicId, epicName });
+    const res = await apiClient.post(`/auth/verify-epic`, {
+      epicId: normalizedEpicId,
+      epicName: normalizedEpicName,
+    });
     return res.data;
   } catch (error) {
     console.error("Epic verification error:", error.response?.data || error.message);

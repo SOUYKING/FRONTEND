@@ -61,26 +61,12 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
       }
     };
 
-    const onLeftMatch = () => {
-      console.log('Left match');
-      localStorage.removeItem('currentMatchId');
-      setCurrentMatchId(null);
-    };
-
     const onWaiting = (data) => {
       console.log('Waiting for opponent:', data.message);
     };
 
     const onSocketError = (error) => {
       console.error('Socket error:', error);
-    };
-
-    const onAlreadyInGame = (data) => {
-      console.error('Already in game:', data.message);
-    };
-
-    const onAlreadyInQueue = (data) => {
-      console.error('Already in queue:', data.message);
     };
 
     const onUserBanned = (data) => {
@@ -90,20 +76,14 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
     };
 
     socket.on('matchFound', onMatchFound);
-    socket.on('leftMatch', onLeftMatch);
     socket.on('waiting', onWaiting);
     socket.on('error', onSocketError);
-    socket.on('alreadyInGame', onAlreadyInGame);
-    socket.on('alreadyInQueue', onAlreadyInQueue);
     socket.on('user:banned', onUserBanned);
 
     return () => {
       socket.off('matchFound', onMatchFound);
-      socket.off('leftMatch', onLeftMatch);
       socket.off('waiting', onWaiting);
       socket.off('error', onSocketError);
-      socket.off('alreadyInGame', onAlreadyInGame);
-      socket.off('alreadyInQueue', onAlreadyInQueue);
       socket.off('user:banned', onUserBanned);
     };
   }, [navigate, setCurrentMatchId]);
@@ -158,6 +138,7 @@ const App = () => {
     const initializeAuth = async () => {
       setLoading(true);
       setAuthError('');
+      let authenticatedSession = false;
 
       const oauthError = getOAuthErrorFromUrl();
       if (oauthError) {
@@ -184,6 +165,7 @@ const App = () => {
           setUser(userData);
           setIsAuthenticated(true);
           setIsAdmin(userData.isAdmin || false);
+          authenticatedSession = true;
           localStorage.setItem('user', JSON.stringify(userData));
           registerSocket();
         } catch (error) {
@@ -206,6 +188,7 @@ const App = () => {
             setUser(userData);
             setIsAuthenticated(true);
             setIsAdmin(userData.isAdmin || false);
+            authenticatedSession = true;
             registerSocket();
           } catch (error) {
             const errMsg = error.response?.data?.message || error.message || 'Token validation failed';
@@ -222,7 +205,7 @@ const App = () => {
         }
       }
 
-      if (isAuthenticated && !window.location.pathname.startsWith('/match/')) {
+      if (authenticatedSession && !window.location.pathname.startsWith('/match/')) {
         try {
           const activeCheck = await getCurrentMatch();
           if (activeCheck && activeCheck.inMatch && activeCheck.matchId) {

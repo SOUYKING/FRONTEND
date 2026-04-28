@@ -35,7 +35,7 @@ const Account = () => {
     }
     setVerifying(true);
     try {
-      const response = await verifyEpicAccount(epicGamesName, epicGamesName);
+      const response = await verifyEpicAccount(epicGamesName);
       setSuccessMessage(response.message);
       setErrorMessage('');
       setShowUpdateForm(false);
