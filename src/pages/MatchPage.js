@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { getCurrentMatch, getActiveMatchInfo, getPublicPlayerProfile, submitMatchResult, resolveMatchDispute, DISCORD_AVATAR_FALLBACK, buildDiscordAvatar } from '../utils/api';
+import { getActiveMatchInfo, getPublicPlayerProfile, submitMatchResult, resolveMatchDispute, DISCORD_AVATAR_FALLBACK, buildDiscordAvatar } from '../utils/api';
 import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
 import './MatchPage.css';
 
 const STAFF_ROLES = ['admin', 'owner', 'staff'];
 
-const MatchPage = ({ socket }) => {
+const MatchPage = ({ socket, user: currentUserFromApp }) => {
   const { matchId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,11 +26,14 @@ const MatchPage = ({ socket }) => {
   const [selfProfileStats, setSelfProfileStats] = useState(null);
   const [opponentProfileStats, setOpponentProfileStats] = useState(null);
   const [isSpectator, setIsSpectator] = useState(false);
+  const [canChat, setCanChat] = useState(false);
+  const [contextLoaded, setContextLoaded] = useState(false);
   const [autoResolveAt, setAutoResolveAt] = useState(null);
   const [countdown, setCountdown] = useState(null);
   const [chatAtBottom, setChatAtBottom] = useState(true);
   const [newMsg, setNewMsg] = useState(false);
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+  const currentUser = currentUserFromApp || JSON.parse(localStorage.getItem('user') || '{}');
   const currentUserId = currentUser?.discordId || currentUser?.id;
   const chatRef = useRef(null);
 
@@ -56,41 +59,31 @@ const MatchPage = ({ socket }) => {
   useEffect(() => {
     let mounted = true;
     const loadContext = async () => {
-      if (self && opponent && !isSpectator) return;
       try {
-        const currentMatch = await getCurrentMatch().catch(() => null);
-        if (!mounted) return;
-        if (currentMatch?.inMatch && currentMatch.matchId === matchId) {
-          setIsSpectator(false);
-          setMatchContext({
-            matchId: currentMatch.matchId,
-            self: { id: currentMatch.selfId, username: currentMatch.selfName || currentUser?.discordName || 'You', epicName: currentMatch.selfEpicName || currentMatch.selfName || 'You', avatar: currentMatch.selfAvatar, rankingPoints: currentUser?.rankingPoints || 0 },
-            opponent: { id: currentMatch.opponentId, username: currentMatch.opponent || 'Opponent', epicName: currentMatch.opponentEpicName || currentMatch.opponent || 'Opponent', avatar: currentMatch.opponentAvatar, rankingPoints: 0 },
-            mapCode: currentMatch.mapCode || '',
-          });
-          return;
-        }
         const matchInfo = await getActiveMatchInfo(matchId).catch(() => null);
         if (!mounted) return;
         if (matchInfo?.inMatch) {
-          if (matchInfo.isStaff) {
-            setIsStaff(true);
-            setIsSpectator(false);
-          } else {
-            setIsSpectator(true);
-          }
+          setIsStaff(matchInfo.isStaff);
+          setIsSpectator(matchInfo.isSpectator);
+          setCanChat(!matchInfo.isSpectator);
+          setContextLoaded(true);
           setMatchContext({
             matchId: matchInfo.matchId,
             self: matchInfo.self ? { id: matchInfo.self.id, username: matchInfo.self.username, epicName: matchInfo.self.epicName, avatar: matchInfo.self.avatar } : null,
             opponent: { id: matchInfo.opponent.id, username: matchInfo.opponent.username, epicName: matchInfo.opponent.epicName, avatar: matchInfo.opponent.avatar },
             mapCode: matchInfo.mapCode || '',
           });
+        } else if (mounted) {
+          setIsSpectator(true);
+          setCanChat(false);
+          setContextLoaded(true);
+          setMatchContext(prev => prev || { matchId });
         }
       } catch { if (mounted) {} }
     };
     loadContext();
     return () => { mounted = false; };
-  }, [self, opponent, matchId, navigate, isSpectator, currentUser?.discordName, currentUser?.rankingPoints]);
+  }, [matchId]);
 
   useEffect(() => {
     const selfId = self?.id || currentUserId;
@@ -116,17 +109,16 @@ const MatchPage = ({ socket }) => {
   }, [self?.id, opponent?.id, currentUserId]);
 
   useEffect(() => {
-    if (!isStaff && !isSpectator && !self) return;
-
-    const isActuallyStaff = isStaff || STAFF_ROLES.includes(userRole);
-    if (isActuallyStaff) {
-      setIsStaff(true);
-      socket.emit('staffJoinMatch', { matchId, staffName: myName });
-    } else if (!isSpectator) {
-      sessionStorage.setItem('currentMatch', JSON.stringify({ matchId, self, opponent }));
-      socket.emit('joinMatch', { matchId, playerName: myName });
-    } else {
-      socket.emit('joinMatch', { matchId, playerName: (currentUser?.discordName || 'Spectator') + ' (spectating)' });
+    if (!contextLoaded) return;
+    if (matchId && self !== undefined) {
+      if (isStaff) {
+        socket.emit('staffJoinMatch', { matchId, staffName: myName });
+      } else if (isSpectator) {
+        socket.emit('joinMatchAsViewer', { matchId, viewerName: currentUser?.discordName || 'Viewer' });
+      } else if (self) {
+        sessionStorage.setItem('currentMatch', JSON.stringify({ matchId, self, opponent }));
+        socket.emit('joinMatch', { matchId, playerName: myName });
+      }
     }
 
     const onReceiveMessage = (msg) => {
@@ -179,7 +171,7 @@ const MatchPage = ({ socket }) => {
       socket.off('matchCompleted', onMatchCompleted);
       socket.off('winSubmitted', onWinSubmitted);
     };
-  }, [matchId, self, opponent, socket, navigate, myName, userRole, isStaff, isSpectator]);
+  }, [matchId, self, opponent, socket, navigate, myName, currentUser, isStaff, isSpectator, contextLoaded]);
 
   useEffect(() => {
     if (chatRef.current && chatAtBottom) {
@@ -419,10 +411,10 @@ const MatchPage = ({ socket }) => {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder={isSpectator ? "Spectator mode - chat disabled" : "Type a message..."}
-                  disabled={disputed || isSpectator}
+                  placeholder={!canChat ? "Spectator mode - chat disabled" : "Type a message..."}
+                  disabled={disputed || !canChat}
                 />
-                <button className="chat-send-btn" onClick={handleSendMessage} disabled={!newMessage.trim() || disputed || isSpectator}>
+                <button className="chat-send-btn" onClick={handleSendMessage} disabled={!newMessage.trim() || disputed || !canChat}>
                   Send
                 </button>
               </div>
