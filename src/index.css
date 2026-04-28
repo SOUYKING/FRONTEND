@@ -55,7 +55,7 @@ body {
   overflow-x: hidden;
   min-height: 100vh;
 }
-#root { position: relative; z-index: 1; min-height: 100vh; }
+#root { position: relative; min-height: 100vh; }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(46, 242, 255, 0.2); border-radius: 3px; }

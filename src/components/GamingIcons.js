@@ -101,7 +101,6 @@ const AnimatedBackground = () => {
               transform: `translate(-50%, -50%) rotate(${rot}deg)`,
               filter: obj.tint,
               pointerEvents: 'none',
-              willChange: 'transform',
               objectFit: 'contain',
             }}
           />

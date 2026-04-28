@@ -122,10 +122,9 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
   };
 
   return (
-    <div className="flex min-h-screen relative z-[1]">
-      <AnimatedBackground />
+    <div className="flex min-h-screen">
       <Sidebar onLogout={handleLogout} />
-      <div className="flex-1 p-[clamp(20px,2.5vw,36px)] min-h-screen overflow-y-auto relative z-[1] ml-[260px] transition-all duration-[250ms] max-md:ml-0 max-md:p-4 max-md:pt-20">
+      <div className="flex-1 p-[clamp(20px,2.5vw,36px)] min-h-screen overflow-y-auto relative z-10 ml-[260px] transition-all duration-[250ms] max-md:ml-0 max-md:p-4 max-md:pt-20">
         <Routes>
           <Route path="/dashboard" element={<Dashboard user={user} />} />
           <Route path="/tournaments" element={<Tournaments user={user} />} />
@@ -249,6 +248,7 @@ const App = () => {
 
   return (
     <Router>
+      <AnimatedBackground />
       {isAuthenticated ? (
         <AuthenticatedApp
           user={user}
@@ -260,9 +260,8 @@ const App = () => {
           setCurrentMatchId={setCurrentMatchId}
         />
       ) : (
-        <div className="flex min-h-screen relative z-[1]">
-          <AnimatedBackground />
-          <div className="flex-1 p-[clamp(20px,2.5vw,36px)] min-h-screen overflow-y-auto relative z-[1]">
+        <div className="flex min-h-screen relative z-10">
+          <div className="flex-1 p-[clamp(20px,2.5vw,36px)] min-h-screen overflow-y-auto relative z-10">
             <Login errorMessage={authError} errorType={authErrorType} />
           </div>
         </div>
