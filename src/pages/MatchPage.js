@@ -59,6 +59,12 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
     return r === 'admin' || r === 'owner' || r === 'staff';
   }, [currentUser]);
 
+  const isSiteOwner = useMemo(() => {
+    if (!currentUser) return false;
+    if (currentUser.isOwner) return true;
+    return String(currentUser.role || '').toLowerCase() === 'owner';
+  }, [currentUser]);
+
   const staffObserverView = useMemo(() => (
     !isSpectator &&
     !self &&
@@ -70,6 +76,12 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
     !isSpectator &&
     (staffModerator || isStaff)
   ), [isSpectator, staffModerator, isStaff]);
+
+  /** Site owner always sees force-win while in a match (queue participant), not only on dispute. */
+  const showForceWinToolsCard = Boolean(
+    !isSpectator &&
+    (staffObserverView || (isSiteOwner && self))
+  );
 
   const myName = self?.username || currentUser?.discordName || 'You';
   const opponentName = opponent?.username || opponent?.discordName || 'Opponent';
@@ -690,7 +702,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
                   <div className="match-status-msg">
                     <i className="fas fa-gavel" style={{ color: 'var(--red)' }}></i>
                     <p>Match disputed. Staff will review.</p>
-                    {canForceMatchResult && (
+                    {canForceMatchResult && !showForceWinToolsCard && (
                       <div className="force-buttons">
                         {player1 && (
                           <button disabled={staffForcing} onClick={() => handleForceWin(player1.id, player1.username)} className="result-btn win">
@@ -720,11 +732,18 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
               </div>
             </div>
 
-            {staffObserverView && (
-              <div className="match-action-card">
-                <div className="match-action-card-header"><i className="fas fa-gavel"></i> Staff Tools</div>
+            {showForceWinToolsCard && (
+              <div className="match-action-card match-action-card--owner-tools">
+                <div className="match-action-card-header">
+                  <i className="fas fa-gavel"></i>
+                  {isSiteOwner && self && !staffObserverView ? 'Owner tools' : 'Staff tools'}
+                </div>
                 <div className="match-action-card-body">
-                  <p className="force-hint">Force a winner any time:</p>
+                  <p className="force-hint">
+                    {isSiteOwner && self && !staffObserverView
+                      ? 'You can force a winner at any time while in this match.'
+                      : 'Force a winner any time:'}
+                  </p>
                   <div className="force-buttons">
                     {player1 && (
                       <button disabled={staffForcing} onClick={() => handleForceWin(player1.id, player1.username)} className="result-btn win">
