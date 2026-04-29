@@ -325,7 +325,6 @@ const Teams = () => {
                   onChange={(e) => setTeamName(e.target.value)}
                   autoComplete="off"
                 />
-                <span className="teams-char-hint">{teamName.length}/40</span>
               </div>
               <div className="teams-field teams-field-size">
                 <label className="teams-field-label" htmlFor="teams-new-size">Team size</label>
@@ -342,6 +341,7 @@ const Teams = () => {
                   </select>
                 </div>
               </div>
+              <span className="teams-char-hint teams-char-hint-row2">{teamName.length}/40</span>
             </div>
             <div className="teams-members-box">
               <div className="teams-members-head">
