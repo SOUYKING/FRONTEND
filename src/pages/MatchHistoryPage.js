@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getMatchHistory, getMatchDetail, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
 import './MatchHistoryPage.css';
+
+const MODE_LABELS = {
+  '1v1': '1v1',
+  '2v2': '2v2',
+  '3v3': '3v3',
+  '4v4': '4v4',
+};
+
+function modeShort(type) {
+  return MODE_LABELS[type] || type || '1v1';
+}
+
+function modeDescription(type) {
+  const m = type || '1v1';
+  if (m === '1v1') return 'Solo duel';
+  return `${m} squad match`;
+}
 
 const MatchHistoryPage = () => {
   const currentUser = (() => {
@@ -109,7 +127,7 @@ const MatchHistoryPage = () => {
       <div className="page-header">
         <div>
           <h1>Match History</h1>
-          <p className="subtitle">Simple, clear match records with one-click details and evidence review</p>
+          <p className="subtitle">Solo and squad matches (2v2–4v4) in one place — open any row for votes, chat, and evidence</p>
         </div>
       </div>
 
@@ -123,7 +141,7 @@ const MatchHistoryPage = () => {
       <div className="match-history-tips">
         <span><i className="fas fa-lightbulb"></i> Click any row to open full match details.</span>
         <span><i className="fas fa-filter"></i> Use filters to quickly find disputed or lost matches.</span>
-        <span><i className="fas fa-shield-alt"></i> Match details show chat logs, votes, and submitted evidence.</span>
+        <span><i className="fas fa-users"></i> Squad rows show team names; captains are still used for reports and Discord.</span>
       </div>
 
       {error && <div style={{ padding: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', marginBottom: 16, color: 'var(--red)', fontSize: '0.85rem' }}>{error}</div>}
@@ -146,7 +164,7 @@ const MatchHistoryPage = () => {
           {paged.map((match, idx) => (
             <div
               key={match.id}
-              className="match-history-item"
+              className={`match-history-item${match.teamMatch ? ' match-history-item--squad' : ''}`}
               style={{ animationDelay: `${idx * 0.03}s` }}
               onClick={() => handleRowClick(match)}
             >
@@ -160,10 +178,40 @@ const MatchHistoryPage = () => {
                 </div>
               </div>
               <div className="match-history-info">
-                <div className="match-history-players">
-                  You <span className="vs-text">vs</span> {match.opponent || 'Unknown Player'}
+                <div className="match-history-meta-row">
+                  <span className={`match-mode-pill mode-${modeShort(match.tournamentType)}`} title={modeDescription(match.tournamentType)}>
+                    {modeShort(match.tournamentType)}
+                  </span>
+                  {match.teamMatch ? (
+                    <span className="match-squad-pill" title="Squad tournament — captains shown on avatars">
+                      <i className="fas fa-users" aria-hidden /> Squad
+                    </span>
+                  ) : null}
+                  {match.tournamentTitle ? (
+                    <span className="match-history-tournament-title" title={match.tournamentTitle}>
+                      {match.tournamentTitle}
+                    </span>
+                  ) : null}
                 </div>
-                <div className="match-history-date">{new Date(match.date).toLocaleDateString()} · Tap to open full match report</div>
+                <div className="match-history-players">
+                  {match.teamMatch && (match.yourTeamName || match.opponentTeamName) ? (
+                    <>
+                      <span className="match-history-squad">{match.yourTeamName || 'Your squad'}</span>
+                      <span className="vs-text">vs</span>
+                      <span className="match-history-squad">{match.opponentTeamName || match.opponent || 'Opponent squad'}</span>
+                    </>
+                  ) : (
+                    <>
+                      You <span className="vs-text">vs</span> {match.opponent || 'Unknown Player'}
+                    </>
+                  )}
+                </div>
+                {match.teamMatch ? (
+                  <div className="match-history-captains">
+                    Captains: you · {match.opponent || '—'}
+                  </div>
+                ) : null}
+                <div className="match-history-date">{new Date(match.date).toLocaleDateString()} · Full report</div>
               </div>
               <div className={`match-history-result ${resultClass(match.result, match.disputed)}`}>
                 {resultLabel(match.result)}
@@ -185,8 +233,20 @@ const MatchHistoryPage = () => {
         <div className="modal-overlay" onClick={() => { setSelectedMatch(null); setDetail(null); }}>
           <div className="match-history-detail-modal modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Match Details</h3>
-              <button className="close-btn" onClick={() => { setSelectedMatch(null); setDetail(null); }}>&times;</button>
+              <div>
+                <h3>Match details</h3>
+                {(selectedMatch?.tournamentTitle || detail?.tournamentTitle) ? (
+                  <p className="modal-subtitle">
+                    {detail?.tournamentTitle || selectedMatch?.tournamentTitle}
+                    {(detail?.tournamentType || selectedMatch?.tournamentType) ? (
+                      <span className={`match-mode-pill mode-${modeShort(detail?.tournamentType || selectedMatch?.tournamentType)} modal-mode-pill`}>
+                        {modeShort(detail?.tournamentType || selectedMatch?.tournamentType)}
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
+              </div>
+              <button type="button" className="close-btn" onClick={() => { setSelectedMatch(null); setDetail(null); }}>&times;</button>
             </div>
             <div className="modal-body">
               {detailLoading ? (
@@ -195,21 +255,68 @@ const MatchHistoryPage = () => {
                 <div style={{ color: 'var(--red)', textAlign: 'center', padding: 20 }}>{detail.error}</div>
               ) : detail ? (
                 <>
-                  <div className="match-detail-header">
-                    <div className="match-detail-players">
-                      <div className="match-detail-player">
-                        <img src={buildDiscordAvatar(detail.self?.discordId, detail.self?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
-                        <span className="name">{detail.self?.discordName || 'You'}</span>
+                  <div className={`match-detail-header${detail.teamMatch ? ' match-detail-header--squad' : ''}`}>
+                    {detail.teamMatch && (
+                      detail.yourTeamName ||
+                      detail.opponentTeamName ||
+                      detail.winnerTeamName ||
+                      detail.player1TeamName ||
+                      detail.player2TeamName
+                    ) ? (
+                      <div className="match-detail-squad-duel">
+                        <div className="match-detail-squad-side self">
+                          <span className="squad-label">
+                            {detail.isParticipant ? 'Your squad' : 'Side 1 · squad'}
+                          </span>
+                          <strong className="squad-title">
+                            {detail.isParticipant
+                              ? (detail.yourTeamName || 'Your squad')
+                              : (detail.player1TeamName || detail.self?.discordName || 'Squad')}
+                          </strong>
+                          <div className="match-detail-player match-detail-player--nested">
+                            <img src={buildDiscordAvatar(detail.self?.discordId, detail.self?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
+                            <span className="name">{detail.self?.discordName || 'Captain 1'}</span>
+                            <span className="role-pill">Captain</span>
+                          </div>
+                        </div>
+                        <div className="match-detail-vs">VS</div>
+                        <div className="match-detail-squad-side opponent">
+                          <span className="squad-label">
+                            {detail.isParticipant ? 'Opponent squad' : 'Side 2 · squad'}
+                          </span>
+                          <strong className="squad-title">
+                            {detail.isParticipant
+                              ? (detail.opponentTeamName || detail.opponent?.discordName || 'Opponent')
+                              : (detail.player2TeamName || detail.opponent?.discordName || 'Squad')}
+                          </strong>
+                          <div className="match-detail-player match-detail-player--nested">
+                            <img src={buildDiscordAvatar(detail.opponent?.discordId, detail.opponent?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
+                            <span className="name">{detail.opponent?.discordName || 'Captain 2'}</span>
+                            <span className="role-pill">Captain</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="match-detail-vs">VS</div>
-                      <div className="match-detail-player">
-                        <img src={buildDiscordAvatar(detail.opponent?.discordId, detail.opponent?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
-                        <span className="name">{detail.opponent?.discordName || 'Opponent'}</span>
+                    ) : (
+                      <div className="match-detail-players">
+                        <div className="match-detail-player">
+                          <img src={buildDiscordAvatar(detail.self?.discordId, detail.self?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
+                          <span className="name">{detail.self?.discordName || 'You'}</span>
+                        </div>
+                        <div className="match-detail-vs">VS</div>
+                        <div className="match-detail-player">
+                          <img src={buildDiscordAvatar(detail.opponent?.discordId, detail.opponent?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
+                          <span className="name">{detail.opponent?.discordName || 'Opponent'}</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <span className={`match-detail-result-badge ${resultClass(detail.result, detail.disputed)}`}>
                       {resultLabel(detail.result)}
                     </span>
+                    {!detail.isParticipant ? (
+                      <p className="match-detail-spectator-note">
+                        Bracket view: side 1 is player 1 in the stored match; result badges use that same perspective.
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="match-detail-info-grid">
@@ -218,13 +325,37 @@ const MatchHistoryPage = () => {
                       <span className="value">{new Date(detail.date).toLocaleString()}</span>
                     </div>
                     <div className="match-detail-info-item">
-                      <span className="label">Winner</span>
+                      <span className="label">Winner (captain)</span>
                       <span className="value">{resolveWinnerName(detail)}</span>
                     </div>
                     <div className="match-detail-info-item">
-                      <span className="label">Loser</span>
+                      <span className="label">Loser (captain)</span>
                       <span className="value">{resolveLoserName(detail)}</span>
                     </div>
+                    {detail.teamMatch && (detail.winnerTeamName || detail.loserTeamName) ? (
+                      <>
+                        <div className="match-detail-info-item">
+                          <span className="label">Winning squad</span>
+                          <span className="value">{detail.winnerTeamName || '—'}</span>
+                        </div>
+                        <div className="match-detail-info-item">
+                          <span className="label">Losing squad</span>
+                          <span className="value">{detail.loserTeamName || '—'}</span>
+                        </div>
+                      </>
+                    ) : null}
+                    {(detail.winnerRank || detail.loserRank) ? (
+                      <>
+                        <div className="match-detail-info-item">
+                          <span className="label">Winner rank</span>
+                          <span className="value">{detail.winnerRank || '—'}</span>
+                        </div>
+                        <div className="match-detail-info-item">
+                          <span className="label">Loser rank</span>
+                          <span className="value">{detail.loserRank || '—'}</span>
+                        </div>
+                      </>
+                    ) : null}
                     <div className="match-detail-info-item">
                       <span className="label">Status</span>
                       <span className="value" style={{ color: detail.disputed ? 'var(--orange)' : 'var(--green)' }}>
@@ -236,9 +367,21 @@ const MatchHistoryPage = () => {
                       <span className="value">{Object.keys(detail.reports || {}).length}/2</span>
                     </div>
                     {detail.tournamentId && (
-                      <div className="match-detail-info-item">
+                      <div className="match-detail-info-item match-detail-info-item--tournament">
                         <span className="label">Tournament</span>
-                        <span className="value" style={{ fontSize: '0.75rem' }}>{detail.tournamentId.substring(0, 12)}...</span>
+                        <span className="value">
+                          {detail.tournamentTitle ? (
+                            <Link to={`/tournament/${detail.tournamentId}/leaderboard`} className="match-detail-tournament-link">
+                              {detail.tournamentTitle}
+                              <i className="fas fa-external-link-alt" aria-hidden />
+                            </Link>
+                          ) : (
+                            <Link to={`/tournament/${detail.tournamentId}/leaderboard`} className="match-detail-tournament-link">
+                              Open leaderboard
+                              <i className="fas fa-external-link-alt" aria-hidden />
+                            </Link>
+                          )}
+                        </span>
                       </div>
                     )}
                     <div className="match-detail-info-item" style={{ gridColumn: 'span 2' }}>
@@ -250,7 +393,7 @@ const MatchHistoryPage = () => {
                   {Object.keys(detail.reports || {}).length > 0 && (
                     <div className="detail-section detail-surface" style={{ marginTop: 16 }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                        <i className="fas fa-vote-yea" style={{ color: 'var(--cyan)' }}></i> Player Votes
+                        <i className="fas fa-vote-yea" style={{ color: 'var(--cyan)' }}></i> Captain votes
                       </label>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {Object.entries(detail.reports).map(([playerId, report]) => {
