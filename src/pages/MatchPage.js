@@ -483,9 +483,9 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder={!canChat ? "Spectator mode - chat disabled" : "Type a message..."}
-                    disabled={disputed || !canChat}
+                    disabled={!canChat}
                   />
-                  <button className="chat-send-btn" onClick={handleSendMessage} disabled={!newMessage.trim() || disputed || !canChat}>
+                  <button className="chat-send-btn" onClick={handleSendMessage} disabled={!newMessage.trim() || !canChat}>
                     Send
                   </button>
                 </div>
@@ -518,7 +518,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
                   <div className="match-status-msg">
                     <i className="fas fa-gavel" style={{ color: 'var(--red)' }}></i>
                     <p>Match disputed. Staff will review.</p>
-                    {isStaff && !self && (
+                    {isStaff && !isSpectator && (
                       <div className="force-buttons">
                         {player1 && (
                           <button disabled={staffForcing} onClick={() => handleForceWin(player1.id, player1.username)} className="result-btn win">
@@ -548,11 +548,11 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
               </div>
             </div>
 
-            {isStaff && !isSpectator && !self && !disputed && !reported && (
+            {isStaff && !isSpectator && (
               <div className="match-action-card">
                 <div className="match-action-card-header"><i className="fas fa-gavel"></i> Staff Tools</div>
                 <div className="match-action-card-body">
-                  <p className="force-hint">Force a win:</p>
+                  <p className="force-hint">Force a winner any time:</p>
                   <div className="force-buttons">
                     {player1 && (
                       <button disabled={staffForcing} onClick={() => handleForceWin(player1.id, player1.username)} className="result-btn win">
