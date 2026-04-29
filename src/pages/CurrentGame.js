@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentMatch, getMyRegisteredTournaments, leaveTournament, DISCORD_AVATAR_FALLBACK, buildDiscordAvatar } from '../utils/api';
-import { getRank, getRankLabel } from '../utils/ranks';
+import { getRankLabel } from '../utils/ranks';
 import './CurrentGame.css';
 
 const CurrentGame = () => {
@@ -11,10 +11,12 @@ const CurrentGame = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     const fetchCurrentState = async () => {
       try {
+        setError('');
         const [matchData, registered] = await Promise.all([
           getCurrentMatch(),
           getMyRegisteredTournaments(),
@@ -22,7 +24,10 @@ const CurrentGame = () => {
         setCurrentMatch(matchData);
         const upcomingOrActive = (registered || [])
           .filter((t) => t.lifecycleStage !== 'completed' && t.lifecycleStage !== 'cancelled')
-          .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+          .sort((a, b) => {
+            if (!!a.queueOpen !== !!b.queueOpen) return a.queueOpen ? -1 : 1;
+            return new Date(a.startDate) - new Date(b.startDate);
+          });
         setRegisteredTournament(upcomingOrActive[0] || null);
       } catch (err) {
         console.error('Error fetching current match:', err);
@@ -34,7 +39,7 @@ const CurrentGame = () => {
     fetchCurrentState();
     const intervalId = setInterval(fetchCurrentState, 15000);
     return () => clearInterval(intervalId);
-  }, []);
+  }, [refreshTick]);
 
   const handleLeaveTournament = async () => {
     if (!registeredTournament?._id) return;
@@ -46,6 +51,8 @@ const CurrentGame = () => {
       setMessage(err.response?.data?.message || 'Failed to leave tournament.');
     }
   };
+
+  const canLeaveTournament = registeredTournament && !registeredTournament.queueOpen;
 
   if (loading) {
     return (
@@ -75,14 +82,16 @@ const CurrentGame = () => {
       <div className="current-game-page page-wrapper">
         {registeredTournament ? (
           <div className="no-game-card">
-            <div className="no-game-icon">🎮</div>
-            <h2>Registered Tournament</h2>
+            <div className="no-game-icon">🏁</div>
+            <h2>Your Current Tournament</h2>
+            <p className="current-card-subtext">You are already registered. Use quick actions below.</p>
             <div className="no-game-details">
-              <div className="detail-row"><i className="fas fa-trophy" style={{ color: 'var(--cyan)' }}></i> {registeredTournament.title}</div>
-              <div className="detail-row"><i className="fas fa-calendar" style={{ color: 'var(--purple)' }}></i> Starts: {new Date(registeredTournament.startDate).toLocaleString()}</div>
-              <div className="detail-row"><i className="fas fa-clock" style={{ color: 'var(--orange)' }}></i> {registeredTournament.queueOpen ? 'Queue is open' : 'Waiting for start'}</div>
+              <div className="detail-row"><i className="fas fa-trophy" style={{ color: 'var(--cyan)' }}></i> {registeredTournament.title || 'Untitled tournament'}</div>
+              <div className="detail-row"><i className="fas fa-calendar" style={{ color: 'var(--purple)' }}></i> Starts: {registeredTournament.startDate ? new Date(registeredTournament.startDate).toLocaleString() : 'TBA'}</div>
+              <div className="detail-row"><i className="fas fa-clock" style={{ color: 'var(--orange)' }}></i> {registeredTournament.queueOpen ? 'Queue is open now' : 'Queue opens at start time'}</div>
+              <div className="detail-row"><i className="fas fa-layer-group" style={{ color: 'var(--green)' }}></i> Stage: {(registeredTournament.lifecycleStage || 'unknown').toUpperCase()}</div>
             </div>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div className="current-game-actions">
               <button
                 onClick={() => navigate(`/queue/${registeredTournament._id}`)}
                 className="btn btn-primary"
@@ -90,34 +99,39 @@ const CurrentGame = () => {
               >
                 {registeredTournament.queueOpen ? 'Join Queue' : 'Queue Opens At Start'}
               </button>
-              <button onClick={handleLeaveTournament} className="btn btn-ghost">
+              <button onClick={handleLeaveTournament} className="btn btn-ghost" disabled={!canLeaveTournament} title={canLeaveTournament ? '' : 'You can only leave before queue opens'}>
                 Leave
+              </button>
+              <button onClick={() => setRefreshTick((n) => n + 1)} className="btn btn-ghost">
+                Refresh
               </button>
             </div>
             {message && <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 12 }}>{message}</p>}
           </div>
         ) : (
           <div className="no-game-card">
-            <div className="no-game-icon">⚔</div>
+            <div className="no-game-icon">🎮</div>
             <h2>No Active Game</h2>
             <p>You are not currently in a match or registered tournament.</p>
-            <button onClick={() => navigate('/tournaments')} className="btn btn-primary">
-              Join a Tournament
-            </button>
+            <div className="current-game-actions">
+              <button onClick={() => navigate('/tournaments')} className="btn btn-primary">
+                Join a Tournament
+              </button>
+              <button onClick={() => setRefreshTick((n) => n + 1)} className="btn btn-ghost">
+                Refresh
+              </button>
+            </div>
           </div>
         )}
       </div>
     );
   }
 
-  const selfRank = getRank(currentMatch.selfSkillRating || 0);
-  const oppRank = getRank(currentMatch.opponentSkillRating || 0);
-
   return (
     <div className="current-game-page page-wrapper">
       <div className="current-game-card">
-        <h2 className="current-game-title">Active Match</h2>
-        <p className="current-game-subtitle">Your battle is live. Jump back in.</p>
+        <h2 className="current-game-title">Live Match Room</h2>
+        <p className="current-game-subtitle">Your game is running. Rejoin instantly and finish your report on time.</p>
 
         <div className="current-vs-area">
           <div className="current-player-card">
@@ -125,6 +139,7 @@ const CurrentGame = () => {
               <img src={buildDiscordAvatar(currentMatch.selfId, currentMatch.selfAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
             </div>
             <div className="current-player-name">{currentMatch.selfName || 'You'}</div>
+            <div className="current-player-rank">{getRankLabel(currentMatch.selfSkillRating || 0)} · {currentMatch.selfSkillRating || 0} RP</div>
             <div className="current-player-tag">YOU</div>
           </div>
 
@@ -139,6 +154,7 @@ const CurrentGame = () => {
               <img src={buildDiscordAvatar(currentMatch.opponentId, currentMatch.opponentAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
             </div>
             <div className="current-player-name">{currentMatch.opponent}</div>
+            <div className="current-player-rank">{getRankLabel(currentMatch.opponentSkillRating || 0)} · {currentMatch.opponentSkillRating || 0} RP</div>
             <div className="current-player-tag">OPPONENT</div>
           </div>
         </div>

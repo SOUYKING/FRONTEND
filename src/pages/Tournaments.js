@@ -7,8 +7,7 @@ const Tournaments = () => {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [errorType, setErrorType] = useState('');
-  const [success, setSuccess] = useState('');
+  const [stageFilter, setStageFilter] = useState('all');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,6 +35,7 @@ const Tournaments = () => {
 
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return null;
     const now = new Date();
     const diff = d.getTime() - now.getTime();
     if (diff <= 0) return null;
@@ -55,6 +55,23 @@ const Tournaments = () => {
     if (s === 'cancelled') return { label: 'CANCELLED', cls: 'stage-cancelled' };
     return { label: s?.toUpperCase() || 'UNKNOWN', cls: '' };
   };
+
+  const sortedTournaments = [...tournaments].sort((a, b) => {
+    const stageA = getStageMeta(a).label;
+    const stageB = getStageMeta(b).label;
+    const rank = { LIVE: 0, UPCOMING: 1, ENDED: 2, CANCELLED: 3 };
+    const diff = (rank[stageA] ?? 9) - (rank[stageB] ?? 9);
+    if (diff !== 0) return diff;
+    return new Date(a.startDate) - new Date(b.startDate);
+  });
+
+  const filteredTournaments = sortedTournaments.filter((t) => {
+    if (stageFilter === 'all') return true;
+    if (stageFilter === 'live') return getStageMeta(t).label === 'LIVE';
+    if (stageFilter === 'upcoming') return getStageMeta(t).label === 'UPCOMING';
+    if (stageFilter === 'ended') return getStageMeta(t).label === 'ENDED' || getStageMeta(t).label === 'CANCELLED';
+    return true;
+  });
 
   if (loading) {
     return (
@@ -79,34 +96,41 @@ const Tournaments = () => {
           <h1>Tournaments</h1>
           <p className="subtitle">Compete in live Fortnite 1v1 events</p>
         </div>
-        <div className="tournament-count-badge">{tournaments.length} event{tournaments.length !== 1 ? 's' : ''}</div>
+        <div className="tournament-count-badge">{filteredTournaments.length} event{filteredTournaments.length !== 1 ? 's' : ''}</div>
       </div>
 
-      {error && errorType === 'epic' && (
-        <div className="tournament-alert warning">
-          <span><i className="fas fa-exclamation-triangle"></i> {error}</span>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => navigate('/account')} className="btn btn-purple btn-sm"><i className="fas fa-gamepad"></i> Verify Epic</button>
-            <button onClick={() => { setError(''); setErrorType(''); }} className="btn btn-ghost btn-sm">Dismiss</button>
-          </div>
+      <div className="tournament-top-tools">
+        <div className="tournament-filter-tabs">
+          <button className={stageFilter === 'all' ? 'active' : ''} onClick={() => setStageFilter('all')}>All</button>
+          <button className={stageFilter === 'live' ? 'active' : ''} onClick={() => setStageFilter('live')}>Live</button>
+          <button className={stageFilter === 'upcoming' ? 'active' : ''} onClick={() => setStageFilter('upcoming')}>Upcoming</button>
+          <button className={stageFilter === 'ended' ? 'active' : ''} onClick={() => setStageFilter('ended')}>Ended</button>
         </div>
-      )}
-      {error && errorType !== 'epic' && (
+        <button onClick={fetchTournaments} className="btn btn-ghost btn-sm">
+          <i className="fas fa-rotate-right"></i> Refresh
+        </button>
+      </div>
+
+      <div className="tournament-help-row">
+        <span><i className="fas fa-circle-info"></i> New player? Pick an Upcoming tournament and wait for queue open.</span>
+        <span><i className="fas fa-gamepad"></i> Queue Open means you can join match queue instantly.</span>
+      </div>
+
+      {error && (
         <div className="tournament-alert error">
           <span><i className="fas fa-exclamation-circle"></i> {error}</span>
-          <button onClick={() => setError('')} className="btn btn-ghost btn-sm">&times;</button>
+          <button onClick={fetchTournaments} className="btn btn-ghost btn-sm">Retry</button>
         </div>
       )}
-      {success && <div className="tournament-alert success"><i className="fas fa-check-circle"></i> {success}</div>}
 
       <div className="tournament-grid">
-        {tournaments.length === 0 ? (
+        {filteredTournaments.length === 0 ? (
           <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
             <span>🏆</span>
-            <p>No tournaments available. Check back later!</p>
+            <p>No tournaments found for this filter.</p>
           </div>
         ) : (
-          tournaments.map((tournament, idx) => {
+          filteredTournaments.map((tournament, idx) => {
             const now = new Date();
             const startDate = new Date(tournament.startDate);
             const endDate = new Date(tournament.endDate);
@@ -139,13 +163,13 @@ const Tournaments = () => {
                 </div>
 
                 <div className="tournament-card-body">
-                  <h3 className="tournament-card-title">{tournament.title}</h3>
-                  <p className="tournament-card-desc">{tournament.description}</p>
+                  <h3 className="tournament-card-title">{tournament.title || 'Untitled tournament'}</h3>
+                  <p className="tournament-card-desc">{tournament.description || 'No description yet.'}</p>
 
                   <div className="tournament-card-stats">
                     <div className="tournament-stat">
                       <i className="fas fa-map-pin"></i>
-                      <span>{tournament.mapCode || 'N/A'}</span>
+                      <span>{tournament.mapCode || tournament.mapName || 'Map TBA'}</span>
                     </div>
                     <div className="tournament-stat">
                       <i className="fas fa-users"></i>
