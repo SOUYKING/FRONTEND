@@ -273,6 +273,36 @@ export const respondToTeamInvite = async (inviteId, action) => {
   }
 };
 
+export const getTeamDetail = async (teamId) => {
+  try {
+    const res = await apiClient.get(`/teams/${teamId}/detail`);
+    return res.data;
+  } catch (error) {
+    console.error("Get team detail error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const leaveTeam = async (teamId) => {
+  try {
+    const res = await apiClient.post(`/teams/${teamId}/leave`);
+    return res.data;
+  } catch (error) {
+    console.error("Leave team error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const removeTeamMember = async (teamId, memberDiscordId) => {
+  try {
+    const res = await apiClient.delete(`/teams/${teamId}/members/${memberDiscordId}`);
+    return res.data;
+  } catch (error) {
+    console.error("Remove team member error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
 export const leaveMatchmaking = async () => {
   try {
     const res = await apiClient.post(`/matchmaking/leave`);

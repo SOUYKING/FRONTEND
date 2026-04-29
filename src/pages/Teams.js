@@ -1,10 +1,25 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { createTeam, deleteTeam, getMyTeamInvites, getMyTeams, respondToTeamInvite, searchUsersForTeam } from '../utils/api';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  buildDiscordAvatar,
+  createTeam,
+  deleteTeam,
+  DISCORD_AVATAR_FALLBACK,
+  getMyTeamInvites,
+  getMyTeams,
+  getTeamDetail,
+  leaveTeam,
+  removeTeamMember,
+  respondToTeamInvite,
+  searchUsersForTeam,
+  sendTeamInvite,
+} from '../utils/api';
 import './Teams.css';
 
 const Teams = () => {
   const [teams, setTeams] = useState([]);
   const [invites, setInvites] = useState([]);
+  const [teamDetail, setTeamDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -15,6 +30,7 @@ const Teams = () => {
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [activeTab, setActiveTab] = useState('my-teams');
+  const [actionBusy, setActionBusy] = useState(false);
 
   const user = useMemo(() => {
     try {
@@ -25,6 +41,8 @@ const Teams = () => {
   }, []);
   const role = (user?.role || '').toLowerCase();
   const hasAccess = user?.isAdmin || ['admin', 'owner', 'staff', 'content_creator'].includes(role);
+  const selectedTeam = useMemo(() => teams.find((team) => team._id === selectedTeamId) || null, [teams, selectedTeamId]);
+  const selectedTeamIsLocked = (selectedTeam?.tournamentLocks || []).length > 0;
 
   const fetchData = async () => {
     try {
@@ -39,12 +57,41 @@ const Teams = () => {
     }
   };
 
+  const loadTeamDetail = useCallback(async (teamId) => {
+    if (!teamId) {
+      setTeamDetail(null);
+      return;
+    }
+    try {
+      setDetailLoading(true);
+      const data = await getTeamDetail(teamId);
+      setTeamDetail(data);
+    } catch (err) {
+      setTeamDetail(null);
+      setError(err.response?.data?.message || 'Failed to load team');
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (hasAccess && selectedTeamId) loadTeamDetail(selectedTeamId);
+    else setTeamDetail(null);
+  }, [hasAccess, selectedTeamId, loadTeamDetail]);
+
+  useEffect(() => {
+    if (!message) return;
+    const t = setTimeout(() => setMessage(''), 4500);
+    return () => clearTimeout(t);
+  }, [message]);
+
   const handleCreateTeam = async () => {
     try {
+      setActionBusy(true);
       setError('');
       const team = await createTeam({
         name: teamName.trim(),
@@ -58,8 +105,11 @@ const Teams = () => {
       setSearchResults([]);
       setSearchQuery('');
       setMessage('Team created');
+      await loadTeamDetail(team._id);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create team');
+    } finally {
+      setActionBusy(false);
     }
   };
 
@@ -92,23 +142,89 @@ const Teams = () => {
 
   const handleInviteResponse = async (inviteId, action) => {
     try {
+      setActionBusy(true);
       await respondToTeamInvite(inviteId, action);
       setInvites((prev) => prev.filter((i) => i._id !== inviteId));
       setMessage(`Invite ${action}ed`);
-      fetchData();
+      await fetchData();
+      if (selectedTeamId) await loadTeamDetail(selectedTeamId);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update invite');
+    } finally {
+      setActionBusy(false);
     }
   };
 
   const handleDeleteTeam = async (teamId) => {
     try {
+      setActionBusy(true);
       await deleteTeam(teamId);
       setTeams((prev) => prev.filter((t) => t._id !== teamId));
-      if (selectedTeamId === teamId) setSelectedTeamId('');
+      if (selectedTeamId === teamId) {
+        setSelectedTeamId('');
+        setTeamDetail(null);
+      }
       setMessage('Team deleted');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete team');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleSendInvite = async (targetUser) => {
+    if (!selectedTeamId) {
+      setError('Select a team first, then invite players.');
+      return;
+    }
+    if (selectedTeamIsLocked) {
+      setError('This team is locked in a tournament and cannot be changed.');
+      return;
+    }
+    try {
+      setActionBusy(true);
+      setError('');
+      await sendTeamInvite(selectedTeamId, targetUser.discordId);
+      setMessage(`Invite sent to ${targetUser.discordName}`);
+      await fetchData();
+      await loadTeamDetail(selectedTeamId);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send invite');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleLeaveTeam = async () => {
+    if (!selectedTeamId || !teamDetail) return;
+    if (!window.confirm('Leave this team? You can be re-invited later.')) return;
+    try {
+      setActionBusy(true);
+      await leaveTeam(selectedTeamId);
+      setMessage('You left the team');
+      setSelectedTeamId('');
+      setTeamDetail(null);
+      await fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to leave team');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberDiscordId) => {
+    if (!selectedTeamId) return;
+    if (!window.confirm('Remove this player from the team?')) return;
+    try {
+      setActionBusy(true);
+      await removeTeamMember(selectedTeamId, memberDiscordId);
+      setMessage('Member removed');
+      await fetchData();
+      await loadTeamDetail(selectedTeamId);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to remove member');
+    } finally {
+      setActionBusy(false);
     }
   };
 
@@ -119,6 +235,17 @@ const Teams = () => {
   useEffect(() => {
     setSelectedMembers((prev) => prev.slice(0, Math.max(0, teamSize - 1)));
   }, [teamSize]);
+
+  const avatarForMember = (m) => buildDiscordAvatar(m.discordId, m.discordAvatar, 128) || DISCORD_AVATAR_FALLBACK;
+
+  const detailStats = useMemo(() => {
+    if (!teamDetail?.team) return null;
+    const w = teamDetail.team.statsWins ?? 0;
+    const l = teamDetail.team.statsLosses ?? 0;
+    const total = w + l;
+    const pct = total > 0 ? Math.round((w / total) * 100) : null;
+    return { w, l, total, pct };
+  }, [teamDetail]);
 
   if (!hasAccess) {
     return (
@@ -138,109 +265,278 @@ const Teams = () => {
 
   return (
     <div className="teams-page page-wrapper">
-      <div className="page-header">
+      <div className="page-header teams-page-header">
         <div>
-          <h1>Teams (Admin Beta)</h1>
-          <p className="subtitle">Create 2v2/3v3/4v4 teams and manage invites</p>
+          <h1>Teams <span className="teams-beta-pill">Admin Beta</span></h1>
+          <p className="subtitle">Build a roster, invite by Discord name, queue as one unit in team tournaments.</p>
         </div>
+        <button type="button" className="btn btn-ghost teams-refresh-btn" onClick={() => { fetchData(); if (selectedTeamId) loadTeamDetail(selectedTeamId); }} disabled={actionBusy}>
+          Refresh
+        </button>
       </div>
+
+      <div className="teams-beta-note">
+        <span>Beta:</span> Visible to staff roles only. Wins and losses update when team-mode matches complete.
+      </div>
+
+      {invites.length > 0 && (
+        <div className="teams-invite-banner">
+          <strong>Invitations</strong>
+          <div className="teams-invite-list">
+            {invites.map((invite) => (
+              <div key={invite._id} className="teams-invite-row">
+                <span>
+                  <span className="teams-invite-from">{invite.fromDiscordName}</span>
+                  {' invited you to '}
+                  <span className="teams-invite-team">{invite.teamId?.name || 'Team'}</span>
+                </span>
+                <div className="teams-invite-actions">
+                  <button type="button" className="btn btn-sm btn-success" disabled={actionBusy} onClick={() => handleInviteResponse(invite._id, 'accept')}>Accept</button>
+                  <button type="button" className="btn btn-sm btn-ghost" disabled={actionBusy} onClick={() => handleInviteResponse(invite._id, 'decline')}>Decline</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && <div className="tournament-alert error"><span>{error}</span></div>}
       {message && <div className="tournament-alert success"><span>{message}</span></div>}
 
       <div className="teams-tabs">
-        <button className={activeTab === 'my-teams' ? 'active' : ''} onClick={() => setActiveTab('my-teams')}>My Teams ({teams.length})</button>
-        <button className={activeTab === 'invites' ? 'active' : ''} onClick={() => setActiveTab('invites')}>Invites ({invites.length})</button>
+        <button type="button" className={activeTab === 'my-teams' ? 'active' : ''} onClick={() => setActiveTab('my-teams')}>My Teams ({teams.length})</button>
+        <button type="button" className={activeTab === 'invites' ? 'active' : ''} onClick={() => setActiveTab('invites')}>Invites ({invites.length})</button>
       </div>
 
-      <div className="teams-grid">
-        <div className="teams-card">
-          <h3>Create Team</h3>
-          <div className="form-row">
-            <input placeholder="Team name" value={teamName} onChange={(e) => setTeamName(e.target.value)} />
-            <select value={teamSize} onChange={(e) => setTeamSize(Number(e.target.value))}>
-              <option value={2}>2v2</option>
-              <option value={3}>3v3</option>
-              <option value={4}>4v4</option>
-            </select>
-          </div>
-          <div className="teams-members-box">
-            <div className="teams-members-head">
-              <strong>Team Members</strong>
-              <span>{1 + selectedMembers.length}/{teamSize}</span>
+      <div className="teams-shell">
+        <aside className="teams-sidebar">
+          <div className="teams-card teams-card-compact">
+            <h3>New team</h3>
+            <p className="teams-helper-text">You are captain. Add optional invites now or from the team hub.</p>
+            <div className="form-row">
+              <input placeholder="Team name" value={teamName} onChange={(e) => setTeamName(e.target.value)} />
+              <select value={teamSize} onChange={(e) => setTeamSize(Number(e.target.value))}>
+                <option value={2}>2v2</option>
+                <option value={3}>3v3</option>
+                <option value={4}>4v4</option>
+              </select>
             </div>
-            <div className="team-member-row owner">
-              <span>{user?.discordName || 'You'}</span>
-              <small>You</small>
+            <div className="teams-members-box">
+              <div className="teams-members-head">
+                <strong>Draft roster</strong>
+                <span>{1 + selectedMembers.length}/{teamSize}</span>
+              </div>
+              <div className="team-member-row owner">
+                <span>{user?.discordName || user?.username || 'You'}</span>
+                <small>Captain</small>
+              </div>
+              {selectedMembers.map((m) => (
+                <div key={m.discordId} className="team-member-row">
+                  <span>{m.discordName}</span>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleRemoveSelectedMember(m.discordId)}>Remove</button>
+                </div>
+              ))}
             </div>
-            {selectedMembers.map((m) => (
-              <div key={m.discordId} className="team-member-row">
-                <span>{m.discordName}</span>
-                <button className="btn btn-ghost btn-sm" onClick={() => handleRemoveSelectedMember(m.discordId)}>Remove</button>
-              </div>
-            ))}
+            <button
+              type="button"
+              className="btn btn-primary teams-full-width"
+              onClick={handleCreateTeam}
+              disabled={actionBusy || !teamName.trim() || selectedMembers.length > teamSize - 1}
+            >
+              {actionBusy ? 'Please wait...' : 'Create team'}
+            </button>
           </div>
-          <button
-            className="btn btn-primary"
-            onClick={handleCreateTeam}
-            disabled={!teamName.trim() || selectedMembers.length > teamSize - 1}
-          >
-            Create Team
-          </button>
-        </div>
 
-        <div className="teams-card">
-          <h3>Find Friend by Discord Name</h3>
-          <div className="form-row">
-            <input placeholder="Search Discord name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-            <button className="btn btn-ghost" onClick={handleSearch}>Search</button>
+          <div className="teams-card teams-card-compact">
+            <h3>Find players</h3>
+            <p className="teams-helper-text">
+              {selectedTeam
+                ? `Invites go to: ${selectedTeam.name}`
+                : 'Select a team in the list to send invites from search.'}
+            </p>
+            <div className="form-row">
+              <input placeholder="Discord name…" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <button type="button" className="btn btn-ghost" onClick={handleSearch}>Search</button>
+            </div>
+            <div className="teams-list teams-list-scroll">
+              {searchResults.map((u) => (
+                <div key={u.discordId} className="team-row">
+                  <span className="teams-search-name">{u.discordName}</span>
+                  <div className="teams-search-actions">
+                    <button type="button" className="btn btn-sm btn-ghost" onClick={() => handleAddSelectedMember(u)}>Draft</button>
+                    <button type="button" className="btn btn-sm btn-primary" disabled={actionBusy || !selectedTeamId || selectedTeamIsLocked} onClick={() => handleSendInvite(u)}>Invite</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="teams-list">
-            {searchResults.map((u) => (
-              <div key={u.discordId} className="team-row">
-                <span>{u.discordName}</span>
-                <button className="btn btn-sm btn-primary" onClick={() => handleAddSelectedMember(u)}>+</button>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        {activeTab === 'my-teams' && (
-          <div className="teams-card teams-card-wide">
-            <h3>My Teams</h3>
-            <div className="teams-list">
-              {teams.map((team) => (
-                <div key={team._id} className={`team-row team-row-wide ${selectedTeamId === team._id ? 'selected' : ''}`}>
-                  <button className="team-pill" onClick={() => setSelectedTeamId(team._id)}>
-                    {team.name} ({team.size}v{team.size}) · {team.members?.filter((m) => m.status === 'accepted').length || 0}/{team.size}
+          {activeTab === 'my-teams' && (
+            <div className="teams-card teams-card-compact">
+              <h3>Your teams</h3>
+              <div className="teams-list teams-list-scroll">
+                {teams.length === 0 && <p className="teams-muted">No teams yet — create one above.</p>}
+                {teams.map((team) => (
+                  <button
+                    key={team._id}
+                    type="button"
+                    className={`teams-list-tile ${selectedTeamId === team._id ? 'active' : ''}`}
+                    onClick={() => setSelectedTeamId(team._id)}
+                  >
+                    <div className="teams-list-tile-top">
+                      <span className="teams-list-tile-name">{team.name}</span>
+                      <span className="teams-list-tile-mode">{team.size}v{team.size}</span>
+                    </div>
+                    <div className="teams-list-tile-meta">
+                      <span>{team.members?.filter((m) => m.status === 'accepted').length || 0}/{team.size} ready</span>
+                      {(team.tournamentLocks?.length || 0) > 0 && <span className="teams-chip locked">Locked</span>}
+                    </div>
                   </button>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-sm btn-primary" onClick={() => setSelectedTeamId(team._id)}>Select</button>
-                    <button className="btn btn-sm btn-ghost" onClick={() => handleDeleteTeam(team._id)}>Delete</button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'invites' && (
-          <div className="teams-card teams-card-wide">
-            <h3>Incoming Invites</h3>
-            <div className="teams-list">
-              {invites.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No pending invites</p>}
-              {invites.map((invite) => (
-                <div key={invite._id} className="team-row">
-                  <span>{invite.fromDiscordName} -> {invite.teamId?.name || 'Team'}</span>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-sm btn-success" onClick={() => handleInviteResponse(invite._id, 'accept')}>Accept</button>
-                    <button className="btn btn-sm btn-ghost" onClick={() => handleInviteResponse(invite._id, 'decline')}>Decline</button>
+          {activeTab === 'invites' && (
+            <div className="teams-card teams-card-compact">
+              <h3>Pending invites</h3>
+              <div className="teams-list">
+                {invites.length === 0 && <p className="teams-muted">No pending invites.</p>}
+                {invites.map((invite) => (
+                  <div key={invite._id} className="team-row team-row-stack">
+                    <span>{invite.fromDiscordName} → {invite.teamId?.name || 'Team'}</span>
+                    <div className="teams-search-actions">
+                      <button type="button" className="btn btn-sm btn-success" disabled={actionBusy} onClick={() => handleInviteResponse(invite._id, 'accept')}>Accept</button>
+                      <button type="button" className="btn btn-sm btn-ghost" disabled={actionBusy} onClick={() => handleInviteResponse(invite._id, 'decline')}>Decline</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </aside>
+
+        <section className="teams-hub">
+          {!selectedTeamId && (
+            <div className="teams-hub-empty">
+              <h2>Team hub</h2>
+              <p>Select a team on the left to see roster, Discord avatars, record, and invite tools.</p>
+            </div>
+          )}
+
+          {selectedTeamId && detailLoading && (
+            <div className="teams-hub-loading skeleton" style={{ minHeight: 280 }} />
+          )}
+
+          {selectedTeamId && !detailLoading && teamDetail && (
+            <>
+              <div className="teams-hub-header">
+                <div>
+                  <h2 className="teams-hub-title">{teamDetail.team.name}</h2>
+                  <p className="teams-hub-sub">
+                    {teamDetail.team.size}v{teamDetail.team.size}
+                    {teamDetail.viewer?.isCaptain ? ' · You are captain' : ''}
+                  </p>
+                </div>
+                <div className="teams-hub-header-actions">
+                  {teamDetail.viewer?.isCaptain && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost teams-danger-outline"
+                      disabled={actionBusy || (teamDetail.team.tournamentLocks?.length || 0) > 0}
+                      onClick={() => handleDeleteTeam(selectedTeamId)}
+                    >
+                      Delete team
+                    </button>
+                  )}
+                  {!teamDetail.viewer?.isCaptain && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost teams-danger-outline"
+                      disabled={actionBusy || (teamDetail.team.tournamentLocks?.length || 0) > 0}
+                      onClick={handleLeaveTeam}
+                    >
+                      Leave team
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {!teamDetail.meta.readyForQueue && (
+                <div className="teams-readiness teams-readiness-warn">
+                  Everyone must accept before this team can queue together in a team tournament.
+                  {' '}
+                  <strong>{teamDetail.meta.acceptedCount}/{teamDetail.team.size}</strong> confirmed.
+                </div>
+              )}
+
+              {teamDetail.meta.readyForQueue && (
+                <div className="teams-readiness teams-readiness-ok">
+                  Roster complete — captain can queue this team in matching 2v2/3v3/4v4 events.
+                </div>
+              )}
+
+              {detailStats && (
+                <div className="teams-stat-strip">
+                  <div className="teams-stat-cell">
+                    <span className="teams-stat-label">Wins</span>
+                    <span className="teams-stat-value teams-stat-win">{detailStats.w}</span>
+                  </div>
+                  <div className="teams-stat-cell">
+                    <span className="teams-stat-label">Losses</span>
+                    <span className="teams-stat-value teams-stat-loss">{detailStats.l}</span>
+                  </div>
+                  <div className="teams-stat-cell">
+                    <span className="teams-stat-label">Matches</span>
+                    <span className="teams-stat-value">{detailStats.total}</span>
+                  </div>
+                  <div className="teams-stat-cell">
+                    <span className="teams-stat-label">Win rate</span>
+                    <span className="teams-stat-value">{detailStats.pct != null ? `${detailStats.pct}%` : '—'}</span>
+                  </div>
+                  <div className="teams-stat-cell">
+                    <span className="teams-stat-label">Size</span>
+                    <span className="teams-stat-value">{teamDetail.team.size}</span>
                   </div>
                 </div>
-              ))}
+              )}
+
+              <div className="teams-roster-head">
+                <h3>Roster</h3>
+                <span className="teams-muted">{teamDetail.roster.length} player{teamDetail.roster.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="teams-roster-grid">
+                {teamDetail.roster.map((m) => (
+                  <div key={m.discordId} className={`teams-player-card ${m.status === 'pending' ? 'pending' : ''}`}>
+                    <div className="teams-player-avatar-wrap">
+                      <img src={avatarForMember(m)} alt="" className="teams-player-avatar" />
+                      {m.isCaptain && <span className="teams-captain-badge" title="Captain">C</span>}
+                    </div>
+                    <div className="teams-player-name">{m.discordName}</div>
+                    <div className="teams-player-meta">
+                      {m.status === 'pending' ? <span className="teams-chip pending">Pending</span> : <span className="teams-chip ok">Ready</span>}
+                    </div>
+                    {teamDetail.viewer?.isCaptain && !m.isCaptain && (teamDetail.team.tournamentLocks?.length || 0) === 0 && (
+                      <button type="button" className="btn btn-sm btn-ghost teams-remove-member" disabled={actionBusy} onClick={() => handleRemoveMember(m.discordId)}>
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="teams-hub-footnote">
+                Stats count completed team-mode matches only. Avatars come from linked Discord accounts.
+              </div>
+            </>
+          )}
+
+          {selectedTeamId && !detailLoading && !teamDetail && (
+            <div className="teams-hub-empty">
+              <p>Could not load this team.</p>
             </div>
-          </div>
-        )}
+          )}
+        </section>
       </div>
     </div>
   );
