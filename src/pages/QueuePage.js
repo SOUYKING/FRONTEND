@@ -228,7 +228,7 @@ const QueuePage = ({ socket }) => {
             </div>
             {myTeams.length === 0 && (
               <div style={{ color: 'var(--orange)', fontSize: '0.8rem', marginTop: 8 }}>
-                No eligible team found. Create/accept a team in Teams (Beta) first.
+                No eligible team found. Create or accept a team on the Teams page first.
               </div>
             )}
           </div>

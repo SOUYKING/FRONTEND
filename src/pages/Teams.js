@@ -34,15 +34,14 @@ const Teams = () => {
   const [activeTab, setActiveTab] = useState('my-teams');
   const [actionBusy, setActionBusy] = useState(false);
 
-  const user = useMemo(() => {
+  const storedUser = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('user') || '{}');
     } catch {
       return {};
     }
   }, []);
-  const role = (user?.role || '').toLowerCase();
-  const hasAccess = user?.isAdmin || ['admin', 'owner', 'staff', 'content_creator'].includes(role);
+
   const selectedTeam = useMemo(() => teams.find((team) => team._id === selectedTeamId) || null, [teams, selectedTeamId]);
   const selectedTeamIsLocked = (selectedTeam?.tournamentLocks || []).length > 0;
 
@@ -81,9 +80,9 @@ const Teams = () => {
   }, []);
 
   useEffect(() => {
-    if (hasAccess && selectedTeamId) loadTeamDetail(selectedTeamId);
+    if (selectedTeamId) loadTeamDetail(selectedTeamId);
     else setTeamDetail(null);
-  }, [hasAccess, selectedTeamId, loadTeamDetail]);
+  }, [selectedTeamId, loadTeamDetail]);
 
   useEffect(() => {
     if (!message) return;
@@ -256,14 +255,6 @@ const Teams = () => {
     return { w, l, total, pct };
   }, [teamDetail]);
 
-  if (!hasAccess) {
-    return (
-      <div className="teams-page page-wrapper">
-        <div className="empty-state"><span>🔒</span><p>Team mode is admin-only for now.</p></div>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
       <div className="teams-page page-wrapper">
@@ -276,16 +267,12 @@ const Teams = () => {
     <div className="teams-page page-wrapper">
       <div className="page-header teams-page-header">
         <div>
-          <h1>Teams <span className="teams-beta-pill">Admin Beta</span></h1>
+          <h1>Teams</h1>
           <p className="subtitle">Build a roster, invite by Discord name, queue as one unit in team tournaments.</p>
         </div>
         <button type="button" className="btn btn-ghost teams-refresh-btn" onClick={() => { fetchData(); if (selectedTeamId) loadTeamDetail(selectedTeamId); }} disabled={actionBusy}>
           Refresh
         </button>
-      </div>
-
-      <div className="teams-beta-note">
-        <span>Beta:</span> Visible to staff roles only. Wins and losses update when team-mode matches complete.
       </div>
 
       {invites.length > 0 && (
@@ -358,7 +345,7 @@ const Teams = () => {
                 <span>{1 + selectedMembers.length}/{teamSize}</span>
               </div>
               <div className="team-member-row owner">
-                <span>{user?.discordName || user?.username || 'You'}</span>
+                <span>{storedUser?.discordName || storedUser?.username || 'You'}</span>
                 <small>Captain</small>
               </div>
               {selectedMembers.map((m) => (

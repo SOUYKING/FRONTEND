@@ -486,7 +486,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
             <h1>MATCH</h1>
             <div className="match-header-tags">
               {displayFormat > 1 && (
-                <span className="match-tag mode match-tag-format">{displayFormat}v{displayFormat} beta</span>
+                <span className="match-tag mode">{displayFormat}v{displayFormat}</span>
               )}
               {matchMode && <span className="match-tag mode">{matchMode}</span>}
               {tournamentName && <span className="match-tag tourney">{tournamentName}</span>}
@@ -545,7 +545,6 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
           <div className="match-beta-center">
             <div className="match-beta-center__ring">
               <span className="match-beta-center__format">{displayFormat}v{displayFormat}</span>
-              <span className="match-beta-center__sub">beta board</span>
             </div>
             {mapCode ? (
               <button type="button" className="match-beta-map" onClick={handleCopyMapCode} title="Copy map code">
