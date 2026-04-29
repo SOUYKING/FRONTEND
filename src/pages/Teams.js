@@ -527,6 +527,7 @@ const Teams = () => {
 
               <div className="teams-hub-footnote">
                 Stats count completed team-mode matches only. Avatars come from linked Discord accounts.
+                After you queue for a team tournament, the roster stays locked until that tournament is completed, cancelled, or deleted by staff.
               </div>
             </>
           )}
