@@ -26,16 +26,22 @@ function buildTeamRollup(entries, tournamentType) {
   const byTeam = new Map();
   for (const e of entries) {
     const hasTeamId = e.teamId != null && String(e.teamId).trim() !== '';
-    const tid = hasTeamId ? String(e.teamId).trim() : `__solo_${e.userId}`;
-    if (!byTeam.has(tid)) {
-      byTeam.set(tid, {
+    const nameNorm = e.teamName && String(e.teamName).trim().toLowerCase();
+    const groupKey = hasTeamId
+      ? `id:${String(e.teamId).trim()}`
+      : nameNorm
+        ? `name:${nameNorm}`
+        : `solo:${e.userId}`;
+    if (!byTeam.has(groupKey)) {
+      byTeam.set(groupKey, {
         teamId: hasTeamId ? String(e.teamId).trim() : null,
         teamName: null,
         members: [],
       });
     }
-    const bucket = byTeam.get(tid);
+    const bucket = byTeam.get(groupKey);
     bucket.members.push(e);
+    if (hasTeamId && !bucket.teamId) bucket.teamId = String(e.teamId).trim();
     const nm = e.teamName && String(e.teamName).trim();
     if (nm && (!bucket.teamName || nm.length > bucket.teamName.length)) {
       bucket.teamName = nm;
