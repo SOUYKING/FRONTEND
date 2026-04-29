@@ -60,6 +60,198 @@
   font-size: 0.86rem;
 }
 
+/* —— Form fields (dark inputs / select, reference-style) —— */
+.teams-field-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(140px, 34%);
+  gap: 12px 14px;
+  align-items: end;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 520px) {
+  .teams-field-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.teams-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.teams-field-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.teams-field-label-spaced {
+  display: block;
+  margin: 12px 0 8px;
+}
+
+.teams-input,
+.teams-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-size: 0.92rem;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.teams-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.teams-input:hover,
+.teams-select:hover {
+  border-color: rgba(46, 242, 255, 0.25);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.teams-input:focus {
+  border-color: rgba(46, 242, 255, 0.65);
+  box-shadow: 0 0 0 3px rgba(46, 242, 255, 0.12);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.teams-char-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
+.teams-select-shell {
+  position: relative;
+}
+
+.teams-select-shell::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid rgba(46, 242, 255, 0.65);
+  pointer-events: none;
+}
+
+.teams-select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 40px;
+  color: var(--text-secondary);
+}
+
+.teams-select:focus {
+  border-color: rgba(46, 242, 255, 0.65);
+  box-shadow: 0 0 0 3px rgba(46, 242, 255, 0.12);
+}
+
+.teams-select option {
+  background: #0f1628;
+  color: var(--text);
+}
+
+/* —— Player search —— */
+.teams-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.teams-search-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+}
+
+.teams-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  color: rgba(46, 242, 255, 0.55);
+  pointer-events: none;
+}
+
+.teams-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px 12px 40px;
+  font-size: 0.92rem;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(46, 242, 255, 0.28);
+  border-radius: 12px;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.teams-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.teams-search-input:hover {
+  border-color: rgba(46, 242, 255, 0.45);
+  background: rgba(0, 0, 0, 0.52);
+}
+
+.teams-search-input:focus {
+  border-color: rgba(46, 242, 255, 0.85);
+  box-shadow: 0 0 0 3px rgba(46, 242, 255, 0.14);
+}
+
+.teams-search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #061018;
+  background: linear-gradient(135deg, var(--cyan), #5ee7df);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(46, 242, 255, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  white-space: nowrap;
+}
+
+.teams-search-btn i {
+  font-size: 0.82rem;
+  opacity: 0.9;
+}
+
+.teams-search-btn:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 22px rgba(46, 242, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.teams-search-btn:active {
+  transform: translateY(0);
+}
+
 .teams-list {
   display: flex;
   flex-direction: column;

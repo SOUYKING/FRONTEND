@@ -313,13 +313,35 @@ const Teams = () => {
           <div className="teams-card teams-card-compact">
             <h3>New team</h3>
             <p className="teams-helper-text">You are captain. Add optional invites now or from the team hub.</p>
-            <div className="form-row">
-              <input placeholder="Team name" value={teamName} onChange={(e) => setTeamName(e.target.value)} />
-              <select value={teamSize} onChange={(e) => setTeamSize(Number(e.target.value))}>
-                <option value={2}>2v2</option>
-                <option value={3}>3v3</option>
-                <option value={4}>4v4</option>
-              </select>
+            <div className="teams-field-row">
+              <div className="teams-field teams-field-name">
+                <label className="teams-field-label" htmlFor="teams-new-name">Team name</label>
+                <input
+                  id="teams-new-name"
+                  className="teams-input"
+                  placeholder="Enter team name"
+                  maxLength={40}
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                  autoComplete="off"
+                />
+                <span className="teams-char-hint">{teamName.length}/40</span>
+              </div>
+              <div className="teams-field teams-field-size">
+                <label className="teams-field-label" htmlFor="teams-new-size">Team size</label>
+                <div className="teams-select-shell">
+                  <select
+                    id="teams-new-size"
+                    className="teams-select"
+                    value={teamSize}
+                    onChange={(e) => setTeamSize(Number(e.target.value))}
+                  >
+                    <option value={2}>2v2 · 2 players</option>
+                    <option value={3}>3v3 · 3 players</option>
+                    <option value={4}>4v4 · 4 players</option>
+                  </select>
+                </div>
+              </div>
             </div>
             <div className="teams-members-box">
               <div className="teams-members-head">
@@ -354,9 +376,29 @@ const Teams = () => {
                 ? `Invites go to: ${selectedTeam.name}`
                 : 'Select a team in the list to send invites from search.'}
             </p>
-            <div className="form-row">
-              <input placeholder="Discord name…" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <button type="button" className="btn btn-ghost" onClick={handleSearch}>Search</button>
+            <label className="teams-field-label teams-field-label-spaced" htmlFor="teams-player-search">Find by Discord name</label>
+            <div className="teams-search-row">
+              <div className="teams-search-input-wrap">
+                <i className="fas fa-magnifying-glass teams-search-icon" aria-hidden />
+                <input
+                  id="teams-player-search"
+                  className="teams-search-input"
+                  placeholder="Search players to invite…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearch();
+                    }
+                  }}
+                  autoComplete="off"
+                />
+              </div>
+              <button type="button" className="teams-search-btn" onClick={handleSearch}>
+                <i className="fas fa-search" aria-hidden />
+                Search
+              </button>
             </div>
             <div className="teams-list teams-list-scroll">
               {searchResults.map((u) => (
