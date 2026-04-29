@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getMatchHistory, getMatchDetail, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
+import './Leaderboard.css';
 import './MatchHistoryPage.css';
 
 const MODE_LABELS = {
@@ -99,6 +100,15 @@ const MatchHistoryPage = () => {
     return 'Draw';
   };
 
+  const historyBadge = (r, disputed) => {
+    if (disputed || r === 'Disputed') return { cls: 'bronze', mark: '!', short: 'FLAG' };
+    if (r === 'Win') return { cls: 'gold', mark: 'W', short: 'WIN' };
+    if (r === 'Loss') return { cls: 'plain', mark: 'L', short: 'LOSS' };
+    if (r === 'Pending') return { cls: 'silver', mark: '…', short: 'WAIT' };
+    if (r === 'Unknown') return { cls: 'plain', mark: '?', short: '—' };
+    return { cls: 'silver', mark: 'D', short: 'DRAW' };
+  };
+
   const resolveWinnerName = (d) => {
     if (!d?.winnerDiscordId) return '—';
     if (d.winnerDiscordId === d.self?.discordId) return d.self?.discordName || 'You';
@@ -139,9 +149,9 @@ const MatchHistoryPage = () => {
       </div>
 
       <div className="match-history-tips">
-        <span><i className="fas fa-lightbulb"></i> Click any row to open full match details.</span>
-        <span><i className="fas fa-filter"></i> Use filters to quickly find disputed or lost matches.</span>
-        <span><i className="fas fa-users"></i> Squad rows show team names; captains are still used for reports and Discord.</span>
+        <span><i className="fas fa-lightbulb"></i> Cards match tournament squad leaderboard style — tap for votes, chat, and evidence.</span>
+        <span><i className="fas fa-filter"></i> Filters narrow wins, losses, draws, and disputes.</span>
+        <span><i className="fas fa-users"></i> Squad matches show team titles; captains handle reporting.</span>
       </div>
 
       {error && <div style={{ padding: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', marginBottom: 16, color: 'var(--red)', fontSize: '0.85rem' }}>{error}</div>}
@@ -160,64 +170,83 @@ const MatchHistoryPage = () => {
           <p>No matches played yet. Join a tournament to start!</p>
         </div>
       ) : (
-        <div className="match-history-list">
-          {paged.map((match, idx) => (
-            <div
-              key={match.id}
-              className={`match-history-item${match.teamMatch ? ' match-history-item--squad' : ''}`}
-              style={{ animationDelay: `${idx * 0.03}s` }}
-              onClick={() => handleRowClick(match)}
-            >
-              <div className="match-history-avatars">
-                <div className="match-history-avatar self">
-                  <img src={buildDiscordAvatar(match.selfId || currentUser?.discordId || currentUser?.id, match.selfAvatar || currentUser?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
-                </div>
-                <span className="match-history-vs">VS</span>
-                <div className="match-history-avatar opponent">
-                  <img src={buildDiscordAvatar(match.opponentId, match.opponentAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
-                </div>
-              </div>
-              <div className="match-history-info">
-                <div className="match-history-meta-row">
-                  <span className={`match-mode-pill mode-${modeShort(match.tournamentType)}`} title={modeDescription(match.tournamentType)}>
-                    {modeShort(match.tournamentType)}
-                  </span>
-                  {match.teamMatch ? (
-                    <span className="match-squad-pill" title="Squad tournament — captains shown on avatars">
-                      <i className="fas fa-users" aria-hidden /> Squad
-                    </span>
-                  ) : null}
-                  {match.tournamentTitle ? (
-                    <span className="match-history-tournament-title" title={match.tournamentTitle}>
-                      {match.tournamentTitle}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="match-history-players">
-                  {match.teamMatch && (match.yourTeamName || match.opponentTeamName) ? (
-                    <>
-                      <span className="match-history-squad">{match.yourTeamName || 'Your squad'}</span>
-                      <span className="vs-text">vs</span>
-                      <span className="match-history-squad">{match.opponentTeamName || match.opponent || 'Opponent squad'}</span>
-                    </>
-                  ) : (
-                    <>
-                      You <span className="vs-text">vs</span> {match.opponent || 'Unknown Player'}
-                    </>
-                  )}
-                </div>
-                {match.teamMatch ? (
-                  <div className="match-history-captains">
-                    Captains: you · {match.opponent || '—'}
+        <div className="lb-squad-standings mh-card-standings">
+          {paged.map((match, idx) => {
+            const badge = historyBadge(match.result, match.disputed);
+            const outcomeClass = resultClass(match.result, match.disputed);
+            const selfAv = buildDiscordAvatar(match.selfId || currentUser?.discordId || currentUser?.id, match.selfAvatar || currentUser?.discordAvatar) || DISCORD_AVATAR_FALLBACK;
+            const oppAv = buildDiscordAvatar(match.opponentId, match.opponentAvatar) || DISCORD_AVATAR_FALLBACK;
+            const titleMain = match.teamMatch && (match.yourTeamName || match.opponentTeamName)
+              ? `${match.yourTeamName || 'Your squad'} vs ${match.opponentTeamName || match.opponent || 'Opponent'}`
+              : `You vs ${match.opponent || 'Unknown'}`;
+            return (
+              <div
+                key={match.id}
+                className={`lb-squad-card mh-history-card mh-history-card--${outcomeClass}${match.teamMatch ? ' mh-history-card--squad' : ''}`}
+                style={{ animationDelay: `${idx * 0.04}s` }}
+              >
+                <button
+                  type="button"
+                  className="lb-squad-card-hit mh-history-card-hit"
+                  onClick={() => handleRowClick(match)}
+                >
+                  <div className={`lb-squad-rank-badge ${badge.cls}`}>
+                    <span className="lb-squad-rank-num mh-history-badge-mark">{badge.mark}</span>
+                    <span className="lb-squad-rank-label">{badge.short}</span>
                   </div>
-                ) : null}
-                <div className="match-history-date">{new Date(match.date).toLocaleDateString()} · Full report</div>
+                  <div className="lb-squad-card-body">
+                    <div className="lb-squad-card-top">
+                      <div className="lb-squad-avatar-stack mh-history-avatar-stack" aria-hidden>
+                        <span className="lb-squad-stack-face mh-history-stack-face--self">
+                          <img src={selfAv} alt="" />
+                        </span>
+                        <span className="lb-squad-stack-face mh-history-stack-face--opp">
+                          <img src={oppAv} alt="" />
+                        </span>
+                      </div>
+                      <div className="lb-squad-title-block">
+                        <h3 className="lb-squad-team-title mh-history-duel-title">{titleMain}</h3>
+                        <p className="lb-squad-team-sub">
+                          {match.tournamentTitle ? (
+                            <span className="mh-history-tourney-line" title={match.tournamentTitle}>{match.tournamentTitle}</span>
+                          ) : (
+                            <span>Match history</span>
+                          )}
+                          {match.teamMatch ? (
+                            <span className="mh-history-captain-line"> · Captains: you · {match.opponent || '—'}</span>
+                          ) : null}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="lb-squad-stat-strip">
+                      <div className="lb-squad-stat-pill">
+                        <span className="lb-squad-stat-k">Format</span>
+                        <span className="lb-squad-stat-v">
+                          <span className={`match-mode-pill mode-${modeShort(match.tournamentType)} mh-history-mode-pill`} title={modeDescription(match.tournamentType)}>
+                            {modeShort(match.tournamentType)}
+                          </span>
+                          {match.teamMatch ? (
+                            <span className="match-squad-pill mh-history-squad-pill"><i className="fas fa-users" aria-hidden /> Squad</span>
+                          ) : null}
+                        </span>
+                      </div>
+                      <div className="lb-squad-stat-pill">
+                        <span className="lb-squad-stat-k">Played</span>
+                        <span className="lb-squad-stat-v">{new Date(match.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                      <div className={`lb-squad-stat-pill lb-squad-stat-pill--accent mh-history-outcome-pill mh-history-outcome-pill--${outcomeClass}`}>
+                        <span className="lb-squad-stat-k">Outcome</span>
+                        <span className="lb-squad-stat-v">{resultLabel(match.result)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="lb-squad-chevron" aria-hidden>
+                    <i className="fas fa-chevron-right" />
+                  </div>
+                </button>
               </div>
-              <div className={`match-history-result ${resultClass(match.result, match.disputed)}`}>
-                {resultLabel(match.result)}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -231,8 +260,8 @@ const MatchHistoryPage = () => {
 
       {selectedMatch && (
         <div className="modal-overlay" onClick={() => { setSelectedMatch(null); setDetail(null); }}>
-          <div className="match-history-detail-modal modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="match-history-detail-modal modal-content mh-detail-lb-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header mh-detail-modal-head">
               <div>
                 <h3>Match details</h3>
                 {(selectedMatch?.tournamentTitle || detail?.tournamentTitle) ? (

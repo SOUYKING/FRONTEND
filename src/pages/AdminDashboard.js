@@ -5,6 +5,7 @@ import { io } from 'socket.io-client';
 import { API_BASE_URL, SOCKET_BASE_URL, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
 import { getRank, getRankLabel } from '../utils/ranks';
 import './AdminDashboard.css';
+import './Leaderboard.css';
 
 const MAX_FEED_ITEMS = 100;
 const POLL_INTERVAL = 20000;
@@ -1400,6 +1401,14 @@ function adminFormatMatchResult(m) {
   return m.result || '—';
 }
 
+function adminMatchDateBadge(date) {
+  const d = new Date(date);
+  return {
+    num: d.getDate(),
+    label: d.toLocaleString('en', { month: 'short' }).toUpperCase(),
+  };
+}
+
 const MatchesTab = ({ api, notify, focusedMatchId }) => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1473,86 +1482,108 @@ const MatchesTab = ({ api, notify, focusedMatchId }) => {
         </div>
       )}
 
-      <div className="matches-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Format</th>
-              <th>Side 1 (captain)</th>
-              <th>Side 2 (captain)</th>
-              <th>Result</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {matches.map(m => {
-              const mode = m.tournamentType || '1v1';
-              const s1 = adminSquadLabelPlayer1(m);
-              const s2 = adminSquadLabelPlayer2(m);
-              return (
-              <tr
+      <div className="admin-matches-card-list lb-squad-standings">
+        {matches.length === 0 ? (
+          <div className="admin-matches-empty empty-state lb-empty">
+            <span>⚔️</span>
+            <p>No matches in this filter.</p>
+          </div>
+        ) : (
+          matches.map((m) => {
+            const mode = m.tournamentType || '1v1';
+            const s1 = adminSquadLabelPlayer1(m);
+            const s2 = adminSquadLabelPlayer2(m);
+            const dateBd = adminMatchDateBadge(m.date);
+            const isFocused = focusedMatchId && String(m._id) === String(focusedMatchId);
+            const duelTitle = m.teamMatch && (s1 || s2 || m.winnerTeamName)
+              ? `${s1 || m.player1?.discordName || 'Side 1'} vs ${s2 || m.player2?.discordName || 'Side 2'}`
+              : `${m.player1?.discordName || 'Side 1'} vs ${m.player2?.discordName || 'Side 2'}`;
+            return (
+              <div
                 key={m._id}
-                className={`${m.disputed ? 'disputed-row' : ''}${m.teamMatch ? ' match-row-squad' : ''}`}
-                style={focusedMatchId && String(m._id) === String(focusedMatchId) ? { outline: '2px solid var(--cyan)', background: 'rgba(46,242,255,0.06)' } : undefined}
+                className={`lb-squad-card admin-match-lb-card${m.disputed ? ' admin-match-lb-card--disputed' : ''}${m.teamMatch ? ' admin-match-lb-card--squad' : ''}${isFocused ? ' admin-match-lb-card--focused' : ''}`}
               >
-                <td className="cell-date">
-                  <div>{new Date(m.date).toLocaleDateString()}</div>
-                  {m.tournamentTitle && (
-                    <div className="admin-match-tourney" title={m.tournamentTitle}>{m.tournamentTitle.length > 28 ? `${m.tournamentTitle.slice(0, 28)}…` : m.tournamentTitle}</div>
-                  )}
-                </td>
-                <td>
-                  <span className={`admin-match-mode-pill mode-${mode}`}>{mode}</span>
-                  {m.teamMatch ? <span className="admin-match-squad-tag">Squad</span> : null}
-                </td>
-                <td className="cell-player admin-match-side-cell">
-                  <img src={buildDiscordAvatar(m.player1?.discordId, m.player1?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="mini-avatar" />
-                  <div className="admin-match-side-text">
-                    <span className="admin-match-captain">{m.player1?.discordName || 'Unknown'}</span>
-                    {s1 ? <span className="admin-match-squad-name">{s1}</span> : m.teamMatch ? <span className="admin-match-squad-muted">Squad</span> : null}
+                <div className="lb-squad-card-hit admin-match-lb-row" role="group">
+                  <div className={`lb-squad-rank-badge ${m.disputed ? 'bronze' : 'plain'} admin-match-date-badge`}>
+                    <span className="lb-squad-rank-num admin-match-date-num">{dateBd.num}</span>
+                    <span className="lb-squad-rank-label">{dateBd.label}</span>
                   </div>
-                </td>
-                <td className="cell-player admin-match-side-cell">
-                  <img src={buildDiscordAvatar(m.player2?.discordId, m.player2?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="mini-avatar" />
-                  <div className="admin-match-side-text">
-                    <span className="admin-match-captain">{m.player2?.discordName || 'Unknown'}</span>
-                    {s2 ? <span className="admin-match-squad-name">{s2}</span> : m.teamMatch ? <span className="admin-match-squad-muted">Squad</span> : null}
+                  <div className="lb-squad-card-body">
+                    <div className="lb-squad-card-top">
+                      <div className="lb-squad-avatar-stack admin-match-avatar-stack" aria-hidden>
+                        <span className="lb-squad-stack-face admin-match-stack-p1">
+                          <img src={buildDiscordAvatar(m.player1?.discordId, m.player1?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
+                        </span>
+                        <span className="lb-squad-stack-face admin-match-stack-p2">
+                          <img src={buildDiscordAvatar(m.player2?.discordId, m.player2?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
+                        </span>
+                      </div>
+                      <div className="lb-squad-title-block">
+                        <h3 className="lb-squad-team-title admin-match-duel-title">{duelTitle}</h3>
+                        <p className="lb-squad-team-sub">
+                          {m.tournamentTitle ? (
+                            <span title={m.tournamentTitle}>{m.tournamentTitle.length > 42 ? `${m.tournamentTitle.slice(0, 42)}…` : m.tournamentTitle}</span>
+                          ) : (
+                            <span>Admin match</span>
+                          )}
+                          <span className="admin-match-sub-id"> · {String(m._id).slice(-8)}</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="lb-squad-stat-strip">
+                      <div className="lb-squad-stat-pill">
+                        <span className="lb-squad-stat-k">Format</span>
+                        <span className="lb-squad-stat-v admin-match-format-val">
+                          <span className={`admin-match-mode-pill mode-${mode}`}>{mode}</span>
+                          {m.teamMatch ? <span className="admin-match-squad-tag">Squad</span> : null}
+                        </span>
+                      </div>
+                      <div className="lb-squad-stat-pill">
+                        <span className="lb-squad-stat-k">Captains</span>
+                        <span className="lb-squad-stat-v admin-match-captains-val">
+                          <span className="admin-match-captain-chip">{m.player1?.discordName || '—'}</span>
+                          <span className="admin-match-captain-sep">·</span>
+                          <span className="admin-match-captain-chip">{m.player2?.discordName || '—'}</span>
+                        </span>
+                      </div>
+                      <div className={`lb-squad-stat-pill lb-squad-stat-pill--accent ${m.disputed ? 'admin-match-result-pill--disputed' : ''}`}>
+                        <span className="lb-squad-stat-k">Result</span>
+                        <span className={`lb-squad-stat-v match-result ${m.result === 'player1' ? 'p1' : m.result === 'player2' ? 'p2' : ''}`}>
+                          {adminFormatMatchResult(m)}
+                        </span>
+                      </div>
+                    </div>
+                    {m.teamMatch && (m.result === 'player1' || m.result === 'player2') ? (
+                      <p className="admin-match-bracket-note">Bracket: captain outcome on stored sides</p>
+                    ) : null}
                   </div>
-                </td>
-                <td>
-                  <span className={`match-result ${m.result === 'player1' ? 'p1' : m.result === 'player2' ? 'p2' : ''}`}>
-                    {adminFormatMatchResult(m)}
-                  </span>
-                  {m.teamMatch && (m.result === 'player1' || m.result === 'player2') && (
-                    <div className="admin-match-result-sub">Captain outcome (bracket side)</div>
-                  )}
-                </td>
-                <td>
-                  <span className={`match-status-badge ${m.disputed ? 'disputed' : m.status || 'completed'}`}>
-                    {m.disputed ? '⚠ Disputed' : m.status || 'completed'}
-                  </span>
-                </td>
-                <td className="cell-actions">
-                  {m.disputed || m.status === 'pending' ? (
-                    <>
+                  <div className="admin-match-lb-side">
+                    <span className={`match-status-badge ${m.disputed ? 'disputed' : m.status || 'completed'}`}>
+                      {m.disputed ? 'Disputed' : m.status || 'Done'}
+                    </span>
+                  </div>
+                </div>
+                {m.disputed || m.status === 'pending' ? (
+                  <div className="lb-squad-roster admin-match-lb-actions">
+                    <div className="lb-squad-roster-head admin-match-actions-head">
+                      <span className="lb-squad-roster-title">Resolve</span>
+                      <span className="lb-squad-roster-team">Override winner</span>
+                    </div>
+                    <div className="admin-match-action-btns">
                       <button type="button" className="btn-tiny success" title="Side 1 captain wins" onClick={() => overrideMatch(m._id, 'player1')}>
-                        Side 1
+                        Side 1 wins
                       </button>
                       <button type="button" className="btn-tiny danger" title="Side 2 captain wins" onClick={() => overrideMatch(m._id, 'player2')}>
-                        Side 2
+                        Side 2 wins
                       </button>
                       <button type="button" className="btn-tiny" onClick={() => overrideMatch(m._id, 'draw')}>Draw</button>
-                    </>
-                  ) : <span className="text-muted">—</span>}
-                </td>
-              </tr>
-              );
-            })}
-            {matches.length === 0 && <tr><td colSpan="7"><p className="no-data">No matches found</p></td></tr>}
-          </tbody>
-        </table>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })
+        )}
       </div>
 
       {totalPages > 1 && (
