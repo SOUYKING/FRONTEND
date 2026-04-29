@@ -41,6 +41,10 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
   const [countdown, setCountdown] = useState(null);
   const [chatAtBottom, setChatAtBottom] = useState(true);
   const [newMsg, setNewMsg] = useState(false);
+  const [matchSides, setMatchSides] = useState(null);
+  const [participantSide, setParticipantSide] = useState(null);
+  const [teamMatch, setTeamMatch] = useState(false);
+  const [isTeamCaptain, setIsTeamCaptain] = useState(true);
 
   const currentUser = useMemo(
     () => currentUserFromApp || readStoredUser(),
@@ -53,11 +57,6 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
   const opponentName = opponent?.username || opponent?.discordName || 'Opponent';
   const userRole = currentUser?.role || 'player';
 
-  const myPoints = selfProfileStats?.rankingPoints ?? self?.rankingPoints ?? currentUser?.rankingPoints ?? 0;
-  const opponentPoints = opponentProfileStats?.rankingPoints ?? opponent?.rankingPoints ?? 0;
-  const myRank = getRank(myPoints);
-  const opponentRank = getRank(opponentPoints);
-
   const selfAvatar = self?.avatarUrl
     || buildDiscordAvatar(self?.id, self?.avatar)
     || buildDiscordAvatar(currentUser?.id, currentUser?.discordAvatar)
@@ -68,18 +67,73 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
     || (opponent?.id ? buildDiscordAvatar(opponent.id, null) : null)
     || DISCORD_AVATAR_FALLBACK;
 
-  const isViewingAsSelf = !!self;
-  const isViewingAsStaff = isStaff && !self;
+  const fallbackLeftName = participantSide === 'player2'
+    ? (player2?.username || 'Squad A')
+    : (player1?.username || 'Squad A');
+  const fallbackRightName = participantSide === 'player2'
+    ? (player1?.username || 'Squad B')
+    : (player2?.username || 'Squad B');
 
-  const leftPlayer = isViewingAsSelf ? self : player1;
-  const rightPlayer = isViewingAsSelf ? opponent : player2;
-  const leftPlayerIsSelf = !!self && player1?.id === self?.id;
-  const rightPlayerIsSelf = !!self && player2?.id === self?.id;
+  const { leftSide, rightSide, leftSideKey, rightSideKey, displayFormat } = useMemo(() => {
+    const blank = (p) => {
+      if (!p?.id) return { teamMode: false, label: '—', teamSize: 1, members: [] };
+      return {
+        teamMode: false,
+        label: p.username,
+        teamSize: 1,
+        members: [{
+          id: p.id,
+          username: p.username,
+          epicName: p.epicName || null,
+          avatar: p.avatar || null,
+          rankingPoints: 0,
+          isCaptain: true,
+        }],
+      };
+    };
+    if (matchSides?.player1 && matchSides?.player2) {
+      const lsKey = self && participantSide ? participantSide : 'player1';
+      const rsKey = lsKey === 'player1' ? 'player2' : 'player1';
+      const ls = matchSides[lsKey];
+      const rs = matchSides[rsKey];
+      let fmt = Math.max(ls?.teamSize || 1, rs?.teamSize || 1);
+      if (matchMode && /(\d)/.test(String(matchMode))) {
+        const d = Number(String(matchMode).match(/(\d)/)[1]);
+        if (!Number.isNaN(d)) fmt = Math.max(fmt, d);
+      }
+      return {
+        leftSide: ls,
+        rightSide: rs,
+        leftSideKey: lsKey,
+        rightSideKey: rsKey,
+        displayFormat: fmt,
+      };
+    }
+    const lsKey = self && participantSide ? participantSide : 'player1';
+    const rsKey = lsKey === 'player1' ? 'player2' : 'player1';
+    let fmt = 1;
+    if (matchMode && /(\d)/.test(String(matchMode))) {
+      const d = Number(String(matchMode).match(/(\d)/)[1]);
+      if (!Number.isNaN(d)) fmt = d;
+    }
+    return {
+      leftSide: lsKey === 'player1' ? blank(player1) : blank(player2),
+      rightSide: rsKey === 'player1' ? blank(player1) : blank(player2),
+      leftSideKey: lsKey,
+      rightSideKey: rsKey,
+      displayFormat: fmt,
+    };
+  }, [matchSides, participantSide, self, player1, player2, matchMode]);
 
-  const leftAvatar = leftPlayer ? (leftPlayer.avatar ? buildDiscordAvatar(leftPlayer.id, leftPlayer.avatar) : DISCORD_AVATAR_FALLBACK) : selfAvatar;
-  const rightAvatar = rightPlayer ? (rightPlayer.avatar ? buildDiscordAvatar(rightPlayer.id, rightPlayer.avatar) : DISCORD_AVATAR_FALLBACK) : opponentAvatar;
-  const leftName = leftPlayer?.username || leftPlayer?.discordName || 'Player 1';
-  const rightName = rightPlayer?.username || rightPlayer?.discordName || 'Player 2';
+  const memberToPlayer = (m) => ({
+    id: m.id,
+    discordId: m.id,
+    username: m.username,
+    discordName: m.username,
+    avatar: m.avatar,
+    epicName: m.epicName,
+    rankingPoints: m.rankingPoints,
+  });
 
   const openProfile = (player) => {
     if (!player) return;
@@ -107,6 +161,10 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
           setContextLoaded(true);
           setPlayer1(matchInfo.player1);
           setPlayer2(matchInfo.player2);
+          setMatchSides(matchInfo.sides || null);
+          setParticipantSide(matchInfo.participantSide || null);
+          setTeamMatch(!!matchInfo.teamMatch);
+          setIsTeamCaptain(matchInfo.isTeamCaptain !== false);
           setMatchContext({
             matchId: matchInfo.matchId,
             self: matchInfo.self ? { id: matchInfo.self.id, username: matchInfo.self.username, epicName: matchInfo.self.epicName, avatar: matchInfo.self.avatar } : null,
@@ -397,6 +455,9 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
           <div className="match-header-left">
             <h1>MATCH</h1>
             <div className="match-header-tags">
+              {displayFormat > 1 && (
+                <span className="match-tag mode match-tag-format">{displayFormat}v{displayFormat} beta</span>
+              )}
               {matchMode && <span className="match-tag mode">{matchMode}</span>}
               {tournamentName && <span className="match-tag tourney">{tournamentName}</span>}
             </div>
@@ -409,53 +470,120 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
           </span>
         </div>
 
-        <div className="match-arena">
-          <div className="match-player-panel" onClick={() => openProfile(leftPlayer)}>
-            <div className="player-bg" style={{ background: 'linear-gradient(135deg, rgba(46,242,255,0.04), transparent)' }} />
-            <div className="match-player-avatar">
-              <img src={leftAvatar} alt={leftName} />
-            </div>
-            <div className="match-player-name">{leftName}</div>
-            {leftPlayer?.epicName && <div className="match-player-epic">{leftPlayer.epicName}</div>}
-            <div className="match-player-tag self">{isViewingAsSelf ? 'YOU' : (leftPlayerIsSelf ? 'YOU' : 'PLAYER 1')}</div>
-          </div>
+        <div className="match-beta-board">
+          <section
+            className={`match-roster-panel match-roster-panel--alpha ${self && participantSide === leftSideKey ? 'match-roster-panel--yours' : ''}`}
+            aria-label="Side A roster"
+          >
+            <header className="match-roster-panel__head">
+              <span className="match-roster-panel__eyebrow">{leftSide?.teamMode ? 'Squad' : 'Player'}</span>
+              <h2 className="match-roster-panel__title">{leftSide?.label || fallbackLeftName}</h2>
+              <span className="match-roster-panel__meta">{leftSide?.teamSize || 1}v{leftSide?.teamSize || 1}</span>
+            </header>
+            <ul className="match-roster-panel__list">
+              {(leftSide?.members || []).map((m) => {
+                const rk = getRank(m.rankingPoints || 0);
+                const av = buildDiscordAvatar(m.id, m.avatar) || DISCORD_AVATAR_FALLBACK;
+                const you = !!currentUserId && m.id === currentUserId;
+                return (
+                  <li
+                    key={m.id}
+                    className={`match-roster-panel__row ${you ? 'is-you' : ''}`}
+                    onClick={() => openProfile(memberToPlayer(m))}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && openProfile(memberToPlayer(m))}
+                  >
+                    <img className="match-roster-panel__avatar" src={av} alt="" />
+                    <div className="match-roster-panel__who">
+                      <span className="match-roster-panel__name">
+                        {m.username}
+                        <img className="match-roster-panel__rank-ico" src={rk.icon} alt="" title={getRankLabel(m.rankingPoints || 0)} />
+                      </span>
+                      {m.epicName && <span className="match-roster-panel__epic">{m.epicName}</span>}
+                    </div>
+                    <div className="match-roster-panel__badges">
+                      {m.isCaptain && <span className="match-roster-panel__pill match-roster-panel__pill--cap">Captain</span>}
+                      {you && <span className="match-roster-panel__pill match-roster-panel__pill--you">You</span>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
 
-          <div className="match-vs-center">
-            <div className="match-vs-badge">VS</div>
-            {mapCode && (
-              <div className="match-map-code" onClick={handleCopyMapCode} title="Click to copy">
-                <i className="fas fa-map-pin"></i>
+          <div className="match-beta-center">
+            <div className="match-beta-center__ring">
+              <span className="match-beta-center__format">{displayFormat}v{displayFormat}</span>
+              <span className="match-beta-center__sub">beta board</span>
+            </div>
+            {mapCode ? (
+              <button type="button" className="match-beta-map" onClick={handleCopyMapCode} title="Copy map code">
+                <i className="fas fa-map-pin" aria-hidden />
                 <code>{mapCode}</code>
-                <i className="fas fa-copy"></i>
-              </div>
+                <i className="fas fa-copy" aria-hidden />
+              </button>
+            ) : (
+              <p className="match-beta-map-placeholder">Map code from host</p>
             )}
-          </div>
-
-          <div className="match-player-panel" onClick={() => openProfile(rightPlayer)}>
-            <div className="player-bg" style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.04), transparent)' }} />
-            <div className="match-player-avatar" style={{ borderColor: 'var(--border-purple)', boxShadow: '0 0 25px var(--purple-glow)' }}>
-              <img src={rightAvatar} alt={rightName} />
+            <div className="match-beta-center__strip">
+              <span className="match-beta-live-dot" />
+              In match — use chat for callouts and proof
             </div>
-            <div className="match-player-name">{rightName}</div>
-            {rightPlayer?.epicName && <div className="match-player-epic">{rightPlayer.epicName}</div>}
-            <div className="match-player-tag opponent">{isViewingAsSelf ? 'OPPONENT' : (rightPlayerIsSelf ? 'YOU' : 'PLAYER 2')}</div>
           </div>
-        </div>
 
-        <div className="match-info-bar">
-          <div className="match-info-tags">
-            {mapCode && <span className="match-info-tag"><i className="fas fa-map-pin"></i> {mapCode}</span>}
-          </div>
-          <div className="match-timeline">
-            <span className="timeline-step completed"><i className="fas fa-check-circle"></i> Ready</span>
-            <span className="timeline-step active"><i className="fas fa-play-circle"></i> Live</span>
-          </div>
+          <section
+            className={`match-roster-panel match-roster-panel--beta ${self && participantSide === rightSideKey ? 'match-roster-panel--yours' : ''}`}
+            aria-label="Side B roster"
+          >
+            <header className="match-roster-panel__head">
+              <span className="match-roster-panel__eyebrow">{rightSide?.teamMode ? 'Squad' : 'Player'}</span>
+              <h2 className="match-roster-panel__title">{rightSide?.label || fallbackRightName}</h2>
+              <span className="match-roster-panel__meta">{rightSide?.teamSize || 1}v{rightSide?.teamSize || 1}</span>
+            </header>
+            <ul className="match-roster-panel__list">
+              {(rightSide?.members || []).map((m) => {
+                const rk = getRank(m.rankingPoints || 0);
+                const av = buildDiscordAvatar(m.id, m.avatar) || DISCORD_AVATAR_FALLBACK;
+                const you = !!currentUserId && m.id === currentUserId;
+                return (
+                  <li
+                    key={m.id}
+                    className={`match-roster-panel__row ${you ? 'is-you' : ''}`}
+                    onClick={() => openProfile(memberToPlayer(m))}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && openProfile(memberToPlayer(m))}
+                  >
+                    <img className="match-roster-panel__avatar" src={av} alt="" />
+                    <div className="match-roster-panel__who">
+                      <span className="match-roster-panel__name">
+                        {m.username}
+                        <img className="match-roster-panel__rank-ico" src={rk.icon} alt="" title={getRankLabel(m.rankingPoints || 0)} />
+                      </span>
+                      {m.epicName && <span className="match-roster-panel__epic">{m.epicName}</span>}
+                    </div>
+                    <div className="match-roster-panel__badges">
+                      {m.isCaptain && <span className="match-roster-panel__pill match-roster-panel__pill--cap">Captain</span>}
+                      {you && <span className="match-roster-panel__pill match-roster-panel__pill--you">You</span>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
         </div>
 
         <div className="match-flow-hints">
-          <span><i className="fas fa-circle-info"></i> Step 1: Add opponent using Epic name, then start your 1v1.</span>
-          <span><i className="fas fa-flag-checkered"></i> Step 2: Report result right after match to avoid disputes.</span>
-          <span><i className="fas fa-headset"></i> Need help? Use Call Staff and keep chat clear with evidence details.</span>
+          {teamMatch ? (
+            <>
+              <span><i className="fas fa-users"></i> Team queue: everyone listed plays this match ({displayFormat}v{displayFormat}).</span>
+              <span><i className="fas fa-crown"></i> Only the captain submits win / loss — squadmates use chat for proof.</span>
+            </>
+          ) : (
+            <span><i className="fas fa-circle-info"></i> 1v1: report your result right after the game to avoid disputes.</span>
+          )}
+          <span><i className="fas fa-headset"></i> Need help? Call Staff and keep chat clear.</span>
         </div>
 
         <div className="match-bottom">
@@ -520,17 +648,24 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>You are {isStaff ? 'staff observer' : 'spectating'} this match.</p>
                   </div>
                 ) : !reported && !disputed ? (
-                  <div className="result-buttons">
-                    <button disabled={reporting} onClick={() => handleReportResult(self?.id || currentUserId)} className="result-btn win">
-                      <i className="fas fa-check-circle"></i> I Won
-                    </button>
-                    <button disabled={reporting} onClick={() => handleReportResult(opponent?.id)} className="result-btn lose">
-                      <i className="fas fa-times-circle"></i> I Lost
-                    </button>
-                    <button disabled={reporting || staffNotified} onClick={handleCallStaff} className="result-btn staff">
-                      <i className="fas fa-headset"></i> Call Staff
-                    </button>
-                  </div>
+                  teamMatch && !isTeamCaptain ? (
+                    <div className="match-status-msg match-captain-gate">
+                      <i className="fas fa-crown" style={{ color: 'var(--gold)' }} />
+                      <p>Only your team captain can submit the match result. Use chat to coordinate proof.</p>
+                    </div>
+                  ) : (
+                    <div className="result-buttons">
+                      <button disabled={reporting} onClick={() => handleReportResult(self?.id || currentUserId)} className="result-btn win">
+                        <i className="fas fa-check-circle"></i> I Won
+                      </button>
+                      <button disabled={reporting} onClick={() => handleReportResult(opponent?.id)} className="result-btn lose">
+                        <i className="fas fa-times-circle"></i> I Lost
+                      </button>
+                      <button disabled={reporting || staffNotified} onClick={handleCallStaff} className="result-btn staff">
+                        <i className="fas fa-headset"></i> Call Staff
+                      </button>
+                    </div>
+                  )
                 ) : disputed ? (
                   <div className="match-status-msg">
                     <i className="fas fa-gavel" style={{ color: 'var(--red)' }}></i>
