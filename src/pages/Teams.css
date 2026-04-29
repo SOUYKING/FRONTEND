@@ -9,6 +9,25 @@
   gap: 14px;
 }
 
+.teams-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.teams-tabs button {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.teams-tabs button.active {
+  border-color: var(--border-glow);
+  color: var(--cyan);
+}
+
 .teams-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -24,6 +43,40 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.teams-members-box {
+  margin: 10px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.teams-members-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+.team-member-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.team-member-row.owner {
+  border-color: rgba(249, 197, 0, 0.3);
+}
+
+.team-member-row small {
+  color: var(--text-muted);
 }
 
 .team-pill {
@@ -48,6 +101,14 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 8px 10px;
+}
+
+.teams-card-wide {
+  grid-column: 1 / -1;
+}
+
+.team-row-wide.selected {
+  border-color: var(--border-glow);
 }
 
 @media (max-width: 900px) {

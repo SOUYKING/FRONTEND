@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { createTeam, getMyTeamInvites, getMyTeams, respondToTeamInvite, searchUsersForTeam, sendTeamInvite } from '../utils/api';
+import { createTeam, deleteTeam, getMyTeamInvites, getMyTeams, respondToTeamInvite, searchUsersForTeam } from '../utils/api';
 import './Teams.css';
 
 const Teams = () => {
@@ -13,6 +13,8 @@ const Teams = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState('');
+  const [selectedMembers, setSelectedMembers] = useState([]);
+  const [activeTab, setActiveTab] = useState('my-teams');
 
   const user = useMemo(() => {
     try {
@@ -44,10 +46,17 @@ const Teams = () => {
   const handleCreateTeam = async () => {
     try {
       setError('');
-      const team = await createTeam({ name: teamName.trim(), size: Number(teamSize) });
+      const team = await createTeam({
+        name: teamName.trim(),
+        size: Number(teamSize),
+        memberDiscordIds: selectedMembers.map((m) => m.discordId),
+      });
       setTeams((prev) => [team, ...prev]);
       setSelectedTeamId(team._id);
       setTeamName('');
+      setSelectedMembers([]);
+      setSearchResults([]);
+      setSearchQuery('');
       setMessage('Team created');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create team');
@@ -55,25 +64,30 @@ const Teams = () => {
   };
 
   const handleSearch = async () => {
+    const query = searchQuery.trim();
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
     try {
-      const users = await searchUsersForTeam(searchQuery.trim());
+      const users = await searchUsersForTeam(query);
       setSearchResults(users || []);
     } catch (err) {
       setError(err.response?.data?.message || 'Search failed');
     }
   };
 
-  const handleSendInvite = async (targetDiscordId) => {
-    if (!selectedTeamId) {
-      setError('Select your team first');
+  const handleAddSelectedMember = (userRow) => {
+    if (selectedMembers.some((m) => m.discordId === userRow.discordId)) return;
+    if (selectedMembers.length >= teamSize - 1) {
+      setError(`You can only add ${teamSize - 1} invited players for ${teamSize}v${teamSize}`);
       return;
     }
-    try {
-      await sendTeamInvite(selectedTeamId, targetDiscordId);
-      setMessage('Invite sent');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Invite failed');
-    }
+    setSelectedMembers((prev) => [...prev, userRow]);
+  };
+
+  const handleRemoveSelectedMember = (discordId) => {
+    setSelectedMembers((prev) => prev.filter((m) => m.discordId !== discordId));
   };
 
   const handleInviteResponse = async (inviteId, action) => {
@@ -86,6 +100,25 @@ const Teams = () => {
       setError(err.response?.data?.message || 'Failed to update invite');
     }
   };
+
+  const handleDeleteTeam = async (teamId) => {
+    try {
+      await deleteTeam(teamId);
+      setTeams((prev) => prev.filter((t) => t._id !== teamId));
+      if (selectedTeamId === teamId) setSelectedTeamId('');
+      setMessage('Team deleted');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete team');
+    }
+  };
+
+  useEffect(() => {
+    handleSearch();
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setSelectedMembers((prev) => prev.slice(0, Math.max(0, teamSize - 1)));
+  }, [teamSize]);
 
   if (!hasAccess) {
     return (
@@ -115,6 +148,11 @@ const Teams = () => {
       {error && <div className="tournament-alert error"><span>{error}</span></div>}
       {message && <div className="tournament-alert success"><span>{message}</span></div>}
 
+      <div className="teams-tabs">
+        <button className={activeTab === 'my-teams' ? 'active' : ''} onClick={() => setActiveTab('my-teams')}>My Teams ({teams.length})</button>
+        <button className={activeTab === 'invites' ? 'active' : ''} onClick={() => setActiveTab('invites')}>Invites ({invites.length})</button>
+      </div>
+
       <div className="teams-grid">
         <div className="teams-card">
           <h3>Create Team</h3>
@@ -126,18 +164,29 @@ const Teams = () => {
               <option value={4}>4v4</option>
             </select>
           </div>
-          <button className="btn btn-primary" onClick={handleCreateTeam}>Create Team</button>
-        </div>
-
-        <div className="teams-card">
-          <h3>Your Teams</h3>
-          <div className="teams-list">
-            {teams.map((team) => (
-              <button key={team._id} className={`team-pill ${selectedTeamId === team._id ? 'active' : ''}`} onClick={() => setSelectedTeamId(team._id)}>
-                {team.name} ({team.size}v{team.size}) · {team.members?.length || 0}/{team.size}
-              </button>
+          <div className="teams-members-box">
+            <div className="teams-members-head">
+              <strong>Team Members</strong>
+              <span>{1 + selectedMembers.length}/{teamSize}</span>
+            </div>
+            <div className="team-member-row owner">
+              <span>{user?.discordName || 'You'}</span>
+              <small>You</small>
+            </div>
+            {selectedMembers.map((m) => (
+              <div key={m.discordId} className="team-member-row">
+                <span>{m.discordName}</span>
+                <button className="btn btn-ghost btn-sm" onClick={() => handleRemoveSelectedMember(m.discordId)}>Remove</button>
+              </div>
             ))}
           </div>
+          <button
+            className="btn btn-primary"
+            onClick={handleCreateTeam}
+            disabled={!teamName.trim() || selectedMembers.length > teamSize - 1}
+          >
+            Create Team
+          </button>
         </div>
 
         <div className="teams-card">
@@ -150,27 +199,48 @@ const Teams = () => {
             {searchResults.map((u) => (
               <div key={u.discordId} className="team-row">
                 <span>{u.discordName}</span>
-                <button className="btn btn-sm btn-primary" onClick={() => handleSendInvite(u.discordId)}>Invite</button>
+                <button className="btn btn-sm btn-primary" onClick={() => handleAddSelectedMember(u)}>+</button>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="teams-card">
-          <h3>Incoming Invites</h3>
-          <div className="teams-list">
-            {invites.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No pending invites</p>}
-            {invites.map((invite) => (
-              <div key={invite._id} className="team-row">
-                <span>{invite.fromDiscordName} -> {invite.teamId?.name || 'Team'}</span>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-sm btn-success" onClick={() => handleInviteResponse(invite._id, 'accept')}>Accept</button>
-                  <button className="btn btn-sm btn-ghost" onClick={() => handleInviteResponse(invite._id, 'decline')}>Decline</button>
+        {activeTab === 'my-teams' && (
+          <div className="teams-card teams-card-wide">
+            <h3>My Teams</h3>
+            <div className="teams-list">
+              {teams.map((team) => (
+                <div key={team._id} className={`team-row team-row-wide ${selectedTeamId === team._id ? 'selected' : ''}`}>
+                  <button className="team-pill" onClick={() => setSelectedTeamId(team._id)}>
+                    {team.name} ({team.size}v{team.size}) · {team.members?.filter((m) => m.status === 'accepted').length || 0}/{team.size}
+                  </button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-sm btn-primary" onClick={() => setSelectedTeamId(team._id)}>Select</button>
+                    <button className="btn btn-sm btn-ghost" onClick={() => handleDeleteTeam(team._id)}>Delete</button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {activeTab === 'invites' && (
+          <div className="teams-card teams-card-wide">
+            <h3>Incoming Invites</h3>
+            <div className="teams-list">
+              {invites.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No pending invites</p>}
+              {invites.map((invite) => (
+                <div key={invite._id} className="team-row">
+                  <span>{invite.fromDiscordName} -> {invite.teamId?.name || 'Team'}</span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-sm btn-success" onClick={() => handleInviteResponse(invite._id, 'accept')}>Accept</button>
+                    <button className="btn btn-sm btn-ghost" onClick={() => handleInviteResponse(invite._id, 'decline')}>Decline</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

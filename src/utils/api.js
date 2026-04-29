@@ -223,12 +223,22 @@ export const searchUsersForTeam = async (query) => {
   }
 };
 
-export const createTeam = async ({ name, size }) => {
+export const createTeam = async ({ name, size, memberDiscordIds = [] }) => {
   try {
-    const res = await apiClient.post('/teams/create', { name, size });
+    const res = await apiClient.post('/teams/create', { name, size, memberDiscordIds });
     return res.data;
   } catch (error) {
     console.error("Create team error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const deleteTeam = async (teamId) => {
+  try {
+    const res = await apiClient.delete(`/teams/${teamId}`);
+    return res.data;
+  } catch (error) {
+    console.error("Delete team error:", error.response?.data || error.message);
     throw error;
   }
 };
