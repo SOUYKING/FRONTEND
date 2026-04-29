@@ -119,6 +119,30 @@
   box-shadow: 0 0 10px var(--cyan-glow);
 }
 
+.sidebar-menu li a.sidebar-nav-has-live:not(.active-nav) {
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.sidebar-live-pill {
+  margin-left: auto;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 100px;
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--green);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  animation: sidebarLivePulse 2s ease-in-out infinite;
+}
+
+@keyframes sidebarLivePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
 .sidebar-divider {
   height: 1px;
   background: var(--border);

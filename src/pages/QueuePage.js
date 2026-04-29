@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { getTournamentById, getCurrentMatch, joinMatchmaking, leaveMatchmaking, getMyTeams } from '../utils/api';
 import './QueuePage.css';
 
@@ -198,8 +198,14 @@ const QueuePage = ({ socket }) => {
         <p className="queue-subtitle">Queue lobby</p>
 
         <div className="queue-helper-chips">
-          <span><i className="fas fa-circle-info"></i> Join queue when ready to play.</span>
-          <span><i className="fas fa-bolt"></i> Keep this tab open for fastest match alerts.</span>
+          <span><i className="fas fa-circle-info" /> Join queue when ready to play.</span>
+          <span><i className="fas fa-bolt" /> Keep this tab open for instant match alerts.</span>
+          {isTeamTournament && (
+            <span>
+              <i className="fas fa-users" /> Captain queues the team; teammates open{' '}
+              <Link to="/current-game" className="queue-inline-link">Current Game</Link> for the match link.
+            </span>
+          )}
         </div>
 
         <div className="queue-status-message">{message || 'Ready to join the queue?'}</div>

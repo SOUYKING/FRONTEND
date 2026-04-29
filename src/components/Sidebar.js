@@ -4,7 +4,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import './Sidebar.css';
 import logo from '../assets/logo.png';
 
-const Sidebar = ({ onLogout }) => {
+const Sidebar = ({ onLogout, liveMatchId }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -56,8 +56,15 @@ const Sidebar = ({ onLogout }) => {
             </NavLink>
           </li>
           <li>
-            <NavLink to="/current-game" className={({ isActive }) => (isActive ? 'active-nav' : '')} onClick={closeMobile}>
+            <NavLink
+              to="/current-game"
+              className={({ isActive }) =>
+                [isActive ? 'active-nav' : null, liveMatchId ? 'sidebar-nav-has-live' : null].filter(Boolean).join(' ')
+              }
+              onClick={closeMobile}
+            >
               <i className="fas fa-gamepad"></i> Current Game
+              {liveMatchId ? <span className="sidebar-live-pill" title="You have a live match">Live</span> : null}
             </NavLink>
           </li>
         </ul>

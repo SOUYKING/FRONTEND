@@ -74,6 +74,30 @@ const Dashboard = ({ user }) => {
 
   return (
     <div className="dashboard-page page-wrapper">
+      {isInMatch && currentMatch?.matchId && (
+        <div className="dashboard-live-match-banner">
+          <div className="dashboard-live-match-main">
+            <span className="dashboard-live-dot" aria-hidden />
+            <div>
+              <div className="dashboard-live-title">You have a live match</div>
+              <div className="dashboard-live-sub">
+                vs <strong>{currentMatch.opponent || 'Opponent'}</strong>
+                {currentMatch.mapCode ? (
+                  <span className="dashboard-live-map"> · Map {currentMatch.mapCode}</span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+          <div className="dashboard-live-actions">
+            <Link to={`/match/${currentMatch.matchId}`} className="btn btn-primary btn-sm dashboard-live-btn">
+              <i className="fas fa-door-open" /> Open match room
+            </Link>
+            <Link to="/current-game" className="btn btn-ghost btn-sm dashboard-live-btn">
+              Overview
+            </Link>
+          </div>
+        </div>
+      )}
       <div className="profile-rank-card">
         <div className="profile-rank-avatar">
           <img src={avatarUrl} alt="" />

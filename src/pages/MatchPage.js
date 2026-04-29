@@ -284,6 +284,8 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
       setResultMessage('Match completed! Redirecting...');
       setTimeout(() => {
         sessionStorage.removeItem('currentMatch');
+        localStorage.removeItem('currentMatchId');
+        window.dispatchEvent(new Event('current-match-ended'));
         navigate('/dashboard');
       }, 3000);
     };

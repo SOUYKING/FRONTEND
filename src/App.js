@@ -26,6 +26,15 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
   const navigate = useNavigate();
 
   useEffect(() => {
+    const onMatchEnded = () => {
+      localStorage.removeItem('currentMatchId');
+      setCurrentMatchId(null);
+    };
+    window.addEventListener('current-match-ended', onMatchEnded);
+    return () => window.removeEventListener('current-match-ended', onMatchEnded);
+  }, [setCurrentMatchId]);
+
+  useEffect(() => {
     socket.on('connect', () => {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
@@ -47,13 +56,30 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
       console.log('Match found:', data);
       localStorage.setItem('currentMatchId', data.matchId);
       setCurrentMatchId(data.matchId);
+      let storedProfile = {};
+      try {
+        storedProfile = JSON.parse(localStorage.getItem('user') || '{}');
+      } catch {}
+      const selfDisplayName =
+        storedProfile.discordName || storedProfile.username || data.selfEpicName || 'You';
       const currentPath = window.location.pathname;
       if (!currentPath.startsWith('/match/')) {
         navigate(`/match/${data.matchId}`, {
           state: {
             matchId: data.matchId,
-            self: { id: data.selfId, username: data.selfEpicName || data.selfId, epicName: data.selfEpicName, avatar: data.selfAvatar, rankingPoints: 0 },
-            opponent: { id: data.opponentId, username: data.opponent, epicName: data.opponentEpicName || data.opponent, avatar: data.opponentAvatar },
+            self: {
+              id: data.selfId,
+              username: selfDisplayName,
+              epicName: data.selfEpicName,
+              avatar: data.selfAvatar,
+              rankingPoints: storedProfile.rankingPoints ?? 0,
+            },
+            opponent: {
+              id: data.opponentId,
+              username: data.opponent,
+              epicName: data.opponentEpicName || data.opponent,
+              avatar: data.opponentAvatar,
+            },
             mapCode: data.mapCode || '',
             tournamentId: data.tournamentId,
           },
@@ -105,7 +131,7 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
   return (
     <div className="app-container">
       <AnimatedBackground />
-      <Sidebar onLogout={handleLogout} />
+      <Sidebar onLogout={handleLogout} liveMatchId={currentMatchId} />
       <div className="main-content">
         <Routes>
           <Route path="/dashboard" element={<Dashboard user={user} />} />
