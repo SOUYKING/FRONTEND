@@ -197,6 +197,139 @@
   flex-wrap: wrap;
 }
 
+.current-game-actions-footer {
+  margin-top: 20px;
+}
+
+.current-multi-card {
+  max-width: 720px;
+  text-align: left;
+}
+
+.current-multi-card h2,
+.current-multi-card > .no-game-icon {
+  text-align: center;
+}
+
+.current-multi-card > .current-card-subtext {
+  text-align: center;
+}
+
+.current-tournament-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.current-tournament-row {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+}
+
+.current-tournament-row-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.current-tournament-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.current-tournament-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.current-tournament-type-pill {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: rgba(46, 242, 255, 0.1);
+  color: var(--cyan);
+  border: 1px solid rgba(46, 242, 255, 0.2);
+}
+
+.current-tournament-team-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--purple);
+  white-space: nowrap;
+}
+
+.current-tournament-team-link:hover {
+  color: var(--cyan);
+}
+
+.current-tournament-row-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.current-tournament-row-details i {
+  margin-right: 6px;
+  color: var(--cyan);
+  opacity: 0.85;
+}
+
+.current-tournament-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.current-game-inline-msg {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 14px;
+  text-align: center;
+}
+
+.current-game-tournament-pill {
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.current-game-mode-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: -8px 0 16px;
+}
+
+.current-game-mode-hint i {
+  margin-right: 6px;
+  color: var(--purple);
+}
+
+.current-game-other-events {
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.current-game-other-events a {
+  color: var(--cyan);
+  font-weight: 600;
+}
+
 @media (max-width: 480px) {
   .current-game-card, .no-game-card {
     padding: 24px 20px;

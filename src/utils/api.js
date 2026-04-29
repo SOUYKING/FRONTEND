@@ -9,6 +9,13 @@ export function buildDiscordAvatar(discordId, hash, size = 256) {
   return `https://cdn.discordapp.com/avatars/${discordId}/${hash}.${ext}?size=${size}`;
 }
 
+/** Avatar from API may be a CDN URL (e.g. /match/current) or a Discord hash. */
+export function resolveDisplayAvatar(discordId, avatarField, size = 256) {
+  if (!avatarField && !discordId) return null;
+  if (avatarField && (avatarField.startsWith('http://') || avatarField.startsWith('https://'))) return avatarField;
+  return buildDiscordAvatar(discordId, avatarField, size);
+}
+
 const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 const PRODUCTION_API_URL = "https://backend-97zg.onrender.com";
 const LOCAL_API_URL = "http://localhost:5000";

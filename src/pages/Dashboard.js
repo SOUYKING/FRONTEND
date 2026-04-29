@@ -22,7 +22,14 @@ const Dashboard = ({ user }) => {
         ]);
         if (profileData) setProfile(profileData);
         if (matchData) setCurrentMatch(matchData);
-        if (tournaments) setActiveTournaments(tournaments.filter(t => t.status !== 'completed' && t.status !== 'cancelled'));
+        if (tournaments) {
+          setActiveTournaments(
+            tournaments.filter((t) => {
+              const stage = t.lifecycleStage || t.status;
+              return stage !== 'completed' && stage !== 'cancelled';
+            }),
+          );
+        }
       } catch (e) {
       } finally {
         setLoading(false);
@@ -126,14 +133,25 @@ const Dashboard = ({ user }) => {
           </div>
           {activeTournaments.length > 0 ? (
             <div className="tournament-mini-list">
-              {activeTournaments.slice(0, 5).map(t => (
-                <div key={t._id} className="tournament-mini-item">
-                  <span className="tournament-mini-name">{t.title}</span>
-                  <div className="tournament-mini-meta">
-                    <span>{t.status}</span>
+              {activeTournaments.slice(0, 6).map((t) => {
+                const stage = t.lifecycleStage || t.status || '—';
+                return (
+                  <div key={t._id} className="tournament-mini-item">
+                    <div className="tournament-mini-item-text">
+                      <span className="tournament-mini-name">{t.title}</span>
+                      <div className="tournament-mini-meta">
+                        <span>{t.type || '1v1'}</span>
+                        <span>·</span>
+                        <span>{stage}</span>
+                        {t.queueOpen && <span className="tournament-mini-live">Live queue</span>}
+                      </div>
+                    </div>
+                    {t.queueOpen && (
+                      <Link to={`/queue/${t._id}`} className="tournament-mini-queue">Queue</Link>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 12 }}>No active tournaments yet.</p>

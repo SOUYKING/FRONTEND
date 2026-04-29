@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTournaments } from '../utils/api';
+import { getTournaments, getMyRegisteredTournaments, joinTournament } from '../utils/api';
 import './Tournaments.css';
 
 const Tournaments = () => {
@@ -8,6 +8,8 @@ const Tournaments = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stageFilter, setStageFilter] = useState('all');
+  const [registeredIds, setRegisteredIds] = useState(() => new Set());
+  const [actionError, setActionError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,8 +20,13 @@ const Tournaments = () => {
 
   const fetchTournaments = async () => {
     try {
-      const data = await getTournaments();
+      setActionError('');
+      const [data, mine] = await Promise.all([
+        getTournaments(),
+        getMyRegisteredTournaments().catch(() => []),
+      ]);
       setTournaments(data);
+      setRegisteredIds(new Set((mine || []).map((t) => String(t._id))));
     } catch (err) {
       console.error('Error fetching tournaments:', err);
       setError('Failed to load tournaments');
@@ -28,8 +35,17 @@ const Tournaments = () => {
     }
   };
 
-  const handleJoinQueue = (tournamentId) => {
-    navigate(`/queue/${tournamentId}`);
+  const handleJoinQueue = async (tournament) => {
+    if (!tournament?._id || !tournament.queueOpen) return;
+    setActionError('');
+    try {
+      await joinTournament(tournament._id);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Could not join this tournament. Check Epic verification and try again.';
+      setActionError(msg);
+      return;
+    }
+    navigate(`/queue/${tournament._id}`);
   };
   const handleViewLeaderboard = (tournamentId) => navigate(`/tournament/${tournamentId}/leaderboard`);
 
@@ -94,7 +110,7 @@ const Tournaments = () => {
       <div className="page-header">
         <div>
           <h1>Tournaments</h1>
-          <p className="subtitle">Compete in live Fortnite 1v1 events</p>
+          <p className="subtitle">1v1, 2v2, 3v3, and 4v4 events — join multiple tournaments anytime they are live</p>
         </div>
         <div className="tournament-count-badge">{filteredTournaments.length} event{filteredTournaments.length !== 1 ? 's' : ''}</div>
       </div>
@@ -114,7 +130,15 @@ const Tournaments = () => {
       <div className="tournament-help-row">
         <span><i className="fas fa-circle-info"></i> New player? Pick an Upcoming tournament and wait for queue open.</span>
         <span><i className="fas fa-gamepad"></i> Queue Open means you can join match queue instantly.</span>
+        <span><i className="fas fa-users"></i> Squad modes: build your team under Profile → Teams before queuing.</span>
       </div>
+
+      {actionError && (
+        <div className="tournament-alert error" style={{ marginBottom: 12 }}>
+          <span><i className="fas fa-exclamation-circle"></i> {actionError}</span>
+          <button type="button" onClick={() => setActionError('')} className="btn btn-ghost btn-sm">Dismiss</button>
+        </div>
+      )}
 
       {error && (
         <div className="tournament-alert error">
@@ -159,6 +183,9 @@ const Tournaments = () => {
                 ) : null}
                 <div className="tournament-card-header">
                   <span className={`tournament-stage-badge ${stageMeta.cls}`}>{stageMeta.label}</span>
+                  {registeredIds.has(String(tournament._id)) && (
+                    <span className="tournament-stage-badge stage-registered"><i className="fas fa-check"></i> Registered</span>
+                  )}
                   {tournament.prize && <span className="tournament-prize-badge"><i className="fas fa-trophy"></i> {tournament.prize}</span>}
                 </div>
 
@@ -204,7 +231,7 @@ const Tournaments = () => {
 
                 <div className="tournament-card-actions">
                   {queueOpen && !isEnded && (
-                    <button onClick={() => handleJoinQueue(tournament._id)} className="btn btn-success" style={{ flex: 1 }}>
+                    <button onClick={() => handleJoinQueue(tournament)} className="btn btn-success" style={{ flex: 1 }}>
                       <i className="fas fa-right-to-bracket"></i> {['2v2', '3v3', '4v4'].includes(tournament.type) ? 'Select Team & Queue' : 'Join Queue'}
                     </button>
                   )}
