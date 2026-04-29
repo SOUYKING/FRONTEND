@@ -153,7 +153,7 @@ const Leaderboard = () => {
   const typeLabel = tournamentMeta?.type || null;
 
   return (
-    <div className="leaderboard-page page-wrapper">
+    <div className={`leaderboard-page page-wrapper${id && isSquadTournament ? ' lb-page--squad' : ''}`}>
       {tournamentMeta && id && (
         <div className="lb-hero">
           {tournamentMeta.bannerImage ? (
@@ -194,7 +194,7 @@ const Leaderboard = () => {
             </div>
             {isSquadTournament && (
               <p className="lb-hero-hint">
-                One row per <strong>team name</strong> (e.g. #1 <strong>test1</strong>, #2 <strong>test2</strong>). Tap a team to see every player on that roster.
+                Teams ranked by wins. Open a card to see the full roster.
               </p>
             )}
           </div>
@@ -208,7 +208,7 @@ const Leaderboard = () => {
             {!id
               ? 'Top players worldwide'
               : isSquadTournament
-                ? 'Team records; expand a row to see every player'
+                ? 'Squad standings — tap any team for player details'
                 : 'Points and match record for this event'}
           </p>
         </div>
@@ -294,94 +294,111 @@ const Leaderboard = () => {
               <Link to={`/queue/${id}`} className="btn btn-primary btn-sm">Go to queue</Link>
             </div>
           ) : (
-            <div className="lb-table-wrap lb-squad-team-table">
-              <div className="lb-table-head lb-squad-team-head" aria-hidden="true">
-                <span className="lb-th-rank">#</span>
-                <span className="lb-th-team-main">Team name</span>
-                <span className="lb-th-stat">W</span>
-                <span className="lb-th-stat">L</span>
-                <span className="lb-th-stat lb-th-wr">Win%</span>
-                <span className="lb-th-points">Avg pts</span>
-                <span className="lb-th-expand" aria-hidden />
-              </div>
-              <div className="leaderboard-list">
-                {teamRollup.map((team, index) => {
-                  const rank = getRankDisplay(index);
-                  const key = teamRowKey(team, index);
-                  const open = expandedTeamKey === key;
-                  return (
-                    <div
-                      key={key || index}
-                      className={`lb-squad-team-block ${getRankClass(index)}`}
+            <div className="lb-squad-standings">
+              {teamRollup.map((team, index) => {
+                const rank = getRankDisplay(index);
+                const key = teamRowKey(team, index);
+                const open = expandedTeamKey === key;
+                const tier = getRankClass(index);
+                return (
+                  <div
+                    key={key || index}
+                    className={`lb-squad-card ${tier}${open ? ' is-open' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="lb-squad-card-hit"
+                      onClick={() => setExpandedTeamKey(open ? null : key)}
+                      aria-expanded={open}
+                      aria-controls={`roster-${key}`}
                     >
-                      <button
-                        type="button"
-                        className={`leaderboard-item lb-row lb-team-summary-row${open ? ' is-open' : ''}`}
-                        onClick={() => setExpandedTeamKey(open ? null : key)}
-                        aria-expanded={open}
-                      >
-                        <div className={`leaderboard-rank lb-rank ${rank.cls}`}>{rank.label}</div>
-                        <div className="lb-team-summary-cell">
-                          <div className="lb-team-summary-text">
-                            <div className="lb-team-summary-name">{team.displayName}</div>
-                            <div className="lb-team-summary-sub">
+                      <div className={`lb-squad-rank-badge ${rank.cls || 'plain'}`}>
+                        <span className="lb-squad-rank-num">{rank.label}</span>
+                        {index === 0 && <span className="lb-squad-rank-label">1st</span>}
+                        {index === 1 && <span className="lb-squad-rank-label">2nd</span>}
+                        {index === 2 && <span className="lb-squad-rank-label">3rd</span>}
+                      </div>
+                      <div className="lb-squad-card-body">
+                        <div className="lb-squad-card-top">
+                          <div className="lb-squad-avatar-stack" aria-hidden>
+                            {team.members.slice(0, 4).map((m) => (
+                              <span key={m.userId} className="lb-squad-stack-face">
+                                <img
+                                  src={buildDiscordAvatar(m.discordId, m.discordAvatar) || DISCORD_AVATAR_FALLBACK}
+                                  alt=""
+                                />
+                              </span>
+                            ))}
+                          </div>
+                          <div className="lb-squad-title-block">
+                            <h3 className="lb-squad-team-title">{team.displayName}</h3>
+                            <p className="lb-squad-team-sub">
                               {team.memberCount} {team.memberCount === 1 ? 'player' : 'players'}
-                              {' · '}
-                              {open ? 'Hide players' : 'Show players'}
-                            </div>
+                              {open ? ' · roster open' : ' · tap for roster'}
+                            </p>
                           </div>
                         </div>
-                        <div className="lb-stat">{team.wins ?? 0}</div>
-                        <div className="lb-stat">{team.losses ?? 0}</div>
-                        <div className="lb-stat lb-stat-wr">{team.winRateLabel}</div>
-                        <div className="leaderboard-points lb-points">{team.avgPoints ?? 0}</div>
-                        <div className="lb-expand-icon" aria-hidden>
-                          <i className={`fas fa-chevron-${open ? 'up' : 'down'}`} />
+                        <div className="lb-squad-stat-strip">
+                          <div className="lb-squad-stat-pill">
+                            <span className="lb-squad-stat-k">Record</span>
+                            <span className="lb-squad-stat-v">{team.wins ?? 0}–{team.losses ?? 0}</span>
+                          </div>
+                          <div className="lb-squad-stat-pill">
+                            <span className="lb-squad-stat-k">Win rate</span>
+                            <span className="lb-squad-stat-v">{team.winRateLabel}</span>
+                          </div>
+                          <div className="lb-squad-stat-pill lb-squad-stat-pill--accent">
+                            <span className="lb-squad-stat-k">Avg pts</span>
+                            <span className="lb-squad-stat-v">{team.avgPoints ?? 0}</span>
+                          </div>
                         </div>
-                        <div className="lb-row-mobile-meta lb-row-mobile-meta--team">
-                          <span>{team.wins ?? 0}W · {team.losses ?? 0}L</span>
-                          <span>{team.winRateLabel} WR</span>
-                          <span className="lb-m-pts">{team.avgPoints ?? 0} avg pts</span>
+                      </div>
+                      <div className="lb-squad-chevron" aria-hidden>
+                        <i className={`fas fa-chevron-${open ? 'up' : 'down'}`} />
+                      </div>
+                    </button>
+                    {open ? (
+                      <div className="lb-squad-roster" id={`roster-${key}`}>
+                        <div className="lb-squad-roster-head">
+                          <span className="lb-squad-roster-title">Roster</span>
+                          <span className="lb-squad-roster-team">{team.displayName}</span>
                         </div>
-                      </button>
-                      {open ? (
-                        <div className="lb-team-players-drawer" id={`roster-${key}`}>
-                          <div className="lb-drawer-label">Players — {team.displayName}</div>
+                        <ul className="lb-squad-roster-list">
                           {team.members.map((m) => {
                             const wrM = winRate(m.wins, m.losses);
                             return (
-                              <div key={m.userId} className="lb-roster-player-row">
-                                <div className="lb-player-cell">
-                                  <div className="leaderboard-avatar lb-avatar lb-avatar--sm">
+                              <li key={m.userId} className="lb-squad-player-tile">
+                                <div className="lb-squad-player-id">
+                                  <div className="lb-squad-player-av">
                                     <img
                                       src={buildDiscordAvatar(m.discordId, m.discordAvatar) || DISCORD_AVATAR_FALLBACK}
                                       alt=""
                                     />
                                   </div>
-                                  <div className="lb-name-block">
-                                    <div className="leaderboard-name">{m.discordName || 'Player'}</div>
+                                  <div>
+                                    <div className="lb-squad-player-name">{m.discordName || 'Player'}</div>
                                     {m.epicName ? (
-                                      <div className="lb-epic">
+                                      <div className="lb-squad-player-epic">
                                         <i className="fas fa-gamepad" /> {m.epicName}
                                       </div>
                                     ) : null}
                                   </div>
                                 </div>
-                                <div className="lb-roster-stats">
-                                  <span><strong>{m.wins ?? 0}</strong> W</span>
-                                  <span><strong>{m.losses ?? 0}</strong> L</span>
-                                  <span className="lb-roster-wr">{wrM}</span>
-                                  <span className="lb-roster-pts">{m.points ?? 0} pts</span>
+                                <div className="lb-squad-player-metrics">
+                                  <span>{m.wins ?? 0}W</span>
+                                  <span>{m.losses ?? 0}L</span>
+                                  <span className="lb-squad-player-wr">{wrM}</span>
+                                  <span className="lb-squad-player-pts">{m.points ?? 0} pts</span>
                                 </div>
-                              </div>
+                              </li>
                             );
                           })}
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           )}
         </>
