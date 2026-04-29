@@ -50,6 +50,7 @@ const MatchHistoryPage = () => {
     draw: matches.filter(m => m.result === 'Draw').length,
     disputed: matches.filter(m => m.disputed).length,
   };
+  const winRate = counts.all ? Math.round((counts.win / counts.all) * 100) : 0;
 
   const handleRowClick = async (match) => {
     setSelectedMatch(match);
@@ -108,13 +109,21 @@ const MatchHistoryPage = () => {
       <div className="page-header">
         <div>
           <h1>Match History</h1>
-          <p className="subtitle">Track your matches, open details, and review evidence/chat in one place</p>
+          <p className="subtitle">Simple, clear match records with one-click details and evidence review</p>
         </div>
+      </div>
+
+      <div className="match-history-overview">
+        <div className="overview-card"><span>Total Matches</span><strong>{counts.all}</strong></div>
+        <div className="overview-card"><span>Win Rate</span><strong>{winRate}%</strong></div>
+        <div className="overview-card"><span>Disputes</span><strong>{counts.disputed}</strong></div>
+        <div className="overview-card"><span>Draws</span><strong>{counts.draw}</strong></div>
       </div>
 
       <div className="match-history-tips">
         <span><i className="fas fa-lightbulb"></i> Click any row to open full match details.</span>
         <span><i className="fas fa-filter"></i> Use filters to quickly find disputed or lost matches.</span>
+        <span><i className="fas fa-shield-alt"></i> Match details show chat logs, votes, and submitted evidence.</span>
       </div>
 
       {error && <div style={{ padding: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', marginBottom: 16, color: 'var(--red)', fontSize: '0.85rem' }}>{error}</div>}
@@ -154,7 +163,7 @@ const MatchHistoryPage = () => {
                 <div className="match-history-players">
                   You <span className="vs-text">vs</span> {match.opponent || 'Unknown Player'}
                 </div>
-                <div className="match-history-date">{new Date(match.date).toLocaleDateString()} · Click to view details</div>
+                <div className="match-history-date">{new Date(match.date).toLocaleDateString()} · Tap to open full match report</div>
               </div>
               <div className={`match-history-result ${resultClass(match.result, match.disputed)}`}>
                 {resultLabel(match.result)}
@@ -239,7 +248,7 @@ const MatchHistoryPage = () => {
                   </div>
 
                   {Object.keys(detail.reports || {}).length > 0 && (
-                    <div className="detail-section" style={{ marginTop: 16 }}>
+                    <div className="detail-section detail-surface" style={{ marginTop: 16 }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                         <i className="fas fa-vote-yea" style={{ color: 'var(--cyan)' }}></i> Player Votes
                       </label>
@@ -274,7 +283,7 @@ const MatchHistoryPage = () => {
                   )}
 
                   {detail.chatLogs?.length > 0 && (
-                    <div className="detail-section" style={{ marginTop: 16 }}>
+                    <div className="detail-section detail-surface" style={{ marginTop: 16 }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                         <i className="fas fa-comments" style={{ color: 'var(--purple)' }}></i> Match Chat ({detail.chatLogs.length})
                       </label>
@@ -304,7 +313,7 @@ const MatchHistoryPage = () => {
                   )}
 
                   {detail.evidence?.length > 0 && (
-                    <div className="detail-section" style={{ marginTop: 16 }}>
+                    <div className="detail-section detail-surface" style={{ marginTop: 16 }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                         <i className="fas fa-paperclip" style={{ color: 'var(--orange)' }}></i> Evidence ({detail.evidence.length})
                       </label>

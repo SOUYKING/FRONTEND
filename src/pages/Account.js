@@ -105,71 +105,38 @@ const Account = () => {
             </div>
           </div>
           <h2 className="account-name">{userData?.discordName || userData?.username || 'Player'}</h2>
-          <p className="account-epic-name">{userData?.epicGamesName || 'Not verified'}</p>
-
-          <div className="account-stats-row">
-            <div className="account-stat-box">
-              <div className="value">{userData?.wins || 0}</div>
-              <div className="label">Wins</div>
-            </div>
-            <div className="account-stat-box">
-              <div className="value">{userData?.losses || 0}</div>
-              <div className="label">Losses</div>
-            </div>
-            <div className="account-stat-box">
-              <div className="value">{userData?.totalMatches || 0}</div>
-              <div className="label">Matches</div>
-            </div>
-            <div className="account-stat-box">
-              <div className="value">{winRate}%</div>
-              <div className="label">Win Rate</div>
-            </div>
-          </div>
-
+          <p className="account-epic-name">{userData?.epicGamesName || 'Epic not linked yet'}</p>
           <div className="rank-progress-bar">
             <div className="rank-progress-fill" style={{ width: `${progress}%`, background: rank.color }} />
           </div>
-          <p className="account-helper-text">Tip: Keep your Epic name accurate so opponents can add you faster.</p>
+          <p className="account-helper-text">Rank: <strong style={{ color: rank.color }}>{rankLabel}</strong> · Points: <strong>{pts}</strong></p>
         </div>
 
         <div>
           <div className="account-main-card">
-            <h3 className="account-section-title"><i className="fas fa-circle-info"></i> Quick Help</h3>
+            <h3 className="account-section-title"><i className="fas fa-circle-info"></i> Quick Start</h3>
             <div className="account-help-list">
-              <div className="account-help-item"><strong>1.</strong> Verify your Epic username before joining queue.</div>
-              <div className="account-help-item"><strong>2.</strong> Use the update button only if your Epic name changed.</div>
-              <div className="account-help-item"><strong>3.</strong> If you entered the wrong name, contact staff from match page support tools.</div>
+              <div className="account-help-item"><strong>Step 1:</strong> Check your Discord profile info is correct.</div>
+              <div className="account-help-item"><strong>Step 2:</strong> Link your Epic username to join tournaments.</div>
+              <div className="account-help-item"><strong>Step 3:</strong> Track your stats and rank progress below.</div>
             </div>
           </div>
 
           <div className="account-main-card">
-            <h3 className="account-section-title"><i className="fas fa-user"></i> Discord Profile</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Username</span>
-                <span style={{ fontWeight: 600 }}>{userData?.discordName || userData?.username || '—'}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Role</span>
-                <span className={`role-badge ${userData?.role || 'player'}`}>{userData?.role || 'Player'}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Rank</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: rank.color }}>
-                  <img src={rank.icon} alt="" className="rank-icon-img" /> {rankLabel}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Ranking Points</span>
-                <span style={{ fontWeight: 700, color: 'var(--cyan)' }}>{pts}</span>
-              </div>
+            <h3 className="account-section-title"><i className="fas fa-user"></i> Profile Summary</h3>
+            <div className="account-summary-grid">
+              <div className="account-summary-item"><span>Discord Name</span><strong>{userData?.discordName || userData?.username || '—'}</strong></div>
+              <div className="account-summary-item"><span>Role</span><strong className={`role-badge ${userData?.role || 'player'}`}>{userData?.role || 'Player'}</strong></div>
+              <div className="account-summary-item"><span>Current Rank</span><strong style={{ color: rank.color }}>{rankLabel}</strong></div>
+              <div className="account-summary-item"><span>Ranking Points</span><strong style={{ color: 'var(--cyan)' }}>{pts}</strong></div>
             </div>
           </div>
 
           <div className="account-main-card">
-            <h3 className="account-section-title"><i className="fas fa-shield-halved"></i> Epic Games {userData?.epicVerified && <span style={{ color: 'var(--green)', fontSize: '0.7rem', marginLeft: 8 }}>✓ Verified</span>}</h3>
+            <h3 className="account-section-title"><i className="fas fa-shield-halved"></i> Epic Games</h3>
             {!userData?.epicVerified ? (
               <div className="settings-form">
+                <p className="account-inline-note">You must verify your Epic username before joining queue.</p>
                 <div className="input-group">
                   <label>Epic Games Username</label>
                   <input
@@ -191,7 +158,7 @@ const Account = () => {
                     <div className="verification-icon epic"><i className="fas fa-check-circle"></i></div>
                     <div className="verification-text">
                       <strong>{userData.epicGamesName}</strong>
-                      <span>Other players can add you by this name</span>
+                      <span>Verified and ready for matchmaking</span>
                     </div>
                   </div>
                   <button onClick={() => setShowUpdateForm(!showUpdateForm)} className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }}>
@@ -200,9 +167,7 @@ const Account = () => {
                 </div>
                 {showUpdateForm && (
                   <div className="settings-form" style={{ marginTop: 12 }}>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-                      You can change your Epic account once every 7 days.
-                    </p>
+                    <p className="account-inline-note">You can change Epic name once every 7 days.</p>
                     <div className="input-group">
                       <label>New Epic Games Username</label>
                       <input
@@ -228,11 +193,11 @@ const Account = () => {
           </div>
 
           <div className="account-main-card">
-            <h3 className="account-section-title"><i className="fas fa-chart-simple"></i> Statistics</h3>
+            <h3 className="account-section-title"><i className="fas fa-chart-simple"></i> Stats Overview</h3>
             <div className="account-stats-row" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
               <div className="account-stat-box"><div className="value">{userData?.wins || 0}</div><div className="label">Wins</div></div>
               <div className="account-stat-box"><div className="value">{userData?.losses || 0}</div><div className="label">Losses</div></div>
-              <div className="account-stat-box"><div className="value">{userData?.totalMatches || 0}</div><div className="label">Total</div></div>
+              <div className="account-stat-box"><div className="value">{userData?.totalMatches || 0}</div><div className="label">Matches</div></div>
               <div className="account-stat-box"><div className="value">{winRate}%</div><div className="label">Win Rate</div></div>
             </div>
             <div className="account-stats-row" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
