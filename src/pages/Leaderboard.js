@@ -25,15 +25,21 @@ function buildTeamRollup(entries, tournamentType) {
   if (!TEAM_TYPES.has(tournamentType || '')) return [];
   const byTeam = new Map();
   for (const e of entries) {
-    const tid = e.teamId || `__solo_${e.userId}`;
+    const hasTeamId = e.teamId != null && String(e.teamId).trim() !== '';
+    const tid = hasTeamId ? String(e.teamId).trim() : `__solo_${e.userId}`;
     if (!byTeam.has(tid)) {
       byTeam.set(tid, {
-        teamId: e.teamId,
-        teamName: e.teamId ? (e.teamName || 'Team') : null,
+        teamId: hasTeamId ? String(e.teamId).trim() : null,
+        teamName: null,
         members: [],
       });
     }
-    byTeam.get(tid).members.push(e);
+    const bucket = byTeam.get(tid);
+    bucket.members.push(e);
+    const nm = e.teamName && String(e.teamName).trim();
+    if (nm && (!bucket.teamName || nm.length > bucket.teamName.length)) {
+      bucket.teamName = nm;
+    }
   }
   const rows = [...byTeam.values()].map((t) => {
     const { members } = t;
@@ -43,9 +49,15 @@ function buildTeamRollup(entries, tournamentType) {
     const wins = members[0]?.wins ?? 0;
     const losses = members[0]?.losses ?? 0;
     const roster = [...members].sort((a, b) => (b.points || 0) - (a.points || 0));
+    const displayName =
+      (t.teamName && t.teamName.trim()) ||
+      roster.map((m) => m.teamName).find((n) => n && String(n).trim()) ||
+      (roster.length === 1 ? String(roster[0].discordName || 'Player').trim() : null) ||
+      `Team (${roster.length})`;
     return {
       ...t,
       members: roster,
+      displayName,
       avgPoints,
       wins,
       losses,
@@ -182,7 +194,7 @@ const Leaderboard = () => {
             </div>
             {isSquadTournament && (
               <p className="lb-hero-hint">
-                Squad standings are by <strong>team</strong> (wins, losses, avg points). Tap a row to open the roster and each player&apos;s stats.
+                One row per <strong>team name</strong> (e.g. #1 <strong>test1</strong>, #2 <strong>test2</strong>). Tap a team to see every player on that roster.
               </p>
             )}
           </div>
@@ -285,7 +297,7 @@ const Leaderboard = () => {
             <div className="lb-table-wrap lb-squad-team-table">
               <div className="lb-table-head lb-squad-team-head" aria-hidden="true">
                 <span className="lb-th-rank">#</span>
-                <span className="lb-th-team-main">Team</span>
+                <span className="lb-th-team-main">Team name</span>
                 <span className="lb-th-stat">W</span>
                 <span className="lb-th-stat">L</span>
                 <span className="lb-th-stat lb-th-wr">Win%</span>
@@ -310,22 +322,12 @@ const Leaderboard = () => {
                       >
                         <div className={`leaderboard-rank lb-rank ${rank.cls}`}>{rank.label}</div>
                         <div className="lb-team-summary-cell">
-                          <div className="lb-team-summary-avatars" aria-hidden>
-                            {team.members.slice(0, 4).map((m) => (
-                              <span key={m.userId} className="lb-summary-av">
-                                <img
-                                  src={buildDiscordAvatar(m.discordId, m.discordAvatar) || DISCORD_AVATAR_FALLBACK}
-                                  alt=""
-                                />
-                              </span>
-                            ))}
-                          </div>
                           <div className="lb-team-summary-text">
-                            <div className="lb-team-summary-name">{team.teamName || 'Team'}</div>
+                            <div className="lb-team-summary-name">{team.displayName}</div>
                             <div className="lb-team-summary-sub">
                               {team.memberCount} {team.memberCount === 1 ? 'player' : 'players'}
                               {' · '}
-                              {open ? 'Hide roster' : 'Show roster'}
+                              {open ? 'Hide players' : 'Show players'}
                             </div>
                           </div>
                         </div>
@@ -344,7 +346,7 @@ const Leaderboard = () => {
                       </button>
                       {open ? (
                         <div className="lb-team-players-drawer" id={`roster-${key}`}>
-                          <div className="lb-drawer-label">Roster</div>
+                          <div className="lb-drawer-label">Players — {team.displayName}</div>
                           {team.members.map((m) => {
                             const wrM = winRate(m.wins, m.losses);
                             return (
