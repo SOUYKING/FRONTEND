@@ -295,6 +295,181 @@
   transform: translateY(0);
 }
 
+.teams-search-results {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.teams-search-results.teams-list-scroll {
+  max-height: 280px;
+  padding-right: 4px;
+}
+
+.teams-search-results__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border: 1px dashed rgba(46, 242, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.teams-search-results__spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(46, 242, 255, 0.12);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: teams-search-spin 0.65s linear infinite;
+}
+
+@keyframes teams-search-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.teams-search-results__empty {
+  margin: 0;
+  padding: 14px 12px;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.teams-player-hit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.38);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.teams-player-hit:hover {
+  border-color: rgba(46, 242, 255, 0.22);
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 20px rgba(46, 242, 255, 0.06);
+}
+
+.teams-player-hit--drafted {
+  border-color: rgba(249, 197, 0, 0.35);
+  background: rgba(249, 197, 0, 0.06);
+}
+
+.teams-player-hit__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid rgba(46, 242, 255, 0.25);
+  box-shadow: 0 0 16px rgba(46, 242, 255, 0.12);
+}
+
+.teams-player-hit__body {
+  flex: 1 1 140px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.teams-player-hit__name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.teams-player-hit__sub {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.teams-player-hit__sub--muted {
+  color: var(--text-muted);
+  font-family: inherit;
+  font-style: italic;
+}
+
+.teams-player-hit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.teams-player-hit__badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 100px;
+  background: rgba(249, 197, 0, 0.15);
+  color: #f6d872;
+  border: 1px solid rgba(249, 197, 0, 0.35);
+}
+
+.teams-player-hit__btn {
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: filter 0.15s ease, opacity 0.15s ease, transform 0.12s ease;
+}
+
+.teams-player-hit__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.teams-player-hit__btn--ghost {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.teams-player-hit__btn--ghost:hover:not(:disabled) {
+  border-color: rgba(46, 242, 255, 0.35);
+  color: var(--cyan);
+}
+
+.teams-player-hit__btn--primary {
+  background: linear-gradient(135deg, var(--cyan), #5ee7df);
+  color: #061018;
+  border-color: transparent;
+  box-shadow: 0 2px 12px rgba(46, 242, 255, 0.2);
+}
+
+.teams-player-hit__btn--primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
 .teams-list {
   display: flex;
   flex-direction: column;
@@ -507,11 +682,6 @@
   margin: 0;
   color: var(--text-muted);
   font-size: 0.88rem;
-}
-
-.teams-search-name {
-  font-weight: 600;
-  color: var(--text-secondary);
 }
 
 .teams-list-tile {

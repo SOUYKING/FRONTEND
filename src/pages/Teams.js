@@ -27,6 +27,8 @@ const Teams = () => {
   const [teamSize, setTeamSize] = useState(2);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchHasRun, setSearchHasRun] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [activeTab, setActiveTab] = useState('my-teams');
@@ -117,13 +119,20 @@ const Teams = () => {
     const query = searchQuery.trim();
     if (query.length < 2) {
       setSearchResults([]);
+      setSearchHasRun(false);
       return;
     }
     try {
+      setSearchLoading(true);
+      setError('');
       const users = await searchUsersForTeam(query);
       setSearchResults(users || []);
+      setSearchHasRun(true);
     } catch (err) {
       setError(err.response?.data?.message || 'Search failed');
+      setSearchHasRun(true);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -400,16 +409,53 @@ const Teams = () => {
                 Search
               </button>
             </div>
-            <div className="teams-list teams-list-scroll">
-              {searchResults.map((u) => (
-                <div key={u.discordId} className="team-row">
-                  <span className="teams-search-name">{u.discordName}</span>
-                  <div className="teams-search-actions">
-                    <button type="button" className="btn btn-sm btn-ghost" onClick={() => handleAddSelectedMember(u)}>Draft</button>
-                    <button type="button" className="btn btn-sm btn-primary" disabled={actionBusy || !selectedTeamId || selectedTeamIsLocked} onClick={() => handleSendInvite(u)}>Invite</button>
-                  </div>
+            <div className="teams-search-results teams-list-scroll" aria-busy={searchLoading}>
+              {searchLoading && (
+                <div className="teams-search-results__loading">
+                  <span className="teams-search-results__spinner" aria-hidden />
+                  Searching players…
                 </div>
-              ))}
+              )}
+              {!searchLoading && searchHasRun && searchResults.length === 0 && searchQuery.trim().length >= 2 && (
+                <p className="teams-search-results__empty">No players match that name. Try a different spelling.</p>
+              )}
+              {!searchLoading && searchResults.map((u) => {
+                const avatarSrc = buildDiscordAvatar(u.discordId, u.discordAvatar) || DISCORD_AVATAR_FALLBACK;
+                const inDraft = selectedMembers.some((m) => m.discordId === u.discordId);
+                const epic = u.epicGamesName?.trim();
+                return (
+                  <div key={u.discordId} className={`teams-player-hit ${inDraft ? 'teams-player-hit--drafted' : ''}`}>
+                    <img className="teams-player-hit__avatar" src={avatarSrc} alt="" width={48} height={48} />
+                    <div className="teams-player-hit__body">
+                      <span className="teams-player-hit__name">{u.discordName}</span>
+                      {epic ? (
+                        <span className="teams-player-hit__sub">Epic: {epic}</span>
+                      ) : (
+                        <span className="teams-player-hit__sub teams-player-hit__sub--muted">Discord profile</span>
+                      )}
+                    </div>
+                    <div className="teams-player-hit__actions">
+                      {inDraft && <span className="teams-player-hit__badge">In draft</span>}
+                      <button
+                        type="button"
+                        className="teams-player-hit__btn teams-player-hit__btn--ghost"
+                        onClick={() => handleAddSelectedMember(u)}
+                        disabled={inDraft || actionBusy}
+                      >
+                        Draft
+                      </button>
+                      <button
+                        type="button"
+                        className="teams-player-hit__btn teams-player-hit__btn--primary"
+                        disabled={actionBusy || !selectedTeamId || selectedTeamIsLocked}
+                        onClick={() => handleSendInvite(u)}
+                      >
+                        Invite
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
