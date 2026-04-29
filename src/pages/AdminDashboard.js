@@ -350,7 +350,9 @@ const AdminDashboard = () => {
       case 'strike': return `${item.discordName} striked by ${item.by}${item.autoBanned ? ' [auto-ban]' : ''}`;
       case 'queue-join': return `${item.username} joined queue (${item.tournamentId?.substring(0, 8)}...)`;
       case 'queue-leave': return `User left queue (${item.userId?.substring(0, 8)}...)`;
-      case 'match-start': return `Match: ${item.player1} vs ${item.player2}`;
+      case 'match-start': return item.teamMatch
+        ? `Squad match: ${item.player1} vs ${item.player2}`
+        : `Match: ${item.player1} vs ${item.player2}`;
       case 'report': return `Report in match ${item.matchId?.substring(0, 8)}...`;
       default: return `Event: ${JSON.stringify(item).substring(0, 60)}`;
     }
@@ -996,7 +998,10 @@ const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getSta
                 <div className="participants-list">
                   {tournament.participants?.length > 0 ? tournament.participants.map((p, i) => (
                     <div key={i} className="participant-item">
-                      <span className="name">{p.discordName || p.userId}</span>
+                      <div className="participant-id-block">
+                        <span className="name">{p.discordName || p.userId}</span>
+                        {p.teamName ? <span className="participant-team-tag">{p.teamName}</span> : null}
+                      </div>
                       <span className="epic">{p.epicName || '—'}</span>
                     </div>
                   )) : <p className="no-data">No participants yet</p>}
@@ -1367,6 +1372,34 @@ const AnticheatTab = ({ api }) => {
   );
 };
 
+function adminSquadLabelPlayer1(m) {
+  if (!m.teamMatch) return null;
+  if (m.result === 'player1') return m.winnerTeamName || null;
+  if (m.result === 'player2') return m.loserTeamName || null;
+  if (m.winnerDiscordId && m.player1?.discordId && m.winnerDiscordId === m.player1.discordId) return m.winnerTeamName;
+  if (m.loserDiscordId && m.player1?.discordId && m.loserDiscordId === m.player1.discordId) return m.loserTeamName;
+  return null;
+}
+
+function adminSquadLabelPlayer2(m) {
+  if (!m.teamMatch) return null;
+  if (m.result === 'player2') return m.winnerTeamName || null;
+  if (m.result === 'player1') return m.loserTeamName || null;
+  if (m.winnerDiscordId && m.player2?.discordId && m.winnerDiscordId === m.player2.discordId) return m.winnerTeamName;
+  if (m.loserDiscordId && m.player2?.discordId && m.loserDiscordId === m.player2.discordId) return m.loserTeamName;
+  return null;
+}
+
+function adminFormatMatchResult(m) {
+  if (m.result === 'draw') return 'Draw';
+  if (m.teamMatch && m.winnerTeamName && m.loserTeamName && (m.result === 'player1' || m.result === 'player2')) {
+    return `${m.winnerTeamName} def. ${m.loserTeamName}`;
+  }
+  if (m.result === 'player1') return `${m.player1?.discordName || 'P1'} win`;
+  if (m.result === 'player2') return `${m.player2?.discordName || 'P2'} win`;
+  return m.result || '—';
+}
+
 const MatchesTab = ({ api, notify, focusedMatchId }) => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1415,7 +1448,10 @@ const MatchesTab = ({ api, notify, focusedMatchId }) => {
   return (
     <div className="matches-tab">
       <div className="tab-title-section">
-        <h2>Match History</h2>
+        <div>
+          <h2>Matches</h2>
+          <p className="section-subtitle">1v1 and squad (2v2–4v4): captains in columns, squad names when stored</p>
+        </div>
         <div className="filter-tabs sm">
           <button className={filter === 'all' ? 'active' : ''} onClick={() => { setFilter('all'); setPage(1); }}>All</button>
           <button className={filter === 'completed' ? 'active' : ''} onClick={() => { setFilter('completed'); setPage(1); }}>Completed</button>
@@ -1425,10 +1461,15 @@ const MatchesTab = ({ api, notify, focusedMatchId }) => {
       </div>
 
       {focusedMatch && (
-        <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(46,242,255,0.3)', background: 'rgba(46,242,255,0.08)', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-          <strong style={{ color: 'var(--cyan)' }}>Focused alert match:</strong>{' '}
-          {focusedMatch.player1?.discordName || 'P1'} vs {focusedMatch.player2?.discordName || 'P2'}{' '}
-          <span style={{ opacity: 0.8 }}>({focusedMatch._id})</span>
+        <div className="admin-focused-match-banner">
+          <strong>Focused alert match</strong>
+          <span className="admin-focused-match-line">
+            {focusedMatch.teamMatch && focusedMatch.winnerTeamName
+              ? `${focusedMatch.winnerTeamName || 'Squad'} vs ${focusedMatch.loserTeamName || 'Squad'} · `
+              : null}
+            Captains {focusedMatch.player1?.discordName || 'P1'} vs {focusedMatch.player2?.discordName || 'P2'}
+          </span>
+          <span className="admin-focused-match-id">{focusedMatch._id}</span>
         </div>
       )}
 
@@ -1437,35 +1478,56 @@ const MatchesTab = ({ api, notify, focusedMatchId }) => {
           <thead>
             <tr>
               <th>Date</th>
-              <th>Player 1</th>
-              <th>Player 2</th>
+              <th>Format</th>
+              <th>Side 1 (captain)</th>
+              <th>Side 2 (captain)</th>
               <th>Result</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {matches.map(m => (
+            {matches.map(m => {
+              const mode = m.tournamentType || '1v1';
+              const s1 = adminSquadLabelPlayer1(m);
+              const s2 = adminSquadLabelPlayer2(m);
+              return (
               <tr
                 key={m._id}
-                className={m.disputed ? 'disputed-row' : ''}
+                className={`${m.disputed ? 'disputed-row' : ''}${m.teamMatch ? ' match-row-squad' : ''}`}
                 style={focusedMatchId && String(m._id) === String(focusedMatchId) ? { outline: '2px solid var(--cyan)', background: 'rgba(46,242,255,0.06)' } : undefined}
               >
-                <td className="cell-date">{new Date(m.date).toLocaleDateString()}</td>
-                <td className="cell-player">
-                  <img src={buildDiscordAvatar(m.player1?.discordId, m.player1?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="mini-avatar" />
-                  <span>{m.player1?.discordName || 'Unknown'}</span>
+                <td className="cell-date">
+                  <div>{new Date(m.date).toLocaleDateString()}</div>
+                  {m.tournamentTitle && (
+                    <div className="admin-match-tourney" title={m.tournamentTitle}>{m.tournamentTitle.length > 28 ? `${m.tournamentTitle.slice(0, 28)}…` : m.tournamentTitle}</div>
+                  )}
                 </td>
-                <td className="cell-player">
+                <td>
+                  <span className={`admin-match-mode-pill mode-${mode}`}>{mode}</span>
+                  {m.teamMatch ? <span className="admin-match-squad-tag">Squad</span> : null}
+                </td>
+                <td className="cell-player admin-match-side-cell">
+                  <img src={buildDiscordAvatar(m.player1?.discordId, m.player1?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="mini-avatar" />
+                  <div className="admin-match-side-text">
+                    <span className="admin-match-captain">{m.player1?.discordName || 'Unknown'}</span>
+                    {s1 ? <span className="admin-match-squad-name">{s1}</span> : m.teamMatch ? <span className="admin-match-squad-muted">Squad</span> : null}
+                  </div>
+                </td>
+                <td className="cell-player admin-match-side-cell">
                   <img src={buildDiscordAvatar(m.player2?.discordId, m.player2?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="mini-avatar" />
-                  <span>{m.player2?.discordName || 'Unknown'}</span>
+                  <div className="admin-match-side-text">
+                    <span className="admin-match-captain">{m.player2?.discordName || 'Unknown'}</span>
+                    {s2 ? <span className="admin-match-squad-name">{s2}</span> : m.teamMatch ? <span className="admin-match-squad-muted">Squad</span> : null}
+                  </div>
                 </td>
                 <td>
                   <span className={`match-result ${m.result === 'player1' ? 'p1' : m.result === 'player2' ? 'p2' : ''}`}>
-                    {m.result === 'player1' ? `${m.player1?.discordName || 'P1'} Win` :
-                     m.result === 'player2' ? `${m.player2?.discordName || 'P2'} Win` :
-                     m.result || '—'}
+                    {adminFormatMatchResult(m)}
                   </span>
+                  {m.teamMatch && (m.result === 'player1' || m.result === 'player2') && (
+                    <div className="admin-match-result-sub">Captain outcome (bracket side)</div>
+                  )}
                 </td>
                 <td>
                   <span className={`match-status-badge ${m.disputed ? 'disputed' : m.status || 'completed'}`}>
@@ -1475,19 +1537,20 @@ const MatchesTab = ({ api, notify, focusedMatchId }) => {
                 <td className="cell-actions">
                   {m.disputed || m.status === 'pending' ? (
                     <>
-                      <button className="btn-tiny success" onClick={() => overrideMatch(m._id, 'player1')}>
-                        {m.player1?.discordName?.split(' ')[0] || 'P1'}
+                      <button type="button" className="btn-tiny success" title="Side 1 captain wins" onClick={() => overrideMatch(m._id, 'player1')}>
+                        Side 1
                       </button>
-                      <button className="btn-tiny danger" onClick={() => overrideMatch(m._id, 'player2')}>
-                        {m.player2?.discordName?.split(' ')[0] || 'P2'}
+                      <button type="button" className="btn-tiny danger" title="Side 2 captain wins" onClick={() => overrideMatch(m._id, 'player2')}>
+                        Side 2
                       </button>
-                      <button className="btn-tiny" onClick={() => overrideMatch(m._id, 'draw')}>Draw</button>
+                      <button type="button" className="btn-tiny" onClick={() => overrideMatch(m._id, 'draw')}>Draw</button>
                     </>
                   ) : <span className="text-muted">—</span>}
                 </td>
               </tr>
-            ))}
-            {matches.length === 0 && <tr><td colSpan="6"><p className="no-data">No matches found</p></td></tr>}
+              );
+            })}
+            {matches.length === 0 && <tr><td colSpan="7"><p className="no-data">No matches found</p></td></tr>}
           </tbody>
         </table>
       </div>
