@@ -192,6 +192,11 @@
   font-size: 0.8rem;
   color: var(--text-secondary);
 }
+.notif-dropdown-subtitle {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
 .notif-dropdown-header button {
   background: none;
   border: none;

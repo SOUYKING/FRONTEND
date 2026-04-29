@@ -26,6 +26,8 @@ const AdminDashboard = () => {
   const [feedOpen, setFeedOpen] = useState(false);
   const [socketStatus, setSocketStatus] = useState('connecting');
   const [prevStats, setPrevStats] = useState(null);
+  const [focusedMatchId, setFocusedMatchId] = useState(null);
+  const staffNotifRef = useRef(null);
   const feedEndRef = useRef(null);
   const pollRef = useRef(null);
   const socketRef = useRef(null);
@@ -173,6 +175,17 @@ const AdminDashboard = () => {
     }
   }, [liveFeed, feedOpen]);
 
+  useEffect(() => {
+    const onPointerDown = (event) => {
+      if (!staffNotifRef.current) return;
+      if (!staffNotifRef.current.contains(event.target)) {
+        setStaffNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, []);
+
   const fetchDashboardStats = async () => {
     try {
       const res = await api.get('/admin/dashboard/stats');
@@ -318,9 +331,17 @@ const AdminDashboard = () => {
       } catch (err) {}
     }
     if (n.matchId) {
+      setFocusedMatchId(n.matchId);
       setActiveTab('matches');
       setStaffNotifOpen(false);
     }
+  };
+
+  const notifTypeIcon = (type) => {
+    if (type === 'dispute') return '⚖️';
+    if (type === 'call_staff') return '🆘';
+    if (type === 'match_completed') return '✅';
+    return '🔔';
   };
 
   const feedItemIcon = (type) => {
@@ -416,23 +437,26 @@ const AdminDashboard = () => {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="staff-notif-bell" onClick={() => setStaffNotifOpen(!staffNotifOpen)}>
+          <div className="staff-notif-bell" ref={staffNotifRef} onClick={() => setStaffNotifOpen(!staffNotifOpen)}>
             <span className="bell-icon">🔔</span>
             {staffNotifs.unreadCount > 0 && <span className="bell-count">{staffNotifs.unreadCount}</span>}
             <span className="bell-label">Staff Alerts</span>
           </div>
           {staffNotifOpen && (
-            <div className="staff-notif-dropdown">
+            <div className="staff-notif-dropdown" onClick={(e) => e.stopPropagation()}>
               <div className="notif-dropdown-header">
-                <strong>Staff Notifications</strong>
-                <button onClick={handleMarkAllRead}>Mark all read</button>
+                <div>
+                  <strong>Staff Alerts</strong>
+                  <div className="notif-dropdown-subtitle">Call staff, disputes, and urgent match reports.</div>
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); handleMarkAllRead(); }}>Mark all read</button>
               </div>
               <div className="notif-dropdown-list">
                 {staffNotifs.notifications.length === 0 ? (
-                  <div className="notif-empty">No notifications</div>
+                  <div className="notif-empty">No staff alerts right now.</div>
                 ) : staffNotifs.notifications.slice(0, 10).map(n => (
-                  <div key={n._id} className={`notif-item ${!n.read ? 'unread' : ''}`} onClick={() => handleNotifClick(n)}>
-                    <div className="notif-item-title">{n.title || n.type}</div>
+                  <div key={n._id} className={`notif-item ${!n.read ? 'unread' : ''}`} onClick={() => handleNotifClick(n)} title={n.matchId ? 'Open matches tab' : 'Alert'}>
+                    <div className="notif-item-title">{notifTypeIcon(n.type)} {n.title || n.type}</div>
                     <div className="notif-item-msg">{n.message}</div>
                     <div className="notif-item-time">{new Date(n.createdAt).toLocaleString()}</div>
                   </div>
@@ -503,7 +527,7 @@ const AdminDashboard = () => {
           />
         )}
         {activeTab === 'anticheat' && <AnticheatTab api={api} />}
-        {activeTab === 'matches' && <MatchesTab api={api} notify={showNotification} />}
+        {activeTab === 'matches' && <MatchesTab api={api} notify={showNotification} focusedMatchId={focusedMatchId} />}
 
         {activeTab === 'broadcast' && <BroadcastTab api={api} notify={showNotification} />}
       </main>
@@ -1137,7 +1161,30 @@ const UsersTab = ({ users, selectedUser, onSearch, onSelectUser, onAction, onWhi
               <div className="stat"><span>Losses</span><strong>{selectedUser.user?.losses || 0}</strong></div>
               <div className="stat"><span>Rank</span><strong>{getRankLabel(selectedUser.user?.rankingPoints || 0)}</strong></div>
             </div>
+            <div className="stats-grid-mini">
+              <div className="stat"><span>Warnings</span><strong>{selectedUser.activeWarnings?.length || 0}</strong></div>
+              <div className="stat"><span>Strikes</span><strong>{selectedUser.user?.strikes || 0}</strong></div>
+              <div className="stat"><span>Role</span><strong>{selectedUser.user?.role || 'player'}</strong></div>
+            </div>
             <div className="detail-section"><label>Epic Games</label><p>{selectedUser.user?.epicGamesName || 'Not verified'} {selectedUser.user?.epicVerified ? '✓' : ''}</p></div>
+            <div className="detail-section"><label>Chat Status</label><p>{selectedUser.user?.mutedUntil && new Date(selectedUser.user.mutedUntil) > new Date() ? `Muted until ${new Date(selectedUser.user.mutedUntil).toLocaleString()}` : 'Not muted'}</p></div>
+            <div className="detail-section"><label>Premium</label><p>{selectedUser.user?.isPremium ? `${selectedUser.user?.premiumTier || 'basic'} (expires ${selectedUser.user?.premiumExpiresAt ? new Date(selectedUser.user.premiumExpiresAt).toLocaleDateString() : 'N/A'})` : 'No premium'}</p></div>
+            {selectedUser.activeWarnings?.length > 0 && (
+              <div className="detail-section">
+                <label>Active Warnings</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {selectedUser.activeWarnings.slice(0, 5).map((warning) => (
+                    <div key={warning.warningId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, background: 'rgba(15,23,42,0.45)', border: '1px solid #334155', borderRadius: 8, padding: '8px 10px' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b', textTransform: 'uppercase' }}>{warning.type}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{warning.reason || 'No reason'}</div>
+                      </div>
+                      <button className="btn btn-sm" onClick={() => onAction(selectedUser.user?.discordId, `remove-warning/${warning.warningId}`)}>Remove</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {selectedUser.user?.ipAddresses?.length > 0 && (
               <div className="detail-section">
                 <label>IP Addresses</label>
@@ -1153,19 +1200,21 @@ const UsersTab = ({ users, selectedUser, onSearch, onSelectUser, onAction, onWhi
             )}
             <div className="action-buttons">
               <button className="btn" onClick={() => {
-                const reason = window.prompt('Warning reason:');
-                if (reason) onAction(selectedUser.user?.discordId, 'warn', { type: 'other', reason, daysUntilExpiry: 30 });
-              }}>Warn</button>
-              <button className="btn" onClick={() => {
-                const reason = window.prompt('Strike reason:');
-                if (reason) onAction(selectedUser.user?.discordId, 'strike', { reason });
-              }}>Strike</button>
-              <button className="btn reset" onClick={() => {
-                if (window.confirm('Reset this user\'s profile? This cannot be undone.')) {
-                  onAction(selectedUser.user?.discordId, 'reset', { resetType: 'full' });
+                const newEpicName = window.prompt('Enter corrected Epic name:', selectedUser.user?.epicGamesName || '');
+                if (newEpicName && newEpicName.trim()) {
+                  onAction(selectedUser.user?.discordId, 'update-epic', { epicGamesName: newEpicName.trim(), epicVerified: true });
                 }
-              }}>Reset</button>
-              <button className="btn" onClick={() => onAction(selectedUser.user?.discordId, 'remove-premium')}>Remove Premium</button>
+              }}>Update Epic Name</button>
+              <button className="btn reset" onClick={() => {
+                if (window.confirm('Reset wins/losses/draws/total matches only?')) {
+                  onAction(selectedUser.user?.discordId, 'reset', { resetType: 'stats_only' });
+                }
+              }}>Reset W/L Stats</button>
+              <button className="btn reset" onClick={() => {
+                if (window.confirm('Reset rank points only?')) {
+                  onAction(selectedUser.user?.discordId, 'reset', { resetType: 'rating_only' });
+                }
+              }}>Reset Rank</button>
               {selectedUser.user?.isBanned ? (
                 <button className="btn unban" onClick={() => onAction(selectedUser.user?.discordId, 'unban')}>Unban</button>
               ) : (
@@ -1314,19 +1363,20 @@ const AnticheatTab = ({ api }) => {
   );
 };
 
-const MatchesTab = ({ api, notify }) => {
+const MatchesTab = ({ api, notify, focusedMatchId }) => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [focusedMatch, setFocusedMatch] = useState(null);
 
   useEffect(() => { fetchMatches(); }, [api, filter, page]);
 
   const fetchMatches = async () => {
     try {
       const params = { limit: 50, page };
-      if (filter === 'disputed') { params.disputed = 'true'; params.status = 'disputed'; }
+      if (filter === 'disputed') { params.disputed = 'true'; }
       else if (filter !== 'all') params.status = filter;
       const res = await api.get('/admin/matches', { params });
       setMatches(res.data.matches);
@@ -1339,6 +1389,22 @@ const MatchesTab = ({ api, notify }) => {
     try { await api.post(`/admin/matches/${matchId}/override`, { winner }); fetchMatches(); notify('Match overridden', 'success'); }
     catch (err) { notify('Failed to override match', 'error'); }
   };
+
+  useEffect(() => {
+    const loadFocusedMatch = async () => {
+      if (!focusedMatchId) return;
+      try {
+        setFilter('all');
+        setPage(1);
+        const res = await api.get(`/admin/matches/${focusedMatchId}`);
+        setFocusedMatch(res.data);
+      } catch (err) {
+        setFocusedMatch(null);
+        notify('Alert match not found anymore', 'error');
+      }
+    };
+    loadFocusedMatch();
+  }, [focusedMatchId]);
 
   if (loading) return <div className="tab-loading">Loading...</div>;
 
@@ -1354,6 +1420,14 @@ const MatchesTab = ({ api, notify }) => {
         </div>
       </div>
 
+      {focusedMatch && (
+        <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(46,242,255,0.3)', background: 'rgba(46,242,255,0.08)', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+          <strong style={{ color: 'var(--cyan)' }}>Focused alert match:</strong>{' '}
+          {focusedMatch.player1?.discordName || 'P1'} vs {focusedMatch.player2?.discordName || 'P2'}{' '}
+          <span style={{ opacity: 0.8 }}>({focusedMatch._id})</span>
+        </div>
+      )}
+
       <div className="matches-table-wrap">
         <table>
           <thead>
@@ -1368,7 +1442,11 @@ const MatchesTab = ({ api, notify }) => {
           </thead>
           <tbody>
             {matches.map(m => (
-              <tr key={m._id} className={m.disputed ? 'disputed-row' : ''}>
+              <tr
+                key={m._id}
+                className={m.disputed ? 'disputed-row' : ''}
+                style={focusedMatchId && String(m._id) === String(focusedMatchId) ? { outline: '2px solid var(--cyan)', background: 'rgba(46,242,255,0.06)' } : undefined}
+              >
                 <td className="cell-date">{new Date(m.date).toLocaleDateString()}</td>
                 <td className="cell-player">
                   <img src={buildDiscordAvatar(m.player1?.discordId, m.player1?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" className="mini-avatar" />
