@@ -42,8 +42,10 @@ function buildTeamRollup(entries, tournamentType) {
       : 0;
     const wins = members[0]?.wins ?? 0;
     const losses = members[0]?.losses ?? 0;
+    const roster = [...members].sort((a, b) => (b.points || 0) - (a.points || 0));
     return {
       ...t,
+      members: roster,
       avgPoints,
       wins,
       losses,
@@ -51,7 +53,13 @@ function buildTeamRollup(entries, tournamentType) {
       memberCount: members.length,
     };
   });
-  rows.sort((a, b) => b.avgPoints - a.avgPoints);
+  rows.sort((a, b) => {
+    const wp = (b.wins || 0) - (a.wins || 0);
+    if (wp !== 0) return wp;
+    const lp = (a.losses || 0) - (b.losses || 0);
+    if (lp !== 0) return lp;
+    return (b.avgPoints || 0) - (a.avgPoints || 0);
+  });
   return rows;
 }
 
@@ -61,7 +69,7 @@ const Leaderboard = () => {
   const [tournamentMeta, setTournamentMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [view, setView] = useState('players');
+  const [expandedTeamKey, setExpandedTeamKey] = useState(null);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -101,9 +109,8 @@ const Leaderboard = () => {
     [entries, tournamentMeta?.type],
   );
 
-  useEffect(() => {
-    if (!isSquadTournament && view === 'teams') setView('players');
-  }, [isSquadTournament, view]);
+  const teamRowKey = (team, index) =>
+    team.teamId || team.members.map((m) => m.userId).join('|') || `team-row-${index}`;
 
   const getRankClass = (index) => {
     if (index === 0) return 'top-1';
@@ -159,15 +166,23 @@ const Leaderboard = () => {
                 <span className="lb-meta-chip lb-meta-prize"><i className="fas fa-trophy" /> {tournamentMeta.prize}</span>
               )}
               <span className="lb-meta-chip">
-                <i className="fas fa-users" /> {entries.length} {entries.length === 1 ? 'player' : 'players'}
-                {isSquadTournament && teamRollup.length > 0 && (
-                  <> · {teamRollup.length} {teamRollup.length === 1 ? 'team' : 'teams'}</>
+                <i className="fas fa-users" />
+                {isSquadTournament && teamRollup.length > 0 ? (
+                  <>
+                    {teamRollup.length} {teamRollup.length === 1 ? 'team' : 'teams'}
+                    {' · '}
+                    {entries.length} {entries.length === 1 ? 'player' : 'players'}
+                  </>
+                ) : (
+                  <>
+                    {entries.length} {entries.length === 1 ? 'player' : 'players'}
+                  </>
                 )}
               </span>
             </div>
             {isSquadTournament && (
               <p className="lb-hero-hint">
-                Squad event: rankings track each player; <strong>Teams</strong> view groups rosters and shows average points.
+                Squad standings are by <strong>team</strong> (wins, losses, avg points). Tap a row to open the roster and each player&apos;s stats.
               </p>
             )}
           </div>
@@ -178,7 +193,11 @@ const Leaderboard = () => {
         <div>
           <h1>{!id || !tournamentMeta ? `${title} leaderboard` : 'Standings'}</h1>
           <p className="subtitle">
-            {!id ? 'Top players worldwide' : 'Points, wins, and team breakdown for this event'}
+            {!id
+              ? 'Top players worldwide'
+              : isSquadTournament
+                ? 'Team records; expand a row to see every player'
+                : 'Points and match record for this event'}
           </p>
         </div>
         {!id && (
@@ -192,26 +211,7 @@ const Leaderboard = () => {
         <div className="lb-alert">{error}</div>
       )}
 
-      {id && isSquadTournament && (
-        <div className="leaderboard-tabs lb-tabs">
-          <button
-            type="button"
-            className={`leaderboard-tab ${view === 'players' ? 'active' : ''}`}
-            onClick={() => setView('players')}
-          >
-            <i className="fas fa-user" /> Players
-          </button>
-          <button
-            type="button"
-            className={`leaderboard-tab ${view === 'teams' ? 'active' : ''}`}
-            onClick={() => setView('teams')}
-          >
-            <i className="fas fa-users" /> Teams
-          </button>
-        </div>
-      )}
-
-      {(!id || view === 'players') && (
+      {(!id || !isSquadTournament) && (
         <>
           {entries.length === 0 ? (
             <div className="empty-state lb-empty">
@@ -222,11 +222,10 @@ const Leaderboard = () => {
               )}
             </div>
           ) : (
-            <div className={`lb-table-wrap ${isSquadTournament ? 'squad' : ''}`}>
+            <div className="lb-table-wrap">
               <div className="lb-table-head" aria-hidden="true">
                 <span className="lb-th-rank">#</span>
                 <span className="lb-th-player">Player</span>
-                {isSquadTournament && <span className="lb-th-team">Team</span>}
                 <span className="lb-th-stat">W</span>
                 <span className="lb-th-stat">L</span>
                 <span className="lb-th-stat lb-th-wr">Win%</span>
@@ -256,15 +255,6 @@ const Leaderboard = () => {
                           )}
                         </div>
                       </div>
-                      {isSquadTournament && (
-                        <div className="lb-team-cell">
-                          {entry.teamName ? (
-                            <span className="lb-team-pill" title={entry.teamId || ''}>{entry.teamName}</span>
-                          ) : (
-                            <span className="lb-team-pill lb-team-none">—</span>
-                          )}
-                        </div>
-                      )}
                       <div className="lb-stat">{entry.wins ?? 0}</div>
                       <div className="lb-stat">{entry.losses ?? 0}</div>
                       <div className="lb-stat lb-stat-wr">{wr}</div>
@@ -283,50 +273,113 @@ const Leaderboard = () => {
         </>
       )}
 
-      {id && isSquadTournament && view === 'teams' && (
+      {id && isSquadTournament && (
         <>
           {teamRollup.length === 0 ? (
-            <div className="empty-state lb-empty"><p>No teams to show.</p></div>
+            <div className="empty-state lb-empty">
+              <span>🏆</span>
+              <p>No teams on the board yet. Play matches to fill the standings.</p>
+              <Link to={`/queue/${id}`} className="btn btn-primary btn-sm">Go to queue</Link>
+            </div>
           ) : (
-            <div className="lb-team-grid">
-              {teamRollup.map((team, index) => {
-                const rank = getRankDisplay(index);
-                return (
-                  <div key={team.teamId || team.members[0]?.userId || index} className={`lb-team-card ${getRankClass(index)}`}>
-                    <div className="lb-team-card-head">
-                      <div className={`lb-team-rank ${rank.cls}`}>{rank.label}</div>
-                      <div className="lb-team-title">
-                        <h3>{team.teamName || 'Team'}</h3>
-                        <span className="lb-team-sub">{team.memberCount} {team.memberCount === 1 ? 'player' : 'players'} · Avg {team.avgPoints} pts</span>
-                      </div>
-                    </div>
-                    <div className="lb-team-roster">
-                      {team.members.map((m) => (
-                        <div key={m.userId} className="lb-roster-member" title={m.discordName}>
-                          <img
-                            src={buildDiscordAvatar(m.discordId, m.discordAvatar) || DISCORD_AVATAR_FALLBACK}
-                            alt=""
-                          />
+            <div className="lb-table-wrap lb-squad-team-table">
+              <div className="lb-table-head lb-squad-team-head" aria-hidden="true">
+                <span className="lb-th-rank">#</span>
+                <span className="lb-th-team-main">Team</span>
+                <span className="lb-th-stat">W</span>
+                <span className="lb-th-stat">L</span>
+                <span className="lb-th-stat lb-th-wr">Win%</span>
+                <span className="lb-th-points">Avg pts</span>
+                <span className="lb-th-expand" aria-hidden />
+              </div>
+              <div className="leaderboard-list">
+                {teamRollup.map((team, index) => {
+                  const rank = getRankDisplay(index);
+                  const key = teamRowKey(team, index);
+                  const open = expandedTeamKey === key;
+                  return (
+                    <div
+                      key={key || index}
+                      className={`lb-squad-team-block ${getRankClass(index)}`}
+                    >
+                      <button
+                        type="button"
+                        className={`leaderboard-item lb-row lb-team-summary-row${open ? ' is-open' : ''}`}
+                        onClick={() => setExpandedTeamKey(open ? null : key)}
+                        aria-expanded={open}
+                      >
+                        <div className={`leaderboard-rank lb-rank ${rank.cls}`}>{rank.label}</div>
+                        <div className="lb-team-summary-cell">
+                          <div className="lb-team-summary-avatars" aria-hidden>
+                            {team.members.slice(0, 4).map((m) => (
+                              <span key={m.userId} className="lb-summary-av">
+                                <img
+                                  src={buildDiscordAvatar(m.discordId, m.discordAvatar) || DISCORD_AVATAR_FALLBACK}
+                                  alt=""
+                                />
+                              </span>
+                            ))}
+                          </div>
+                          <div className="lb-team-summary-text">
+                            <div className="lb-team-summary-name">{team.teamName || 'Team'}</div>
+                            <div className="lb-team-summary-sub">
+                              {team.memberCount} {team.memberCount === 1 ? 'player' : 'players'}
+                              {' · '}
+                              {open ? 'Hide roster' : 'Show roster'}
+                            </div>
+                          </div>
                         </div>
-                      ))}
+                        <div className="lb-stat">{team.wins ?? 0}</div>
+                        <div className="lb-stat">{team.losses ?? 0}</div>
+                        <div className="lb-stat lb-stat-wr">{team.winRateLabel}</div>
+                        <div className="leaderboard-points lb-points">{team.avgPoints ?? 0}</div>
+                        <div className="lb-expand-icon" aria-hidden>
+                          <i className={`fas fa-chevron-${open ? 'up' : 'down'}`} />
+                        </div>
+                        <div className="lb-row-mobile-meta lb-row-mobile-meta--team">
+                          <span>{team.wins ?? 0}W · {team.losses ?? 0}L</span>
+                          <span>{team.winRateLabel} WR</span>
+                          <span className="lb-m-pts">{team.avgPoints ?? 0} avg pts</span>
+                        </div>
+                      </button>
+                      {open ? (
+                        <div className="lb-team-players-drawer" id={`roster-${key}`}>
+                          <div className="lb-drawer-label">Roster</div>
+                          {team.members.map((m) => {
+                            const wrM = winRate(m.wins, m.losses);
+                            return (
+                              <div key={m.userId} className="lb-roster-player-row">
+                                <div className="lb-player-cell">
+                                  <div className="leaderboard-avatar lb-avatar lb-avatar--sm">
+                                    <img
+                                      src={buildDiscordAvatar(m.discordId, m.discordAvatar) || DISCORD_AVATAR_FALLBACK}
+                                      alt=""
+                                    />
+                                  </div>
+                                  <div className="lb-name-block">
+                                    <div className="leaderboard-name">{m.discordName || 'Player'}</div>
+                                    {m.epicName ? (
+                                      <div className="lb-epic">
+                                        <i className="fas fa-gamepad" /> {m.epicName}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </div>
+                                <div className="lb-roster-stats">
+                                  <span><strong>{m.wins ?? 0}</strong> W</span>
+                                  <span><strong>{m.losses ?? 0}</strong> L</span>
+                                  <span className="lb-roster-wr">{wrM}</span>
+                                  <span className="lb-roster-pts">{m.points ?? 0} pts</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : null}
                     </div>
-                    <div className="lb-team-stats">
-                      <div>
-                        <span className="lb-ts-label">Record</span>
-                        <span className="lb-ts-val">{team.wins}W — {team.losses}L</span>
-                      </div>
-                      <div>
-                        <span className="lb-ts-label">Win rate</span>
-                        <span className="lb-ts-val">{team.winRateLabel}</span>
-                      </div>
-                      <div>
-                        <span className="lb-ts-label">Avg points</span>
-                        <span className="lb-ts-val lb-ts-cyan">{team.avgPoints}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
         </>
