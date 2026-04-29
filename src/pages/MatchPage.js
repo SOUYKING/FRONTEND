@@ -59,11 +59,17 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
     return r === 'admin' || r === 'owner' || r === 'staff';
   }, [currentUser]);
 
-  const showStaffMatchTools = Boolean(
+  const staffObserverView = useMemo(() => (
     !isSpectator &&
     !self &&
     (isStaff || staffModerator)
-  );
+  ), [isSpectator, self, isStaff, staffModerator]);
+
+  /** Moderators can force-resolve disputes even while playing (not only when spectating). */
+  const canForceMatchResult = useMemo(() => (
+    !isSpectator &&
+    (staffModerator || isStaff)
+  ), [isSpectator, staffModerator, isStaff]);
 
   const myName = self?.username || currentUser?.discordName || 'You';
   const opponentName = opponent?.username || opponent?.discordName || 'Opponent';
@@ -227,7 +233,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
       if (self) {
         sessionStorage.setItem('currentMatch', JSON.stringify({ matchId, self, opponent }));
         socket.emit('joinMatch', { matchId, playerName: myName });
-      } else if (!self && (isStaff || staffModerator)) {
+      } else if (staffObserverView) {
         socket.emit('staffJoinMatch', { matchId, staffName: myName });
       } else if (isSpectator) {
         socket.emit('joinMatchAsViewer', { matchId, viewerName: currentUser?.discordName || 'Viewer' });
@@ -320,7 +326,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
       socket.off('reportSubmitted', onReportSubmitted);
       socket.off('joinMatchAsViewer', onJoinMatchAsViewer);
     };
-  }, [matchId, self, opponent, socket, navigate, myName, currentUser?.discordName, isStaff, staffModerator, isSpectator, contextLoaded]);
+  }, [matchId, self, opponent, socket, navigate, myName, currentUser?.discordName, staffObserverView, isSpectator, contextLoaded]);
 
   useEffect(() => {
     if (chatRef.current && chatAtBottom) {
@@ -478,7 +484,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
             <i className={`fas ${disputed ? 'fa-gavel' : reported ? 'fa-check-circle' : 'fa-circle'}`}></i>
             {disputed ? ' Disputed' : reported ? ' Reported' : ' LIVE'}
             {isSpectator && <span style={{ marginLeft: 6, opacity: 0.6, fontWeight: 400 }}>· Spectator</span>}
-            {showStaffMatchTools && <span style={{ marginLeft: 6, opacity: 0.6, fontWeight: 400 }}>· Staff View</span>}
+            {staffObserverView && <span style={{ marginLeft: 6, opacity: 0.6, fontWeight: 400 }}>· Staff View</span>}
           </span>
         </div>
 
@@ -654,11 +660,11 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
             <div className="match-action-card">
               <div className="match-action-card-header"><i className="fas fa-trophy"></i> Report Result</div>
               <div className="match-action-card-body">
-                {isSpectator || showStaffMatchTools ? (
+                {isSpectator || staffObserverView ? (
                   <div className="match-status-msg">
                     <i className="fas fa-eye" style={{ color: 'var(--text-muted)', opacity: 0.5, fontSize: '1.5rem', marginBottom: 8 }}></i>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      You are {showStaffMatchTools ? 'staff observer' : 'spectating'} this match.
+                      You are {staffObserverView ? 'staff observer' : 'spectating'} this match.
                     </p>
                   </div>
                 ) : !reported && !disputed ? (
@@ -684,7 +690,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
                   <div className="match-status-msg">
                     <i className="fas fa-gavel" style={{ color: 'var(--red)' }}></i>
                     <p>Match disputed. Staff will review.</p>
-                    {showStaffMatchTools && (
+                    {canForceMatchResult && (
                       <div className="force-buttons">
                         {player1 && (
                           <button disabled={staffForcing} onClick={() => handleForceWin(player1.id, player1.username)} className="result-btn win">
@@ -714,7 +720,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
               </div>
             </div>
 
-            {showStaffMatchTools && (
+            {staffObserverView && (
               <div className="match-action-card">
                 <div className="match-action-card-header"><i className="fas fa-gavel"></i> Staff Tools</div>
                 <div className="match-action-card-body">
