@@ -21,13 +21,11 @@ const AdminDashboard = () => {
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [staffNotifs, setStaffNotifs] = useState({ notifications: [], unreadCount: 0 });
-  const [staffNotifOpen, setStaffNotifOpen] = useState(false);
   const [liveFeed, setLiveFeed] = useState([]);
   const [feedOpen, setFeedOpen] = useState(false);
   const [socketStatus, setSocketStatus] = useState('connecting');
   const [prevStats, setPrevStats] = useState(null);
   const [focusedMatchId, setFocusedMatchId] = useState(null);
-  const staffNotifRef = useRef(null);
   const feedEndRef = useRef(null);
   const pollRef = useRef(null);
   const socketRef = useRef(null);
@@ -166,6 +164,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'tournaments') fetchTournaments();
+    if (activeTab === 'staff-alerts') fetchStaffNotifications();
   }, [activeTab]);
 
   // Auto-scroll feed
@@ -174,17 +173,6 @@ const AdminDashboard = () => {
       feedEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [liveFeed, feedOpen]);
-
-  useEffect(() => {
-    const onPointerDown = (event) => {
-      if (!staffNotifRef.current) return;
-      if (!staffNotifRef.current.contains(event.target)) {
-        setStaffNotifOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
-  }, []);
 
   const fetchDashboardStats = async () => {
     try {
@@ -333,7 +321,6 @@ const AdminDashboard = () => {
     if (n.matchId) {
       setFocusedMatchId(n.matchId);
       setActiveTab('matches');
-      setStaffNotifOpen(false);
     }
   };
 
@@ -424,6 +411,11 @@ const AdminDashboard = () => {
             <span className="nav-label">Matches</span>
             <span className="badge danger">{staffNotifs.unreadCount > 0 ? staffNotifs.unreadCount : ''}</span>
           </button>
+          <button className={activeTab === 'staff-alerts' ? 'active' : ''} onClick={() => { setActiveTab('staff-alerts'); setSidebarOpen(false); }}>
+            <span className="nav-icon">🔔</span>
+            <span className="nav-label">Staff Alerts</span>
+            <span className="badge danger">{staffNotifs.unreadCount > 0 ? staffNotifs.unreadCount : ''}</span>
+          </button>
           <button className={activeTab === 'anticheat' ? 'active' : ''} onClick={() => { setActiveTab('anticheat'); setSidebarOpen(false); }}>
             <span className="nav-icon">⚡</span>
             <span className="nav-label">Anticheat</span>
@@ -433,35 +425,6 @@ const AdminDashboard = () => {
         </nav>
 
         <div className="sidebar-footer">
-          <div ref={staffNotifRef}>
-            <div className="staff-notif-bell" onClick={() => setStaffNotifOpen(!staffNotifOpen)}>
-              <span className="bell-icon">🔔</span>
-              {staffNotifs.unreadCount > 0 && <span className="bell-count">{staffNotifs.unreadCount}</span>}
-              <span className="bell-label">Staff Alerts</span>
-            </div>
-            {staffNotifOpen && (
-              <div className="staff-notif-dropdown" onClick={(e) => e.stopPropagation()}>
-                <div className="notif-dropdown-header">
-                  <div>
-                    <strong>Staff Alerts</strong>
-                    <div className="notif-dropdown-subtitle">Call staff, disputes, and urgent match reports.</div>
-                  </div>
-                  <button onClick={(e) => { e.stopPropagation(); handleMarkAllRead(); }}>Mark all read</button>
-                </div>
-                <div className="notif-dropdown-list">
-                  {staffNotifs.notifications.length === 0 ? (
-                    <div className="notif-empty">No staff alerts right now.</div>
-                  ) : staffNotifs.notifications.slice(0, 10).map(n => (
-                    <div key={n._id} className={`notif-item ${!n.read ? 'unread' : ''}`} onClick={() => handleNotifClick(n)} title={n.matchId ? 'Open matches tab' : 'Alert'}>
-                      <div className="notif-item-title">{notifTypeIcon(n.type)} {n.title || n.type}</div>
-                      <div className="notif-item-msg">{n.message}</div>
-                      <div className="notif-item-time">{new Date(n.createdAt).toLocaleString()}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
           <button onClick={() => navigate('/')} className="back-btn">← Back to Site</button>
         </div>
       </aside>
@@ -522,6 +485,16 @@ const AdminDashboard = () => {
             onAction={handleUserAction}
             onWhitelistIP={handleWhitelistIP}
             getRiskColor={getRiskColor}
+          />
+        )}
+        {activeTab === 'staff-alerts' && (
+          <StaffAlertsTab
+            notifications={staffNotifs.notifications}
+            unreadCount={staffNotifs.unreadCount}
+            onRefresh={fetchStaffNotifications}
+            onMarkAllRead={handleMarkAllRead}
+            onOpenAlert={handleNotifClick}
+            notifTypeIcon={notifTypeIcon}
           />
         )}
         {activeTab === 'anticheat' && <AnticheatTab api={api} />}
@@ -1222,6 +1195,42 @@ const UsersTab = ({ users, selectedUser, onSearch, onSelectUser, onAction, onWhi
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+const StaffAlertsTab = ({ notifications, unreadCount, onRefresh, onMarkAllRead, onOpenAlert, notifTypeIcon }) => {
+  return (
+    <div className="staff-alerts-tab">
+      <div className="tab-title-section">
+        <div>
+          <h2>Staff Alerts</h2>
+          <p className="section-subtitle">{notifications?.length || 0} total alerts, {unreadCount || 0} unread</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost btn-sm" onClick={onRefresh}>Refresh</button>
+          <button className="btn btn-primary btn-sm" onClick={onMarkAllRead}>Mark all read</button>
+        </div>
+      </div>
+
+      <div className="live-feed-panel" style={{ marginBottom: 0 }}>
+        <div className="feed-list" style={{ maxHeight: 'none' }}>
+          {!notifications || notifications.length === 0 ? (
+            <div className="feed-empty">No staff alerts right now.</div>
+          ) : notifications.map((n) => (
+            <div
+              key={n._id}
+              className={`notif-item ${!n.read ? 'unread' : ''}`}
+              onClick={() => onOpenAlert(n)}
+              title={n.matchId ? 'Open related match' : 'Mark as read'}
+            >
+              <div className="notif-item-title">{notifTypeIcon(n.type)} {n.title || n.type}</div>
+              <div className="notif-item-msg">{n.message}</div>
+              <div className="notif-item-time">{new Date(n.createdAt).toLocaleString()}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
