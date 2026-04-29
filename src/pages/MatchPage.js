@@ -5,6 +5,13 @@ import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
 import './MatchPage.css';
 
 const STAFF_ROLES = ['admin', 'owner', 'staff'];
+const readStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}');
+  } catch {
+    return {};
+  }
+};
 
 const MatchPage = ({ socket, user: currentUserFromApp }) => {
   const { matchId } = useParams();
@@ -36,7 +43,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
   const [newMsg, setNewMsg] = useState(false);
 
   const currentUser = useMemo(
-    () => currentUserFromApp || JSON.parse(localStorage.getItem('user') || '{}'),
+    () => currentUserFromApp || readStoredUser(),
     [currentUserFromApp]
   );
   const currentUserId = currentUser?.discordId || currentUser?.id;
@@ -321,6 +328,10 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
 
   const handleCopyMapCode = () => {
     if (!mapCode) return;
+    if (!navigator?.clipboard?.writeText) {
+      setResultMessage('Copy is not supported on this browser.');
+      return;
+    }
     navigator.clipboard.writeText(mapCode).then(() => setResultMessage('Map code copied!')).catch(() => {});
   };
 
@@ -439,6 +450,12 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
             <span className="timeline-step completed"><i className="fas fa-check-circle"></i> Ready</span>
             <span className="timeline-step active"><i className="fas fa-play-circle"></i> Live</span>
           </div>
+        </div>
+
+        <div className="match-flow-hints">
+          <span><i className="fas fa-circle-info"></i> Step 1: Add opponent using Epic name, then start your 1v1.</span>
+          <span><i className="fas fa-flag-checkered"></i> Step 2: Report result right after match to avoid disputes.</span>
+          <span><i className="fas fa-headset"></i> Need help? Use Call Staff and keep chat clear with evidence details.</span>
         </div>
 
         <div className="match-bottom">

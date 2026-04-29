@@ -1,5 +1,8 @@
 .match-page {
   animation: fadeInUp 0.5s ease;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px;
 }
 
 /* ===== MATCH HEADER ===== */
@@ -225,6 +228,22 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   margin-bottom: 24px;
+}
+
+.match-flow-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.match-flow-hints span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 8px 10px;
 }
 
 .match-info-tags {
@@ -742,5 +761,9 @@
   }
   .chat-messages {
     max-height: 250px;
+  }
+
+  .match-flow-hints {
+    flex-direction: column;
   }
 }
