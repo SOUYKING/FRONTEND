@@ -56,11 +56,6 @@ const Sidebar = ({ onLogout }) => {
             </NavLink>
           </li>
           <li>
-            <NavLink to="/teams" className={({ isActive }) => (isActive ? 'active-nav' : '')} onClick={closeMobile}>
-              <i className="fas fa-users"></i> Teams
-            </NavLink>
-          </li>
-          <li>
             <NavLink to="/current-game" className={({ isActive }) => (isActive ? 'active-nav' : '')} onClick={closeMobile}>
               <i className="fas fa-gamepad"></i> Current Game
             </NavLink>
@@ -74,6 +69,11 @@ const Sidebar = ({ onLogout }) => {
           <li>
             <NavLink to="/account" className={({ isActive }) => (isActive ? 'active-nav' : '')} onClick={closeMobile}>
               <i className="fas fa-user"></i> Account
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/teams" className={({ isActive }) => (isActive ? 'active-nav' : '')} onClick={closeMobile}>
+              <i className="fas fa-users"></i> Teams
             </NavLink>
           </li>
           <li>
