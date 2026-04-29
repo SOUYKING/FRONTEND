@@ -124,10 +124,6 @@ const QueuePage = ({ socket }) => {
 
   const handleJoinQueue = async () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!user.epicVerified) {
-      setMessage('You must verify your Epic Games account first!');
-      return;
-    }
     // Do not hard-block on client-side queueOpen; backend is the source of truth.
     setStatus('joining');
     setMessage('Joining queue...');

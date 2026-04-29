@@ -42,6 +42,13 @@ const Account = () => {
       const updatedData = await fetchProfileData();
       setUserData(updatedData);
       setEpicGamesName(updatedData.epicGamesName || '');
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      localStorage.setItem('user', JSON.stringify({
+        ...storedUser,
+        epicVerified: true,
+        epicGamesName: updatedData.epicGamesName || epicGamesName,
+      }));
+      window.dispatchEvent(new Event('user-updated'));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setErrorMessage(err.response?.data?.message || 'Failed to verify Epic Games account');

@@ -221,6 +221,25 @@ const App = () => {
     initializeAuth();
   }, []);
 
+  useEffect(() => {
+    const syncUserFromStorage = () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (!storedUser) return;
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        setIsAdmin(!!parsed?.isAdmin);
+      } catch {}
+    };
+
+    window.addEventListener('storage', syncUserFromStorage);
+    window.addEventListener('user-updated', syncUserFromStorage);
+    return () => {
+      window.removeEventListener('storage', syncUserFromStorage);
+      window.removeEventListener('user-updated', syncUserFromStorage);
+    };
+  }, []);
+
   if (loading) {
     return (
       <div style={{

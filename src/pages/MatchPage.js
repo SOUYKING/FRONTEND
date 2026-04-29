@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getActiveMatchInfo, getPublicPlayerProfile, submitMatchResult, resolveMatchDispute, DISCORD_AVATAR_FALLBACK, buildDiscordAvatar, getMatchChat } from '../utils/api';
 import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
@@ -35,7 +35,10 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
   const [chatAtBottom, setChatAtBottom] = useState(true);
   const [newMsg, setNewMsg] = useState(false);
 
-  const currentUser = currentUserFromApp || JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUser = useMemo(
+    () => currentUserFromApp || JSON.parse(localStorage.getItem('user') || '{}'),
+    [currentUserFromApp]
+  );
   const currentUserId = currentUser?.discordId || currentUser?.id;
   const chatRef = useRef(null);
 
@@ -70,6 +73,16 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
   const rightAvatar = rightPlayer ? (rightPlayer.avatar ? buildDiscordAvatar(rightPlayer.id, rightPlayer.avatar) : DISCORD_AVATAR_FALLBACK) : opponentAvatar;
   const leftName = leftPlayer?.username || leftPlayer?.discordName || 'Player 1';
   const rightName = rightPlayer?.username || rightPlayer?.discordName || 'Player 2';
+
+  const openProfile = (player) => {
+    if (!player) return;
+    const playerId = player.id || player.discordId;
+    const selfId = self?.id || currentUserId;
+    setShowProfile({
+      player,
+      isSelf: !!playerId && !!selfId && playerId === selfId,
+    });
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -197,6 +210,14 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
       setResultMessage(data?.message || 'Report submitted. Staff will review.');
     };
 
+    // Backend can redirect non-participants from joinMatch to viewer mode.
+    const onJoinMatchAsViewer = (data) => {
+      socket.emit('joinMatchAsViewer', {
+        matchId: data?.matchId || matchId,
+        viewerName: data?.viewerName || currentUser?.discordName || 'Viewer',
+      });
+    };
+
     socket.on('receiveMessage', onReceiveMessage);
     socket.on('chatHistory', onChatHistory);
     socket.on('disputeOpened', onDisputeOpened);
@@ -207,6 +228,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
     socket.on('chatError', onChatError);
     socket.on('chatWarning', onChatWarning);
     socket.on('reportSubmitted', onReportSubmitted);
+    socket.on('joinMatchAsViewer', onJoinMatchAsViewer);
 
     return () => {
       socket.off('receiveMessage', onReceiveMessage);
@@ -219,8 +241,9 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
       socket.off('chatError', onChatError);
       socket.off('chatWarning', onChatWarning);
       socket.off('reportSubmitted', onReportSubmitted);
+      socket.off('joinMatchAsViewer', onJoinMatchAsViewer);
     };
-  }, [matchId, self, opponent, socket, navigate, myName, currentUser, isStaff, isSpectator, contextLoaded]);
+  }, [matchId, self, opponent, socket, navigate, myName, currentUser?.discordName, isStaff, isSpectator, contextLoaded]);
 
   useEffect(() => {
     if (chatRef.current && chatAtBottom) {
@@ -316,12 +339,16 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
 
   const PlayerProfileModal = ({ player, isSelf, onClose }) => {
     if (!player) return null;
-    const stats = isSelf ? selfProfileStats : opponentProfileStats;
+    const playerId = player.id || player.discordId;
+    const stats =
+      (selfProfileStats?.discordId && selfProfileStats.discordId === playerId && selfProfileStats)
+      || (opponentProfileStats?.discordId && opponentProfileStats.discordId === playerId && opponentProfileStats)
+      || (isSelf ? selfProfileStats : opponentProfileStats);
     const pts = stats?.rankingPoints ?? player.rankingPoints ?? 0;
     const rank = getRank(pts);
     const rankLabel = getRankLabel(pts);
-    const avatar = isSelf ? selfAvatar : opponentAvatar;
-    const name = stats?.discordName || (isSelf ? myName : opponentName);
+    const avatar = buildDiscordAvatar(playerId, player.avatar || player.discordAvatar) || (isSelf ? selfAvatar : opponentAvatar);
+    const name = stats?.discordName || player.username || player.discordName || (isSelf ? myName : opponentName);
     const wins = stats?.wins ?? 0;
     const losses = stats?.losses ?? 0;
     const totalMatches = stats?.totalMatches ?? 0;
@@ -353,17 +380,6 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
     );
   };
 
-const getModalPlayer = (which) => {
-      if (which === 'self') {
-        return self || currentUser;
-      }
-      if (which === 'opponent') {
-        if (self) return opponent;
-        return isViewingAsStaff ? rightPlayer : null;
-      }
-      return null;
-    };
-
     return (
       <div className="match-page page-wrapper">
         <div className="match-header">
@@ -383,7 +399,7 @@ const getModalPlayer = (which) => {
         </div>
 
         <div className="match-arena">
-          <div className="match-player-panel" onClick={() => setShowProfile(leftPlayerIsSelf ? 'self' : 'opponent')}>
+          <div className="match-player-panel" onClick={() => openProfile(leftPlayer)}>
             <div className="player-bg" style={{ background: 'linear-gradient(135deg, rgba(46,242,255,0.04), transparent)' }} />
             <div className="match-player-avatar">
               <img src={leftAvatar} alt={leftName} />
@@ -404,7 +420,7 @@ const getModalPlayer = (which) => {
             )}
           </div>
 
-          <div className="match-player-panel" onClick={() => setShowProfile(rightPlayerIsSelf ? 'self' : 'opponent')}>
+          <div className="match-player-panel" onClick={() => openProfile(rightPlayer)}>
             <div className="player-bg" style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.04), transparent)' }} />
             <div className="match-player-avatar" style={{ borderColor: 'var(--border-purple)', boxShadow: '0 0 25px var(--purple-glow)' }}>
               <img src={rightAvatar} alt={rightName} />
@@ -502,7 +518,7 @@ const getModalPlayer = (which) => {
                   <div className="match-status-msg">
                     <i className="fas fa-gavel" style={{ color: 'var(--red)' }}></i>
                     <p>Match disputed. Staff will review.</p>
-                    {(isStaff || self) && (
+                    {isStaff && (
                       <div className="force-buttons">
                         {player1 && (
                           <button disabled={staffForcing} onClick={() => handleForceWin(player1.id, player1.username)} className="result-btn win">
@@ -557,8 +573,8 @@ const getModalPlayer = (which) => {
 
         {showProfile && (
           <PlayerProfileModal
-            player={getModalPlayer(showProfile)}
-            isSelf={showProfile === 'self'}
+            player={showProfile.player}
+            isSelf={showProfile.isSelf}
             onClose={() => setShowProfile(null)}
           />
         )}

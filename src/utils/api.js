@@ -378,7 +378,7 @@ export const getOAuthErrorFromUrl = () => {
   const messages = {
     no_code: { message: "Login failed: missing OAuth code.", type: error },
     oauth_failed: { message: "Login failed during Discord authentication. Please try again.", type: error },
-    not_server_member: { message: "You must join the Discord server before logging in.", type: error },
+    not_server_member: { message: "Discord server membership is optional. You can continue logging in.", type: error },
     banned: { message: reason ? `Login blocked: ${decodeURIComponent(reason)}` : "Login blocked: your account is banned.", type: error },
     ip_blocked: { message: reason ? decodeURIComponent(reason) : "Login blocked by IP security policy.", type: error },
     server_error: { message: "Server error, please try again.", type: error },

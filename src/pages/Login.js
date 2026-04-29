@@ -101,7 +101,7 @@ const Login = ({ errorMessage = '', errorType = '' }) => {
           </div>
           <div className="login-join-discord">
             <i className="fab fa-discord"></i>
-            <span>Must be in our Discord server to play —</span>
+            <span>Join our Discord community for updates and support —</span>
             <a href={DISCORD_INVITE_URL} target="_blank" rel="noopener noreferrer" className="login-join-link">Join here</a>
           </div>
         </div>
