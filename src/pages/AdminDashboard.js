@@ -867,51 +867,175 @@ const [form, setForm] = useState({
   );
 };
 
-const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getStatusColor }) => (
-  <div className="modal-overlay" onClick={onClose}>
-    <div className="modal-content detail-modal" onClick={e => e.stopPropagation()}>
-      <div className="modal-header">
-        <div>
-          <h3>{tournament.title}</h3>
-          <span className="status-badge" style={{ background: getStatusColor(tournament.status) }}>{tournament.status}</span>
-        </div>
-        <button onClick={onClose} className="close-btn">✕</button>
-      </div>
-      <div className="modal-body">
-        <div className="detail-grid">
-          <div className="detail-item"><label>Map Code</label><span>{tournament.mapCode}</span></div>
-          <div className="detail-item"><label>Type</label><span>{tournament.type}</span></div>
-          <div className="detail-item"><label>Max Players</label><span>{tournament.maxPlayers}</span></div>
-          <div className="detail-item"><label>Prize</label><span>{tournament.prize || 'None'}</span></div>
-          <div className="detail-item"><label>Start</label><span>{new Date(tournament.startDate).toLocaleString()}</span></div>
-          <div className="detail-item"><label>End</label><span>{new Date(tournament.endDate).toLocaleString()}</span></div>
-        </div>
-        <div className="detail-section"><label>Description</label><p>{tournament.description}</p></div>
-        <div className="detail-section"><label>Rules</label><p className="rules">{tournament.rules}</p></div>
-        <div className="detail-section">
-          <label>Participants ({tournament.participants?.length || 0})</label>
-          <div className="participants-list">
-            {tournament.participants?.length > 0 ? tournament.participants.map((p, i) => (
-              <div key={i} className="participant-item">
-                <span className="name">{p.discordName || p.userId}</span>
-                <span className="epic">{p.epicName || '—'}</span>
-              </div>
-            )) : <p className="no-data">No participants yet</p>}
+const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getStatusColor }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    bannerImage: '',
+    mapCode: '',
+    mapName: '',
+    rules: '',
+    type: '1v1',
+    startDate: '',
+    endDate: '',
+    maxPlayers: 16,
+    minSkillRating: 0,
+    maxSkillRating: 3000,
+    prize: '',
+    status: 'registration',
+  });
+
+  useEffect(() => {
+    if (!tournament) return;
+    const toLocalDatetime = (value) => {
+      if (!value) return '';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '';
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    setForm({
+      title: tournament.title || '',
+      description: tournament.description || '',
+      bannerImage: tournament.bannerImage || '',
+      mapCode: tournament.mapCode || '',
+      mapName: tournament.mapName || '',
+      rules: tournament.rules || '',
+      type: tournament.type || '1v1',
+      startDate: toLocalDatetime(tournament.startDate),
+      endDate: toLocalDatetime(tournament.endDate),
+      maxPlayers: tournament.maxPlayers || 16,
+      minSkillRating: tournament.minSkillRating || 0,
+      maxSkillRating: tournament.maxSkillRating || 3000,
+      prize: tournament.prize || '',
+      status: tournament.status || 'registration',
+    });
+    setIsEditing(false);
+  }, [tournament?._id]);
+
+  const updateField = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    if (!form.title.trim() || !form.description.trim() || !form.mapCode.trim() || !form.rules.trim()) {
+      window.alert('Title, description, map code, and rules are required.');
+      return;
+    }
+    const payload = {
+      ...form,
+      startDate: form.startDate ? new Date(form.startDate).toISOString() : tournament.startDate,
+      endDate: form.endDate ? new Date(form.endDate).toISOString() : tournament.endDate,
+      maxPlayers: Number(form.maxPlayers) || 16,
+      minSkillRating: Number(form.minSkillRating) || 0,
+      maxSkillRating: Number(form.maxSkillRating) || 3000,
+      bannerImage: form.bannerImage?.trim() || null,
+      mapName: form.mapName?.trim() || null,
+      prize: form.prize?.trim() || null,
+    };
+
+    try {
+      setSaving(true);
+      await onUpdate(tournament._id, payload);
+      setIsEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content detail-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <div>
+            <h3>{isEditing ? 'Edit Tournament' : tournament.title}</h3>
+            <span className="status-badge" style={{ background: getStatusColor(tournament.status) }}>{tournament.status}</span>
           </div>
+          <button onClick={onClose} className="close-btn">✕</button>
         </div>
-      </div>
-      <div className="modal-footer actions">
-        {tournament.status === 'registration' && <button className="btn success" onClick={() => onAction(tournament._id, 'activate')}>▶ Activate</button>}
-        {tournament.status === 'active' && <button className="btn primary" onClick={() => onAction(tournament._id, 'complete')}>✓ Complete</button>}
-        {(tournament.status === 'registration' || tournament.status === 'active') && (
-          <button className="btn warning" onClick={() => { if (window.confirm('Cancel this tournament?')) onAction(tournament._id, 'cancel'); }}>✕ Cancel</button>
-        )}
-        <button className="btn danger" onClick={() => onAction(tournament._id, 'delete')}>🗑 Delete</button>
-        <button className="btn" onClick={onClose}>Close</button>
+        <div className="modal-body">
+          {isEditing ? (
+            <>
+              <div className="form-group"><label>Title *</label><input type="text" value={form.title} onChange={(e) => updateField('title', e.target.value)} /></div>
+              <div className="form-group"><label>Description *</label><textarea value={form.description} onChange={(e) => updateField('description', e.target.value)} rows={3} /></div>
+              <div className="form-group"><label>Banner Image URL (optional)</label><input type="url" value={form.bannerImage} onChange={(e) => updateField('bannerImage', e.target.value)} placeholder="https://..." /></div>
+              <div className="form-row">
+                <div className="form-group"><label>Map Code *</label><input type="text" value={form.mapCode} onChange={(e) => updateField('mapCode', e.target.value)} /></div>
+                <div className="form-group"><label>Map Name</label><input type="text" value={form.mapName} onChange={(e) => updateField('mapName', e.target.value)} /></div>
+              </div>
+              <div className="form-group"><label>Rules *</label><textarea value={form.rules} onChange={(e) => updateField('rules', e.target.value)} rows={4} /></div>
+              <div className="form-row">
+                <div className="form-group"><label>Type</label><select value={form.type} onChange={(e) => updateField('type', e.target.value)}>
+                  <option value="1v1">1v1</option><option value="2v2">2v2</option><option value="3v3">3v3</option><option value="4v4">4v4</option>
+                </select></div>
+                <div className="form-group"><label>Status</label><select value={form.status} onChange={(e) => updateField('status', e.target.value)}>
+                  <option value="registration">registration</option><option value="active">active</option><option value="completed">completed</option><option value="cancelled">cancelled</option>
+                </select></div>
+              </div>
+              <div className="form-row">
+                <div className="form-group"><label>Start Date</label><input type="datetime-local" value={form.startDate} onChange={(e) => updateField('startDate', e.target.value)} /></div>
+                <div className="form-group"><label>End Date</label><input type="datetime-local" value={form.endDate} onChange={(e) => updateField('endDate', e.target.value)} /></div>
+              </div>
+              <div className="form-row">
+                <div className="form-group"><label>Max Players</label><input type="number" min="2" max="128" value={form.maxPlayers} onChange={(e) => updateField('maxPlayers', e.target.value)} /></div>
+                <div className="form-group"><label>Prize</label><input type="text" value={form.prize} onChange={(e) => updateField('prize', e.target.value)} /></div>
+              </div>
+              <div className="form-row">
+                <div className="form-group"><label>Min Skill</label><input type="number" min="0" value={form.minSkillRating} onChange={(e) => updateField('minSkillRating', e.target.value)} /></div>
+                <div className="form-group"><label>Max Skill</label><input type="number" min="0" value={form.maxSkillRating} onChange={(e) => updateField('maxSkillRating', e.target.value)} /></div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="detail-grid">
+                <div className="detail-item"><label>Map Code</label><span>{tournament.mapCode}</span></div>
+                <div className="detail-item"><label>Type</label><span>{tournament.type}</span></div>
+                <div className="detail-item"><label>Max Players</label><span>{tournament.maxPlayers}</span></div>
+                <div className="detail-item"><label>Prize</label><span>{tournament.prize || 'None'}</span></div>
+                <div className="detail-item"><label>Start</label><span>{new Date(tournament.startDate).toLocaleString()}</span></div>
+                <div className="detail-item"><label>End</label><span>{new Date(tournament.endDate).toLocaleString()}</span></div>
+              </div>
+              <div className="detail-section"><label>Description</label><p>{tournament.description}</p></div>
+              <div className="detail-section"><label>Rules</label><p className="rules">{tournament.rules}</p></div>
+              <div className="detail-section">
+                <label>Participants ({tournament.participants?.length || 0})</label>
+                <div className="participants-list">
+                  {tournament.participants?.length > 0 ? tournament.participants.map((p, i) => (
+                    <div key={i} className="participant-item">
+                      <span className="name">{p.discordName || p.userId}</span>
+                      <span className="epic">{p.epicName || '—'}</span>
+                    </div>
+                  )) : <p className="no-data">No participants yet</p>}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="modal-footer actions">
+          {isEditing ? (
+            <>
+              <button className="btn" onClick={() => setIsEditing(false)} disabled={saving}>Cancel Edit</button>
+              <button className="btn primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
+            </>
+          ) : (
+            <>
+              <button className="btn" onClick={() => setIsEditing(true)}>✏ Edit</button>
+              {tournament.status === 'registration' && <button className="btn success" onClick={() => onAction(tournament._id, 'activate')}>▶ Activate</button>}
+              {tournament.status === 'active' && <button className="btn primary" onClick={() => onAction(tournament._id, 'complete')}>✓ Complete</button>}
+              {(tournament.status === 'registration' || tournament.status === 'active') && (
+                <button className="btn warning" onClick={() => { if (window.confirm('Cancel this tournament?')) onAction(tournament._id, 'cancel'); }}>✕ Cancel</button>
+              )}
+              <button className="btn danger" onClick={() => onAction(tournament._id, 'delete')}>🗑 Delete</button>
+              <button className="btn" onClick={onClose}>Close</button>
+            </>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const UsersTab = ({ users, selectedUser, onSearch, onSelectUser, onAction, onWhitelistIP, getRiskColor }) => {
   const [search, setSearch] = useState('');

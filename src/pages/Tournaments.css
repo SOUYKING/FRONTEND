@@ -81,6 +81,23 @@
   opacity: 1;
 }
 
+.tournament-banner-wrap {
+  width: 100%;
+  height: 150px;
+  background:
+    linear-gradient(160deg, rgba(46, 242, 255, 0.08), rgba(168, 85, 247, 0.08)),
+    rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.tournament-banner {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .tournament-card-header {
   display: flex;
   align-items: center;

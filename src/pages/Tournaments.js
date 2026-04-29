@@ -120,6 +120,19 @@ const Tournaments = () => {
             return (
               <div key={tournament._id} className="tournament-card" style={{ animationDelay: `${idx * 0.06}s` }}>
                 <div className="tournament-card-glow" />
+                {tournament.bannerImage ? (
+                  <div className="tournament-banner-wrap">
+                    <img
+                      src={tournament.bannerImage}
+                      alt={tournament.title}
+                      className="tournament-banner"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                ) : null}
                 <div className="tournament-card-header">
                   <span className={`tournament-stage-badge ${stageMeta.cls}`}>{stageMeta.label}</span>
                   {tournament.prize && <span className="tournament-prize-badge"><i className="fas fa-trophy"></i> {tournament.prize}</span>}
