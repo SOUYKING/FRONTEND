@@ -3,6 +3,13 @@ import { getMatchHistory, getMatchDetail, buildDiscordAvatar, DISCORD_AVATAR_FAL
 import './MatchHistoryPage.css';
 
 const MatchHistoryPage = () => {
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || '{}');
+    } catch {
+      return {};
+    }
+  })();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -68,7 +75,23 @@ const MatchHistoryPage = () => {
     if (r === 'Disputed') return 'Disputed';
     if (r === 'Win') return 'Victory';
     if (r === 'Loss') return 'Defeat';
+    if (r === 'Pending') return 'Pending';
+    if (r === 'Unknown') return 'Unknown';
     return 'Draw';
+  };
+
+  const resolveWinnerName = (d) => {
+    if (!d?.winnerDiscordId) return '—';
+    if (d.winnerDiscordId === d.self?.discordId) return d.self?.discordName || 'You';
+    if (d.winnerDiscordId === d.opponent?.discordId) return d.opponent?.discordName || 'Opponent';
+    return d.winnerDiscordId;
+  };
+
+  const resolveLoserName = (d) => {
+    if (!d?.loserDiscordId) return '—';
+    if (d.loserDiscordId === d.self?.discordId) return d.self?.discordName || 'You';
+    if (d.loserDiscordId === d.opponent?.discordId) return d.opponent?.discordName || 'Opponent';
+    return d.loserDiscordId;
   };
 
   if (loading) {
@@ -85,8 +108,13 @@ const MatchHistoryPage = () => {
       <div className="page-header">
         <div>
           <h1>Match History</h1>
-          <p className="subtitle">Track your competitive journey</p>
+          <p className="subtitle">Track your matches, open details, and review evidence/chat in one place</p>
         </div>
+      </div>
+
+      <div className="match-history-tips">
+        <span><i className="fas fa-lightbulb"></i> Click any row to open full match details.</span>
+        <span><i className="fas fa-filter"></i> Use filters to quickly find disputed or lost matches.</span>
       </div>
 
       {error && <div style={{ padding: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', marginBottom: 16, color: 'var(--red)', fontSize: '0.85rem' }}>{error}</div>}
@@ -115,7 +143,7 @@ const MatchHistoryPage = () => {
             >
               <div className="match-history-avatars">
                 <div className="match-history-avatar self">
-                  <img src={buildDiscordAvatar(JSON.parse(localStorage.getItem('user') || '{}')?.discordId || JSON.parse(localStorage.getItem('user') || '{}')?.id, JSON.parse(localStorage.getItem('user') || '{}')?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
+                  <img src={buildDiscordAvatar(match.selfId || currentUser?.discordId || currentUser?.id, match.selfAvatar || currentUser?.discordAvatar) || DISCORD_AVATAR_FALLBACK} alt="" />
                 </div>
                 <span className="match-history-vs">VS</span>
                 <div className="match-history-avatar opponent">
@@ -124,9 +152,9 @@ const MatchHistoryPage = () => {
               </div>
               <div className="match-history-info">
                 <div className="match-history-players">
-                  You <span className="vs-text">vs</span> {match.opponent}
+                  You <span className="vs-text">vs</span> {match.opponent || 'Unknown Player'}
                 </div>
-                <div className="match-history-date">{new Date(match.date).toLocaleDateString()}</div>
+                <div className="match-history-date">{new Date(match.date).toLocaleDateString()} · Click to view details</div>
               </div>
               <div className={`match-history-result ${resultClass(match.result, match.disputed)}`}>
                 {resultLabel(match.result)}
@@ -182,11 +210,11 @@ const MatchHistoryPage = () => {
                     </div>
                     <div className="match-detail-info-item">
                       <span className="label">Winner</span>
-                      <span className="value">{detail.winnerDiscordId === detail.self?.discordId ? detail.self?.discordName : detail.opponent?.discordName}</span>
+                      <span className="value">{resolveWinnerName(detail)}</span>
                     </div>
                     <div className="match-detail-info-item">
                       <span className="label">Loser</span>
-                      <span className="value">{detail.loserDiscordId === detail.self?.discordId ? detail.self?.discordName : (detail.loserDiscordId === detail.opponent?.discordId ? detail.opponent?.discordName : '—')}</span>
+                      <span className="value">{resolveLoserName(detail)}</span>
                     </div>
                     <div className="match-detail-info-item">
                       <span className="label">Status</span>

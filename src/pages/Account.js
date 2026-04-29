@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchProfileData, verifyEpicAccount, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
+import { fetchProfileData, verifyEpicAccount, updateEpicGamesName, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
 import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
 import './Account.css';
 
@@ -35,17 +35,20 @@ const Account = () => {
     }
     setVerifying(true);
     try {
-      const response = await verifyEpicAccount(epicGamesName);
+      const response = userData?.epicVerified
+        ? await updateEpicGamesName(epicGamesName)
+        : await verifyEpicAccount(epicGamesName);
       setSuccessMessage(response.message);
       setErrorMessage('');
       setShowUpdateForm(false);
       const updatedData = await fetchProfileData();
       setUserData(updatedData);
       setEpicGamesName(updatedData.epicGamesName || '');
-      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      let storedUser = {};
+      try { storedUser = JSON.parse(localStorage.getItem('user') || '{}'); } catch {}
       localStorage.setItem('user', JSON.stringify({
         ...storedUser,
-        epicVerified: true,
+        epicVerified: !!updatedData.epicVerified,
         epicGamesName: updatedData.epicGamesName || epicGamesName,
       }));
       window.dispatchEvent(new Event('user-updated'));
@@ -126,9 +129,19 @@ const Account = () => {
           <div className="rank-progress-bar">
             <div className="rank-progress-fill" style={{ width: `${progress}%`, background: rank.color }} />
           </div>
+          <p className="account-helper-text">Tip: Keep your Epic name accurate so opponents can add you faster.</p>
         </div>
 
         <div>
+          <div className="account-main-card">
+            <h3 className="account-section-title"><i className="fas fa-circle-info"></i> Quick Help</h3>
+            <div className="account-help-list">
+              <div className="account-help-item"><strong>1.</strong> Verify your Epic username before joining queue.</div>
+              <div className="account-help-item"><strong>2.</strong> Use the update button only if your Epic name changed.</div>
+              <div className="account-help-item"><strong>3.</strong> If you entered the wrong name, contact staff from match page support tools.</div>
+            </div>
+          </div>
+
           <div className="account-main-card">
             <h3 className="account-section-title"><i className="fas fa-user"></i> Discord Profile</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
