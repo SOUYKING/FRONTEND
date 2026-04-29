@@ -430,40 +430,38 @@ const AdminDashboard = () => {
             <span className="badge danger">{stats?.overview?.flaggedAccounts || 0}</span>
           </button>
 
-          <button className={activeTab === 'broadcast' ? 'active' : ''} onClick={() => { setActiveTab('broadcast'); setSidebarOpen(false); }}>
-            <span className="nav-icon">📢</span>
-            <span className="nav-label">Broadcast</span>
-          </button>
         </nav>
 
         <div className="sidebar-footer">
-          <div className="staff-notif-bell" ref={staffNotifRef} onClick={() => setStaffNotifOpen(!staffNotifOpen)}>
-            <span className="bell-icon">🔔</span>
-            {staffNotifs.unreadCount > 0 && <span className="bell-count">{staffNotifs.unreadCount}</span>}
-            <span className="bell-label">Staff Alerts</span>
-          </div>
-          {staffNotifOpen && (
-            <div className="staff-notif-dropdown" onClick={(e) => e.stopPropagation()}>
-              <div className="notif-dropdown-header">
-                <div>
-                  <strong>Staff Alerts</strong>
-                  <div className="notif-dropdown-subtitle">Call staff, disputes, and urgent match reports.</div>
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); handleMarkAllRead(); }}>Mark all read</button>
-              </div>
-              <div className="notif-dropdown-list">
-                {staffNotifs.notifications.length === 0 ? (
-                  <div className="notif-empty">No staff alerts right now.</div>
-                ) : staffNotifs.notifications.slice(0, 10).map(n => (
-                  <div key={n._id} className={`notif-item ${!n.read ? 'unread' : ''}`} onClick={() => handleNotifClick(n)} title={n.matchId ? 'Open matches tab' : 'Alert'}>
-                    <div className="notif-item-title">{notifTypeIcon(n.type)} {n.title || n.type}</div>
-                    <div className="notif-item-msg">{n.message}</div>
-                    <div className="notif-item-time">{new Date(n.createdAt).toLocaleString()}</div>
-                  </div>
-                ))}
-              </div>
+          <div ref={staffNotifRef}>
+            <div className="staff-notif-bell" onClick={() => setStaffNotifOpen(!staffNotifOpen)}>
+              <span className="bell-icon">🔔</span>
+              {staffNotifs.unreadCount > 0 && <span className="bell-count">{staffNotifs.unreadCount}</span>}
+              <span className="bell-label">Staff Alerts</span>
             </div>
-          )}
+            {staffNotifOpen && (
+              <div className="staff-notif-dropdown" onClick={(e) => e.stopPropagation()}>
+                <div className="notif-dropdown-header">
+                  <div>
+                    <strong>Staff Alerts</strong>
+                    <div className="notif-dropdown-subtitle">Call staff, disputes, and urgent match reports.</div>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); handleMarkAllRead(); }}>Mark all read</button>
+                </div>
+                <div className="notif-dropdown-list">
+                  {staffNotifs.notifications.length === 0 ? (
+                    <div className="notif-empty">No staff alerts right now.</div>
+                  ) : staffNotifs.notifications.slice(0, 10).map(n => (
+                    <div key={n._id} className={`notif-item ${!n.read ? 'unread' : ''}`} onClick={() => handleNotifClick(n)} title={n.matchId ? 'Open matches tab' : 'Alert'}>
+                      <div className="notif-item-title">{notifTypeIcon(n.type)} {n.title || n.type}</div>
+                      <div className="notif-item-msg">{n.message}</div>
+                      <div className="notif-item-time">{new Date(n.createdAt).toLocaleString()}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <button onClick={() => navigate('/')} className="back-btn">← Back to Site</button>
         </div>
       </aside>
@@ -529,7 +527,6 @@ const AdminDashboard = () => {
         {activeTab === 'anticheat' && <AnticheatTab api={api} />}
         {activeTab === 'matches' && <MatchesTab api={api} notify={showNotification} focusedMatchId={focusedMatchId} />}
 
-        {activeTab === 'broadcast' && <BroadcastTab api={api} notify={showNotification} />}
       </main>
 
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
@@ -650,7 +647,6 @@ const DashboardTab = ({ stats, prevStats, onNavigate }) => (
           <button onClick={() => onNavigate('tournaments')}><span className="qa-icon">🏆</span> Create Tournament</button>
           <button onClick={() => onNavigate('anticheat')}><span className="qa-icon">⚡</span> View Alerts</button>
 
-          <button onClick={() => onNavigate('broadcast')}><span className="qa-icon">📢</span> New Broadcast</button>
         </div>
       </section>
     </div>
@@ -1493,81 +1489,6 @@ const MatchesTab = ({ api, notify, focusedMatchId }) => {
           <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Prev</button>
           <span>{page} / {totalPages}</span>
           <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next →</button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const BroadcastTab = ({ api, notify }) => {
-  const [announcements, setAnnouncements] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ title: '', body: '', type: 'info', priority: 'normal', expiresAt: '' });
-  useEffect(() => { fetchAnnouncements(); }, []);
-  const fetchAnnouncements = async () => {
-    try { const res = await api.get('/admin/announcements'); setAnnouncements(res.data.announcements); } catch (err) { console.error('Failed'); }
-    finally { setLoading(false); }
-  };
-  const handleCreate = async () => {
-    if (!form.title.trim() || !form.body.trim()) { notify('Title and body required', 'error'); return; }
-    try { await api.post('/admin/announcements', form); notify('Announcement published', 'success'); setShowCreate(false); setForm({ title: '', body: '', type: 'info', priority: 'normal', expiresAt: '' }); fetchAnnouncements(); }
-    catch (err) { notify('Failed to create', 'error'); }
-  };
-  const handleDelete = async (id) => { try { await api.delete(`/admin/announcements/${id}`); notify('Deleted', 'success'); fetchAnnouncements(); } catch (err) { notify('Failed to delete', 'error'); } };
-  const handleToggleActive = async (id, current) => { try { await api.put(`/admin/announcements/${id}`, { active: !current }); fetchAnnouncements(); } catch (err) { notify('Failed to update', 'error'); } };
-  const typeColors = { info: '#3b82f6', warning: '#eab308', update: '#22c55e', maintenance: '#f97316', event: '#a78bfa' };
-  if (loading) return <div className="tab-loading">Loading...</div>;
-  return (
-    <div className="broadcast-tab">
-      <div className="tab-title-section">
-        <h2>Broadcast Center</h2>
-        <button className="create-btn" onClick={() => setShowCreate(true)}>+ New Announcement</button>
-      </div>
-      <div className="announcements-list">
-        {announcements.length === 0 ? (
-          <div className="empty-state"><span>📢</span><p>No announcements yet</p></div>
-        ) : announcements.map(a => (
-          <div key={a._id} className={`announcement-card ${!a.active ? 'inactive' : ''}`}>
-            <div className="announcement-card-header">
-              <span className="announcement-type" style={{ background: typeColors[a.type] || '#64748b' }}>{a.type}</span>
-              <span className={`announcement-priority ${a.priority}`}>{a.priority}</span>
-              <span className="announcement-date">{new Date(a.createdAt).toLocaleDateString()}</span>
-              <button className="announcement-toggle" onClick={() => handleToggleActive(a._id, a.active)}>
-                {a.active ? 'Active' : 'Inactive'}
-              </button>
-              <button className="announcement-delete" onClick={() => handleDelete(a._id)}>🗑</button>
-            </div>
-            <div className="announcement-body">
-              <h4>{a.title}</h4>
-              <p>{a.body}</p>
-            </div>
-            <div className="announcement-footer">
-              <span>By {a.createdBy?.discordName || 'Unknown'}</span>
-              {a.expiresAt && <span>Expires {new Date(a.expiresAt).toLocaleDateString()}</span>}
-            </div>
-          </div>
-        ))}
-      </div>
-      {showCreate && (
-        <div className="modal-overlay" onClick={() => setShowCreate(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><h3>New Announcement</h3><button onClick={() => setShowCreate(false)} className="close-btn">✕</button></div>
-            <div className="modal-body">
-              <div className="form-group"><label>Title *</label><input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Announcement title..." /></div>
-              <div className="form-group"><label>Body *</label><textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))} placeholder="Write your announcement..." rows={5} /></div>
-              <div className="form-row">
-                <div className="form-group"><label>Type</label><select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
-                  <option value="info">Info</option><option value="warning">Warning</option><option value="update">Update</option><option value="maintenance">Maintenance</option><option value="event">Event</option>
-                </select></div>
-                <div className="form-group"><label>Priority</label><select value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value }))}>
-                  <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
-                </select></div>
-                <div className="form-group"><label>Expires At</label><input type="datetime-local" value={form.expiresAt} onChange={e => setForm(p => ({ ...p, expiresAt: e.target.value }))} /></div>
-              </div>
-            </div>
-            <div className="modal-footer"><button className="cancel-btn" onClick={() => setShowCreate(false)}>Cancel</button><button className="submit-btn" onClick={handleCreate}>Publish</button></div>
-          </div>
         </div>
       )}
     </div>
