@@ -11,8 +11,8 @@ const ICONS = [
   gameController, headphone, keyboardImg, mouseImg, pistol, rifle, battle,
 ];
 
-const GRID_COLS = 14;
-const GRID_ROWS = 9;
+const GRID_COLS = 10;
+const GRID_ROWS = 6;
 const TOTAL = GRID_COLS * GRID_ROWS;
 
 const AnimatedBackground = () => {
@@ -23,20 +23,22 @@ const AnimatedBackground = () => {
       const row = Math.floor(i / GRID_COLS);
       const cx = (col + 0.5) / GRID_COLS * 100;
       const cy = (row + 0.5) / GRID_ROWS * 100;
-      const jitterX = (Math.random() - 0.5) * 2.2;
-      const jitterY = (Math.random() - 0.5) * 2.2;
+      const jitterX = (Math.random() - 0.5) * 7.5;
+      const jitterY = (Math.random() - 0.5) * 7.5;
       const layer = i % 3;
       items.push({
         id: i,
-        src: ICONS[i % ICONS.length],
+        src: ICONS[Math.floor(Math.random() * ICONS.length)],
         layer,
         baseX: cx + jitterX,
         baseY: cy + jitterY,
-        size: 22 + Math.random() * 28,
-        opacity: 0.03 + Math.random() * 0.03,
-        rotation: -20 + Math.random() * 40,
-        driftDuration: 24 + Math.random() * 24,
-        driftDelay: Math.random() * 8,
+        size: 26 + Math.random() * 36,
+        opacity: 0.08 + Math.random() * 0.1,
+        rotation: -26 + Math.random() * 52,
+        driftX: 10 + Math.random() * 22,
+        driftY: 8 + Math.random() * 20,
+        driftDuration: 14 + Math.random() * 20,
+        driftDelay: Math.random() * 10,
       });
     }
     return items;
@@ -60,7 +62,8 @@ const AnimatedBackground = () => {
               height: obj.size,
               opacity: obj.opacity,
               '--rot': `${obj.rotation}deg`,
-              '--drift': `${obj.layer === 0 ? 3 : obj.layer === 1 ? 5 : 7}px`,
+              '--driftX': `${obj.layer === 0 ? obj.driftX * 0.6 : obj.layer === 1 ? obj.driftX : obj.driftX * 1.25}px`,
+              '--driftY': `${obj.layer === 0 ? obj.driftY * 0.6 : obj.layer === 1 ? obj.driftY : obj.driftY * 1.25}px`,
               animationDuration: `${obj.driftDuration}s`,
               animationDelay: `-${obj.driftDelay}s`,
             }}

@@ -5,15 +5,15 @@
   pointer-events: none;
   overflow: hidden;
   background:
-    radial-gradient(1200px 700px at -10% -10%, rgba(16, 76, 150, 0.2), transparent 55%),
-    radial-gradient(1000px 650px at 110% 110%, rgba(0, 124, 177, 0.12), transparent 58%),
-    linear-gradient(180deg, #090d17 0%, #06080f 44%, #05070d 100%);
+    radial-gradient(1200px 700px at -10% -10%, rgba(16, 76, 150, 0.24), transparent 55%),
+    radial-gradient(1000px 650px at 110% 110%, rgba(0, 124, 177, 0.16), transparent 58%),
+    linear-gradient(180deg, #090d17 0%, #070b14 44%, #05070d 100%);
   isolation: isolate;
 }
 
 .animated-bg-pattern {
   position: absolute;
-  inset: -2%;
+  inset: -4%;
   perspective: 1000px;
 }
 
@@ -21,23 +21,29 @@
   position: absolute;
   object-fit: contain;
   pointer-events: none;
-  filter: grayscale(1) brightness(0.33) contrast(1.08);
+  filter: saturate(0.9) brightness(0.82) contrast(1.08);
   animation-name: bgIconDrift;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
   will-change: transform;
 }
 
-.bg-icon.layer-0 { filter: grayscale(1) brightness(0.28) contrast(1.02) blur(0.2px); }
-.bg-icon.layer-1 { filter: grayscale(1) brightness(0.33) contrast(1.08); }
-.bg-icon.layer-2 { filter: grayscale(1) brightness(0.4) contrast(1.14); }
+.bg-icon.layer-0 { filter: saturate(0.8) brightness(0.68) contrast(1.02) blur(0.25px); }
+.bg-icon.layer-1 { filter: saturate(0.9) brightness(0.82) contrast(1.08); }
+.bg-icon.layer-2 { filter: saturate(1) brightness(0.98) contrast(1.14); }
 
 @keyframes bgIconDrift {
   0%, 100% {
     transform: translate(-50%, -50%) translate3d(0, 0, 0) rotate(var(--rot, 0deg));
   }
+  25% {
+    transform: translate(-50%, -50%) translate3d(calc(var(--driftX, 8px) * -0.4), calc(var(--driftY, 8px) * -0.25), 0) rotate(calc(var(--rot, 0deg) - 1.5deg));
+  }
   50% {
-    transform: translate(-50%, -50%) translate3d(0, calc(var(--drift, 4px) * -1), 0) rotate(calc(var(--rot, 0deg) + 1.5deg));
+    transform: translate(-50%, -50%) translate3d(var(--driftX, 8px), calc(var(--driftY, 8px) * -1), 0) rotate(calc(var(--rot, 0deg) + 2.2deg));
+  }
+  75% {
+    transform: translate(-50%, -50%) translate3d(calc(var(--driftX, 8px) * -0.8), calc(var(--driftY, 8px) * 0.75), 0) rotate(calc(var(--rot, 0deg) - 1deg));
   }
 }
 
@@ -73,7 +79,7 @@
     linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
   background-size: 48px 48px;
   mix-blend-mode: soft-light;
-  opacity: 0.32;
+  opacity: 0.2;
 }
 
 .app-container {
