@@ -9,6 +9,7 @@ const Login = ({ errorMessage = '', errorType = '' }) => {
   const [tournaments, setTournaments] = useState([]);
   const [stats, setStats] = useState({ tournaments: 0, players: 0, matches: 0 });
   const [loading, setLoading] = useState(true);
+  const [loginCooldown, setLoginCooldown] = useState(0);
 
   useEffect(() => {
     const fetchPublicData = async () => {
@@ -30,12 +31,22 @@ const Login = ({ errorMessage = '', errorType = '' }) => {
     fetchPublicData();
   }, []);
 
+  useEffect(() => {
+    if (loginCooldown <= 0) return;
+    const t = setInterval(() => {
+      setLoginCooldown((sec) => (sec > 0 ? sec - 1 : 0));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [loginCooldown]);
+
   const handleLogin = () => {
+    if (loginCooldown > 0) return;
     const discordAuthUrl = getDiscordAuthUrl();
     if (!discordAuthUrl) {
       alert('Login configuration error. Please try again later.');
       return;
     }
+    setLoginCooldown(10);
     window.location.href = discordAuthUrl;
   };
 
@@ -73,8 +84,8 @@ const Login = ({ errorMessage = '', errorType = '' }) => {
           <span className="login-nav-icon">⚡</span>
           <span>FNT ARENA</span>
         </div>
-        <button onClick={handleLogin} className="login-nav-btn">
-          <i className="fab fa-discord"></i> Sign In
+        <button onClick={handleLogin} className="login-nav-btn" disabled={loginCooldown > 0}>
+          <i className="fab fa-discord"></i> {loginCooldown > 0 ? `Wait ${loginCooldown}s` : 'Sign In'}
         </button>
       </div>
 
@@ -90,8 +101,8 @@ const Login = ({ errorMessage = '', errorType = '' }) => {
             Real matchmaking. Real competition. Real rewards.
           </p>
           <div className="login-hero-actions">
-            <button onClick={handleLogin} className="login-hero-btn">
-              <i className="fab fa-discord"></i> Sign in with Discord
+            <button onClick={handleLogin} className="login-hero-btn" disabled={loginCooldown > 0}>
+              <i className="fab fa-discord"></i> {loginCooldown > 0 ? `Please wait ${loginCooldown}s` : 'Sign in with Discord'}
             </button>
           </div>
           <div className="login-hero-trust">
@@ -209,8 +220,8 @@ const Login = ({ errorMessage = '', errorType = '' }) => {
       <div className="login-cta-section">
         <h2>Ready to Compete?</h2>
         <p>Join thousands of players in the arena. Sign in with Discord and start your first match.</p>
-        <button onClick={handleLogin} className="login-hero-btn">
-          <i className="fab fa-discord"></i> Get Started
+        <button onClick={handleLogin} className="login-hero-btn" disabled={loginCooldown > 0}>
+          <i className="fab fa-discord"></i> {loginCooldown > 0 ? `Please wait ${loginCooldown}s` : 'Get Started'}
         </button>
       </div>
 
