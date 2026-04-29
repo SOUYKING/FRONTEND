@@ -319,8 +319,7 @@ const AdminDashboard = () => {
       } catch (err) {}
     }
     if (n.matchId) {
-      setFocusedMatchId(n.matchId);
-      setActiveTab('matches');
+      navigate(`/match/${n.matchId}`);
     }
   };
 
