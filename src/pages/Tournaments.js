@@ -205,7 +205,7 @@ const Tournaments = () => {
                 <div className="tournament-card-actions">
                   {queueOpen && !isEnded && (
                     <button onClick={() => handleJoinQueue(tournament._id)} className="btn btn-success" style={{ flex: 1 }}>
-                      <i className="fas fa-right-to-bracket"></i> Join Queue
+                      <i className="fas fa-right-to-bracket"></i> {['2v2', '3v3', '4v4'].includes(tournament.type) ? 'Select Team & Queue' : 'Join Queue'}
                     </button>
                   )}
                   {!queueOpen && !isEnded && (

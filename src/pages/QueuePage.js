@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getTournamentById, getCurrentMatch, joinMatchmaking, leaveMatchmaking } from '../utils/api';
+import { getTournamentById, getCurrentMatch, joinMatchmaking, leaveMatchmaking, getMyTeams } from '../utils/api';
 import './QueuePage.css';
 
 const QueuePage = ({ socket }) => {
@@ -11,6 +11,8 @@ const QueuePage = ({ socket }) => {
   const [tournament, setTournament] = useState(null);
   const [queueSize, setQueueSize] = useState(0);
   const [epicName, setEpicName] = useState('');
+  const [myTeams, setMyTeams] = useState([]);
+  const [selectedTeamId, setSelectedTeamId] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
   const getStoredUser = () => {
@@ -21,8 +23,11 @@ const QueuePage = ({ socket }) => {
     }
   };
 
+  const requiredTeamSize = tournament?.type === '2v2' ? 2 : tournament?.type === '3v3' ? 3 : tournament?.type === '4v4' ? 4 : 1;
+  const isTeamTournament = requiredTeamSize > 1;
+
   const attemptApiQueueJoin = async (user, customEpicName) => {
-    const res = await joinMatchmaking(tournamentId, customEpicName || user.epicGamesName);
+    const res = await joinMatchmaking(tournamentId, customEpicName || user.epicGamesName, isTeamTournament ? selectedTeamId : null);
     socket.emit('register', { userId: user.discordId || user.id });
     setStatus('waiting');
     setQueueSize(res.queueSize || 0);
@@ -35,6 +40,15 @@ const QueuePage = ({ socket }) => {
         setMessage('');
         const data = await getTournamentById(tournamentId);
         setTournament(data);
+        const teamSize = data?.type === '2v2' ? 2 : data?.type === '3v3' ? 3 : data?.type === '4v4' ? 4 : 0;
+        if (teamSize > 1) {
+          const teams = await getMyTeams(teamSize);
+          setMyTeams(teams || []);
+          if (teams?.length === 1) setSelectedTeamId(teams[0]._id);
+        } else {
+          setMyTeams([]);
+          setSelectedTeamId('');
+        }
       } catch (err) {
         console.error('Error fetching tournament:', err);
         setMessage('Failed to load tournament');
@@ -143,10 +157,16 @@ const QueuePage = ({ socket }) => {
     // Do not hard-block on client-side queueOpen; backend is the source of truth.
     setStatus('joining');
     setMessage('Joining queue...');
+    if (isTeamTournament && !selectedTeamId) {
+      setStatus('error');
+      setMessage(`Select your ${requiredTeamSize}v${requiredTeamSize} team first.`);
+      return;
+    }
     // Socket-first join avoids stale API validators on some deployments.
     socket.emit('joinQueue', {
       tournamentId,
       epicName: finalEpicName,
+      teamId: isTeamTournament ? selectedTeamId : undefined,
     });
   };
 
@@ -183,6 +203,36 @@ const QueuePage = ({ socket }) => {
         </div>
 
         <div className="queue-status-message">{message || 'Ready to join the queue?'}</div>
+
+        {isTeamTournament && (
+          <div className="queue-info-box" style={{ marginTop: -8 }}>
+            <div className="queue-info-row">
+              <span className="queue-info-label">Tournament Type</span>
+              <span className="queue-info-value">{tournament?.type}</span>
+            </div>
+            <div className="queue-info-row">
+              <span className="queue-info-label">Select Team</span>
+              <select
+                value={selectedTeamId}
+                onChange={(e) => setSelectedTeamId(e.target.value)}
+                className="chat-input"
+                style={{ maxWidth: 250 }}
+              >
+                <option value="">Choose your team</option>
+                {myTeams.map((team) => (
+                  <option key={team._id} value={team._id}>
+                    {team.name} ({team.members?.length || 0}/{team.size})
+                  </option>
+                ))}
+              </select>
+            </div>
+            {myTeams.length === 0 && (
+              <div style={{ color: 'var(--orange)', fontSize: '0.8rem', marginTop: 8 }}>
+                No eligible team found. Create/accept a team in Teams (Beta) first.
+              </div>
+            )}
+          </div>
+        )}
 
         {isActive && (
           <div className="queue-info-box">

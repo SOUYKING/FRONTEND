@@ -193,12 +193,72 @@ export const getMyRegisteredTournaments = async () => {
 };
 
 // MATCHMAKING ROUTES
-export const joinMatchmaking = async (tournamentId, epicName) => {
+export const joinMatchmaking = async (tournamentId, epicName, teamId = null) => {
   try {
-    const res = await apiClient.post(`/matchmaking/join`, { tournamentId, epicName });
+    const res = await apiClient.post(`/matchmaking/join`, { tournamentId, epicName, teamId });
     return res.data;
   } catch (error) {
     console.error("Join matchmaking error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getMyTeams = async (size) => {
+  try {
+    const res = await apiClient.get('/teams/mine', { params: size ? { size } : {} });
+    return res.data;
+  } catch (error) {
+    console.error("Get my teams error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const searchUsersForTeam = async (query) => {
+  try {
+    const res = await apiClient.get('/teams/search-users', { params: { q: query } });
+    return res.data;
+  } catch (error) {
+    console.error("Search users for team error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const createTeam = async ({ name, size }) => {
+  try {
+    const res = await apiClient.post('/teams/create', { name, size });
+    return res.data;
+  } catch (error) {
+    console.error("Create team error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const sendTeamInvite = async (teamId, targetDiscordId) => {
+  try {
+    const res = await apiClient.post(`/teams/${teamId}/invite`, { targetDiscordId });
+    return res.data;
+  } catch (error) {
+    console.error("Send team invite error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getMyTeamInvites = async () => {
+  try {
+    const res = await apiClient.get('/teams/invites');
+    return res.data;
+  } catch (error) {
+    console.error("Get team invites error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const respondToTeamInvite = async (inviteId, action) => {
+  try {
+    const res = await apiClient.post(`/teams/invites/${inviteId}/respond`, { action });
+    return res.data;
+  } catch (error) {
+    console.error("Respond to team invite error:", error.response?.data || error.message);
     throw error;
   }
 };

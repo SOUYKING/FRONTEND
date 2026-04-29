@@ -88,6 +88,11 @@ const Sidebar = ({ onLogout }) => {
                   <i className="fas fa-shield-alt"></i> Admin Panel
                 </NavLink>
               </li>
+              <li>
+                <NavLink to="/teams" className={({ isActive }) => (isActive ? 'active-nav' : '')} onClick={closeMobile}>
+                  <i className="fas fa-users"></i> Teams (Beta)
+                </NavLink>
+              </li>
             </ul>
           </>
         )}

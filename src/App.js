@@ -14,6 +14,7 @@ import MatchPage from './pages/MatchPage';
 import CurrentGame from './pages/CurrentGame';
 import MatchHistoryPage from './pages/MatchHistoryPage';
 import NotificationPage from './pages/NotificationPage';
+import Teams from './pages/Teams';
 import AnimatedBackground from './components/GamingIcons';
 
 import { getTokenFromUrl, getOAuthErrorFromUrl, setAuthToken, fetchUserData, verifyToken, getCurrentMatch, SOCKET_BASE_URL } from './utils/api';
@@ -118,6 +119,7 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
           <Route path="/current-game" element={<CurrentGame user={user} currentMatchId={currentMatchId} />} />
           <Route path="/match-history" element={<MatchHistoryPage user={user} />} />
           <Route path="/notifications" element={<NotificationPage user={user} />} />
+          <Route path="/teams" element={<Teams user={user} />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </div>
