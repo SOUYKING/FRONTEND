@@ -11,6 +11,15 @@ const QueuePage = ({ socket }) => {
   const [tournament, setTournament] = useState(null);
   const [queueSize, setQueueSize] = useState(0);
   const [epicName, setEpicName] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const getStoredUser = () => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || '{}');
+    } catch {
+      return {};
+    }
+  };
 
   const attemptApiQueueJoin = async (user, customEpicName) => {
     const res = await joinMatchmaking(tournamentId, customEpicName || user.epicGamesName);
@@ -23,6 +32,7 @@ const QueuePage = ({ socket }) => {
   useEffect(() => {
     const fetchTournament = async () => {
       try {
+        setMessage('');
         const data = await getTournamentById(tournamentId);
         setTournament(data);
       } catch (err) {
@@ -32,7 +42,7 @@ const QueuePage = ({ socket }) => {
     };
     fetchTournament();
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = getStoredUser();
     setEpicName(user.epicGamesName || '');
 
     const fallbackTimer = setTimeout(async () => {
@@ -120,17 +130,23 @@ const QueuePage = ({ socket }) => {
       socket.off('leftQueue', onLeftQueue);
       clearTimeout(fallbackTimer);
     };
-  }, [tournamentId, navigate, socket]);
+  }, [tournamentId, navigate, socket, refreshKey]);
 
   const handleJoinQueue = async () => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = getStoredUser();
+    const finalEpicName = (epicName || user.epicGamesName || '').trim();
+    if (!finalEpicName) {
+      setStatus('error');
+      setMessage('Please add your Epic name in Account page first.');
+      return;
+    }
     // Do not hard-block on client-side queueOpen; backend is the source of truth.
     setStatus('joining');
     setMessage('Joining queue...');
     // Socket-first join avoids stale API validators on some deployments.
     socket.emit('joinQueue', {
       tournamentId,
-      epicName: epicName || user.epicGamesName,
+      epicName: finalEpicName,
     });
   };
 
@@ -159,7 +175,12 @@ const QueuePage = ({ socket }) => {
         </div>
 
         <h2 className="queue-title">{tournament?.title || 'Matchmaking'}</h2>
-        <p className="queue-subtitle">Waiting room</p>
+        <p className="queue-subtitle">Queue lobby</p>
+
+        <div className="queue-helper-chips">
+          <span><i className="fas fa-circle-info"></i> Join queue when ready to play.</span>
+          <span><i className="fas fa-bolt"></i> Keep this tab open for fastest match alerts.</span>
+        </div>
 
         <div className="queue-status-message">{message || 'Ready to join the queue?'}</div>
 
@@ -194,6 +215,9 @@ const QueuePage = ({ socket }) => {
               <i className="fas fa-sign-out-alt"></i> Leave Queue
             </button>
           )}
+          <button onClick={() => setRefreshKey((k) => k + 1)} className="queue-btn neutral">
+            <i className="fas fa-rotate-right"></i> Refresh
+          </button>
         </div>
 
         {tournament && (
