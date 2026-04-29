@@ -4,7 +4,6 @@ import { getActiveMatchInfo, getPublicPlayerProfile, submitMatchResult, resolveM
 import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
 import './MatchPage.css';
 
-const STAFF_ROLES = ['admin', 'owner', 'staff'];
 const readStoredUser = () => {
   try {
     return JSON.parse(localStorage.getItem('user') || '{}');
@@ -52,6 +51,19 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
   );
   const currentUserId = currentUser?.discordId || currentUser?.id;
   const chatRef = useRef(null);
+
+  const staffModerator = useMemo(() => {
+    if (!currentUser) return false;
+    if (currentUser.isOwner) return true;
+    const r = String(currentUser.role || '').toLowerCase();
+    return r === 'admin' || r === 'owner' || r === 'staff';
+  }, [currentUser]);
+
+  const showStaffMatchTools = Boolean(
+    !isSpectator &&
+    !self &&
+    (isStaff || staffModerator)
+  );
 
   const myName = self?.username || currentUser?.discordName || 'You';
   const opponentName = opponent?.username || opponent?.discordName || 'Opponent';
@@ -215,7 +227,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
       if (self) {
         sessionStorage.setItem('currentMatch', JSON.stringify({ matchId, self, opponent }));
         socket.emit('joinMatch', { matchId, playerName: myName });
-      } else if (isStaff) {
+      } else if (!self && (isStaff || staffModerator)) {
         socket.emit('staffJoinMatch', { matchId, staffName: myName });
       } else if (isSpectator) {
         socket.emit('joinMatchAsViewer', { matchId, viewerName: currentUser?.discordName || 'Viewer' });
@@ -308,7 +320,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
       socket.off('reportSubmitted', onReportSubmitted);
       socket.off('joinMatchAsViewer', onJoinMatchAsViewer);
     };
-  }, [matchId, self, opponent, socket, navigate, myName, currentUser?.discordName, isStaff, isSpectator, contextLoaded]);
+  }, [matchId, self, opponent, socket, navigate, myName, currentUser?.discordName, isStaff, staffModerator, isSpectator, contextLoaded]);
 
   useEffect(() => {
     if (chatRef.current && chatAtBottom) {
@@ -466,7 +478,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
             <i className={`fas ${disputed ? 'fa-gavel' : reported ? 'fa-check-circle' : 'fa-circle'}`}></i>
             {disputed ? ' Disputed' : reported ? ' Reported' : ' LIVE'}
             {isSpectator && <span style={{ marginLeft: 6, opacity: 0.6, fontWeight: 400 }}>· Spectator</span>}
-            {isStaff && !isSpectator && !self && <span style={{ marginLeft: 6, opacity: 0.6, fontWeight: 400 }}>· Staff View</span>}
+            {showStaffMatchTools && <span style={{ marginLeft: 6, opacity: 0.6, fontWeight: 400 }}>· Staff View</span>}
           </span>
         </div>
 
@@ -642,10 +654,12 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
             <div className="match-action-card">
               <div className="match-action-card-header"><i className="fas fa-trophy"></i> Report Result</div>
               <div className="match-action-card-body">
-                {isSpectator || (isStaff && !self) ? (
+                {isSpectator || showStaffMatchTools ? (
                   <div className="match-status-msg">
                     <i className="fas fa-eye" style={{ color: 'var(--text-muted)', opacity: 0.5, fontSize: '1.5rem', marginBottom: 8 }}></i>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>You are {isStaff ? 'staff observer' : 'spectating'} this match.</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      You are {showStaffMatchTools ? 'staff observer' : 'spectating'} this match.
+                    </p>
                   </div>
                 ) : !reported && !disputed ? (
                   teamMatch && !isTeamCaptain ? (
@@ -670,7 +684,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
                   <div className="match-status-msg">
                     <i className="fas fa-gavel" style={{ color: 'var(--red)' }}></i>
                     <p>Match disputed. Staff will review.</p>
-                    {isStaff && !isSpectator && (
+                    {showStaffMatchTools && (
                       <div className="force-buttons">
                         {player1 && (
                           <button disabled={staffForcing} onClick={() => handleForceWin(player1.id, player1.username)} className="result-btn win">
@@ -700,7 +714,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
               </div>
             </div>
 
-            {isStaff && !isSpectator && (
+            {showStaffMatchTools && (
               <div className="match-action-card">
                 <div className="match-action-card-header"><i className="fas fa-gavel"></i> Staff Tools</div>
                 <div className="match-action-card-body">
