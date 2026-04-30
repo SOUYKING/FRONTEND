@@ -4,7 +4,7 @@ import { getTournamentById, getTournamentLeaderboard, getGlobalLeaderboard, buil
 import './Leaderboard.css';
 
 const TEAM_TYPES = new Set(['2v2', '3v3', '4v4']);
-const MIN_RANKED_MATCHES = 5;
+const MIN_RANKED_MATCHES = 3;
 
 function normalizeTournamentLbResponse(data) {
   if (Array.isArray(data)) {
