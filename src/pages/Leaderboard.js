@@ -4,6 +4,7 @@ import { getTournamentById, getTournamentLeaderboard, getGlobalLeaderboard, buil
 import './Leaderboard.css';
 
 const TEAM_TYPES = new Set(['2v2', '3v3', '4v4']);
+const MIN_RANKED_MATCHES = 5;
 
 function normalizeTournamentLbResponse(data) {
   if (Array.isArray(data)) {
@@ -19,6 +20,30 @@ function winRate(wins, losses) {
   const t = (wins || 0) + (losses || 0);
   if (t === 0) return '—';
   return `${(((wins || 0) / t) * 100).toFixed(1)}%`;
+}
+
+function compareGlobalEntries(a, b) {
+  const aMatches = a.totalMatches ?? ((a.wins || 0) + (a.losses || 0));
+  const bMatches = b.totalMatches ?? ((b.wins || 0) + (b.losses || 0));
+  const aProv = a.isProvisional ?? (aMatches < MIN_RANKED_MATCHES);
+  const bProv = b.isProvisional ?? (bMatches < MIN_RANKED_MATCHES);
+  const aWr = a.winRate ?? (aMatches > 0 ? ((a.wins || 0) / aMatches) * 100 : 0);
+  const bWr = b.winRate ?? (bMatches > 0 ? ((b.wins || 0) / bMatches) * 100 : 0);
+
+  if (aProv !== bProv) return aProv ? 1 : -1;
+
+  if (!aProv) {
+    if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
+    if (bWr !== aWr) return bWr - aWr;
+    if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+    if (bMatches !== aMatches) return bMatches - aMatches;
+  } else {
+    if (bMatches !== aMatches) return bMatches - aMatches;
+    if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
+    if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+  }
+
+  return String(a.discordName || '').localeCompare(String(b.discordName || ''));
 }
 
 function buildTeamRollup(entries, tournamentType) {
@@ -106,7 +131,7 @@ const Leaderboard = () => {
         } else {
           const globalData = await getGlobalLeaderboard();
           const sorted = Array.isArray(globalData)
-            ? [...globalData].sort((a, b) => (b.points || 0) - (a.points || 0))
+            ? [...globalData].sort(compareGlobalEntries)
             : [];
           setEntries(sorted);
           setTournamentMeta(null);
@@ -212,7 +237,7 @@ const Leaderboard = () => {
           <h1>{!id || !tournamentMeta ? `${title} leaderboard` : 'Standings'}</h1>
           <p className="subtitle">
             {!id
-              ? 'Top players worldwide'
+              ? `Top players worldwide. Players under ${MIN_RANKED_MATCHES} matches are provisional.`
               : isSquadTournament
                 ? 'Squad standings — tap any team for player details'
                 : 'Points and match record for this event'}
@@ -253,6 +278,8 @@ const Leaderboard = () => {
                 {entries.map((entry, index) => {
                   const rank = getRankDisplay(index);
                   const wr = winRate(entry.wins, entry.losses);
+                  const totalMatches = entry.totalMatches ?? ((entry.wins || 0) + (entry.losses || 0));
+                  const isProvisional = entry.isProvisional ?? (!id && totalMatches < MIN_RANKED_MATCHES);
                   return (
                     <div
                       key={entry.userId || index}
@@ -267,7 +294,10 @@ const Leaderboard = () => {
                           />
                         </div>
                         <div className="lb-name-block">
-                          <div className="leaderboard-name">{entry.discordName || 'Player'}</div>
+                          <div className="leaderboard-name">
+                            {entry.discordName || 'Player'}
+                            {isProvisional ? <span className="lb-provisional-pill">Provisional</span> : null}
+                          </div>
                           {entry.epicName && (
                             <div className="lb-epic"><i className="fas fa-gamepad" /> {entry.epicName}</div>
                           )}
