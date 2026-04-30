@@ -46,6 +46,14 @@ function compareGlobalEntries(a, b) {
   return String(a.discordName || '').localeCompare(String(b.discordName || ''));
 }
 
+function bracketStatusLabel(status) {
+  if (status === 'completed') return 'Completed';
+  if (status === 'bye') return 'Bye';
+  if (status === 'pending') return 'Live';
+  if (status === 'in_progress') return 'Live';
+  return 'Waiting';
+}
+
 function buildTeamRollup(entries, tournamentType) {
   if (!TEAM_TYPES.has(tournamentType || '')) return [];
   const byTeam = new Map();
@@ -149,6 +157,11 @@ const Leaderboard = () => {
   const isSquadTournament = TEAM_TYPES.has(tournamentMeta?.type || '');
   const isBracketTournament = id && tournamentMeta?.type === '1v1_bracket';
   const bracketRounds = tournamentMeta?.bracket?.rounds || [];
+  const bracketFinal = bracketRounds.length ? bracketRounds[bracketRounds.length - 1]?.matches?.[0] : null;
+  const bracketChampion = tournamentMeta?.bracket?.championName || bracketFinal?.winnerName || null;
+  const bracketPendingMatches = bracketRounds.reduce((sum, round) => {
+    return sum + (round.matches || []).filter((m) => m.status === 'pending' || m.status === 'in_progress').length;
+  }, 0);
   const teamRollup = useMemo(
     () => buildTeamRollup(entries, tournamentMeta?.type),
     [entries, tournamentMeta?.type],
@@ -259,39 +272,61 @@ const Leaderboard = () => {
       )}
 
       {isBracketTournament && bracketRounds.length > 0 && (
-        <div className="lb-bracket-wrap">
-          <div className="lb-bracket-scroll">
-            {bracketRounds.map((round) => (
-              <div key={`round-${round.round}`} className="lb-bracket-round">
-                <div className="lb-bracket-round-title">
-                  {round.round === bracketRounds.length ? 'Final' : `Round ${round.round}`}
-                </div>
-                <div className="lb-bracket-round-list">
-                  {(round.matches || []).map((match) => {
-                    const p1Win = match.winnerId && match.player1Id && String(match.winnerId) === String(match.player1Id);
-                    const p2Win = match.winnerId && match.player2Id && String(match.winnerId) === String(match.player2Id);
-                    return (
-                      <div key={match.id} className="lb-bracket-match">
-                        <div className={`lb-bracket-player ${p1Win ? 'is-winner' : ''}`}>
-                          <span>{match.player1Name || 'TBD'}</span>
-                        </div>
-                        <div className={`lb-bracket-player ${p2Win ? 'is-winner' : ''}`}>
-                          <span>{match.player2Name || 'TBD'}</span>
-                        </div>
-                        <div className="lb-bracket-state">
-                          {match.status === 'completed' ? 'Completed' : match.status === 'bye' ? 'Bye' : match.status === 'pending' ? 'Pending' : 'Waiting'}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+        <>
+          <div className="lb-bracket-meta-grid">
+            <div className="lb-bracket-meta-card">
+              <span className="lb-bracket-meta-k">Format</span>
+              <span className="lb-bracket-meta-v">Single Elimination</span>
+            </div>
+            <div className="lb-bracket-meta-card">
+              <span className="lb-bracket-meta-k">Players</span>
+              <span className="lb-bracket-meta-v">{entries.length}</span>
+            </div>
+            <div className="lb-bracket-meta-card">
+              <span className="lb-bracket-meta-k">Live Matches</span>
+              <span className="lb-bracket-meta-v">{bracketPendingMatches}</span>
+            </div>
+            <div className="lb-bracket-meta-card lb-bracket-meta-card--champion">
+              <span className="lb-bracket-meta-k">Champion</span>
+              <span className="lb-bracket-meta-v">{bracketChampion || 'TBD'}</span>
+            </div>
           </div>
-        </div>
+
+          <div className="lb-bracket-wrap">
+            <div className="lb-bracket-scroll">
+              {bracketRounds.map((round, roundIdx) => (
+                <div key={`round-${round.round}`} className="lb-bracket-round">
+                  <div className="lb-bracket-round-title">
+                    {round.round === bracketRounds.length ? 'Grand Final' : `Round ${round.round}`}
+                  </div>
+                  <div className="lb-bracket-round-list">
+                    {(round.matches || []).map((match) => {
+                      const p1Win = match.winnerId && match.player1Id && String(match.winnerId) === String(match.player1Id);
+                      const p2Win = match.winnerId && match.player2Id && String(match.winnerId) === String(match.player2Id);
+                      return (
+                        <div key={match.id} className={`lb-bracket-match ${match.status === 'pending' || match.status === 'in_progress' ? 'is-live' : ''}`}>
+                          <div className={`lb-bracket-player ${p1Win ? 'is-winner' : ''}`}>
+                            <span>{match.player1Name || 'TBD'}</span>
+                          </div>
+                          <div className={`lb-bracket-player ${p2Win ? 'is-winner' : ''}`}>
+                            <span>{match.player2Name || 'TBD'}</span>
+                          </div>
+                          <div className="lb-bracket-state">
+                            {bracketStatusLabel(match.status)}
+                          </div>
+                          {roundIdx < bracketRounds.length - 1 ? <div className="lb-bracket-link" aria-hidden /> : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
-      {(!id || !isSquadTournament) && (
+      {(!id || (!isSquadTournament && !isBracketTournament)) && (
         <>
           {entries.length === 0 ? (
             <div className="empty-state lb-empty">
