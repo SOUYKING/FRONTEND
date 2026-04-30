@@ -25,6 +25,7 @@ const QueuePage = ({ socket }) => {
 
   const requiredTeamSize = tournament?.type === '2v2' ? 2 : tournament?.type === '3v3' ? 3 : tournament?.type === '4v4' ? 4 : 1;
   const isTeamTournament = requiredTeamSize > 1;
+  const isBracketTournament = tournament?.type === '1v1_bracket';
 
   const attemptApiQueueJoin = async (user, customEpicName) => {
     const res = await joinMatchmaking(tournamentId, customEpicName || user.epicGamesName, isTeamTournament ? selectedTeamId : null);
@@ -195,10 +196,13 @@ const QueuePage = ({ socket }) => {
         </div>
 
         <h2 className="queue-title">{tournament?.title || 'Matchmaking'}</h2>
-        <p className="queue-subtitle">Queue lobby</p>
+        <p className="queue-subtitle">{isBracketTournament ? 'Bracket match queue' : 'Queue lobby'}</p>
 
         <div className="queue-helper-chips">
           <span><i className="fas fa-circle-info" /> Join queue when ready to play.</span>
+          {isBracketTournament && (
+            <span><i className="fas fa-trophy" /> Single elimination: lose once and you're out.</span>
+          )}
           <span><i className="fas fa-bolt" /> Keep this tab open for instant match alerts.</span>
           {isTeamTournament && (
             <span>
@@ -263,7 +267,7 @@ const QueuePage = ({ socket }) => {
         <div className="queue-actions">
           {(status === 'idle' || status === 'error') && (
             <button onClick={handleJoinQueue} className="queue-btn join">
-              <i className="fas fa-sign-in-alt"></i> Join Queue
+              <i className="fas fa-sign-in-alt"></i> {isBracketTournament ? 'Join Bracket Queue' : 'Join Queue'}
             </button>
           )}
           {isActive && (

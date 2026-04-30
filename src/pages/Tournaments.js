@@ -110,7 +110,7 @@ const Tournaments = () => {
       <div className="page-header">
         <div>
           <h1>Tournaments</h1>
-          <p className="subtitle">1v1, 2v2, 3v3, and 4v4 events — join multiple tournaments anytime they are live</p>
+          <p className="subtitle">1v1, 1v1 bracket, 2v2, 3v3, and 4v4 events — join multiple tournaments anytime they are live</p>
         </div>
         <div className="tournament-count-badge">{filteredTournaments.length} event{filteredTournaments.length !== 1 ? 's' : ''}</div>
       </div>
@@ -232,7 +232,7 @@ const Tournaments = () => {
                 <div className="tournament-card-actions">
                   {queueOpen && !isEnded && (
                     <button onClick={() => handleJoinQueue(tournament)} className="btn btn-success" style={{ flex: 1 }}>
-                      <i className="fas fa-right-to-bracket"></i> {['2v2', '3v3', '4v4'].includes(tournament.type) ? 'Select Team & Queue' : 'Join Queue'}
+                      <i className="fas fa-right-to-bracket"></i> {['2v2', '3v3', '4v4'].includes(tournament.type) ? 'Select Team & Queue' : tournament.type === '1v1_bracket' ? 'Join Bracket Match' : 'Join Queue'}
                     </button>
                   )}
                   {!queueOpen && !isEnded && (

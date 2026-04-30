@@ -817,6 +817,7 @@ const [form, setForm] = useState({
                 <label>Type</label>
                 <select value={form.type} onChange={e => updateField('type', e.target.value)}>
                   <option value="1v1">1v1</option>
+                  <option value="1v1_bracket">1v1 Bracket (KO)</option>
                   <option value="2v2">2v2</option> <option value="3v3">3v3</option> <option value="4v4">4v4</option>
                 </select>
               </div>
@@ -963,7 +964,7 @@ const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getSta
               <div className="form-group"><label>Rules *</label><textarea value={form.rules} onChange={(e) => updateField('rules', e.target.value)} rows={4} /></div>
               <div className="form-row">
                 <div className="form-group"><label>Type</label><select value={form.type} onChange={(e) => updateField('type', e.target.value)}>
-                  <option value="1v1">1v1</option><option value="2v2">2v2</option><option value="3v3">3v3</option><option value="4v4">4v4</option>
+                  <option value="1v1">1v1</option><option value="1v1_bracket">1v1 Bracket (KO)</option><option value="2v2">2v2</option><option value="3v3">3v3</option><option value="4v4">4v4</option>
                 </select></div>
                 <div className="form-group"><label>Status</label><select value={form.status} onChange={(e) => updateField('status', e.target.value)}>
                   <option value="registration">registration</option><option value="active">active</option><option value="completed">completed</option><option value="cancelled">cancelled</option>
