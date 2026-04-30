@@ -47,6 +47,22 @@ const Tournaments = () => {
     }
     navigate(`/queue/${tournament._id}`);
   };
+
+  const handleRegisterBracket = async (tournament) => {
+    if (!tournament?._id) return;
+    setActionError('');
+    try {
+      await joinTournament(tournament._id);
+      setRegisteredIds((prev) => {
+        const next = new Set(prev);
+        next.add(String(tournament._id));
+        return next;
+      });
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Could not register for this bracket.';
+      setActionError(msg);
+    }
+  };
   const handleViewLeaderboard = (tournamentId) => navigate(`/tournament/${tournamentId}/leaderboard`);
 
   const formatRemaining = (dateStr) => {
@@ -165,6 +181,11 @@ const Tournaments = () => {
             const endsIn = formatRemaining(tournament.endDate);
             const participants = tournament.participants || [];
             const progress = tournament.maxPlayers ? (participants.length / tournament.maxPlayers) * 100 : 0;
+            const isBracket = tournament.type === '1v1_bracket';
+            const regDeadline = new Date(tournament.registrationDeadline || tournament.startDate);
+            const regOpen = now < regDeadline;
+            const isRegistered = registeredIds.has(String(tournament._id));
+            const showDefaultWaitingBtn = !queueOpen && !isEnded && (!isBracket || (!regOpen && !isRegistered));
 
             return (
               <div key={tournament._id} className="tournament-card" style={{ animationDelay: `${idx * 0.06}s` }}>
@@ -184,7 +205,7 @@ const Tournaments = () => {
                 ) : null}
                 <div className="tournament-card-header">
                   <span className={`tournament-stage-badge ${stageMeta.cls}`}>{stageMeta.label}</span>
-                  {registeredIds.has(String(tournament._id)) && (
+                  {isRegistered && (
                     <span className="tournament-stage-badge stage-registered"><i className="fas fa-check"></i> Registered</span>
                   )}
                   {tournament.prize && <span className="tournament-prize-badge"><i className="fas fa-trophy"></i> {tournament.prize}</span>}
@@ -247,10 +268,20 @@ const Tournaments = () => {
                 <div className="tournament-card-actions">
                   {queueOpen && !isEnded && (
                     <button onClick={() => handleJoinQueue(tournament)} className="btn btn-success" style={{ flex: 1 }}>
-                      <i className="fas fa-right-to-bracket"></i> {['2v2', '3v3', '4v4'].includes(tournament.type) ? 'Select Team & Queue' : tournament.type === '1v1_bracket' ? 'Join Bracket Match' : 'Join Queue'}
+                      <i className="fas fa-right-to-bracket"></i> {['2v2', '3v3', '4v4'].includes(tournament.type) ? 'Select Team & Queue' : isBracket ? 'Join Bracket Match' : 'Join Queue'}
                     </button>
                   )}
-                  {!queueOpen && !isEnded && (
+                  {isBracket && !queueOpen && !isEnded && regOpen && !isRegistered && (
+                    <button onClick={() => handleRegisterBracket(tournament)} className="btn btn-primary" style={{ flex: 1 }}>
+                      <i className="fas fa-user-plus"></i> Register
+                    </button>
+                  )}
+                  {isBracket && !queueOpen && !isEnded && isRegistered && (
+                    <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
+                      <i className="fas fa-check"></i> Registered
+                    </button>
+                  )}
+                  {showDefaultWaitingBtn && (
                     <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
                       <i className="fas fa-hourglass-half"></i> {startsIn ? 'Starts Soon' : 'Not Started'}
                     </button>
