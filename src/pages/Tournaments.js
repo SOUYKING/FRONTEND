@@ -49,7 +49,7 @@ const Tournaments = () => {
   };
   const handleViewLeaderboard = (tournamentId) => navigate(`/tournament/${tournamentId}/leaderboard`);
 
-  const formatDate = (dateStr) => {
+  const formatRemaining = (dateStr) => {
     const d = new Date(dateStr);
     if (Number.isNaN(d.getTime())) return null;
     const now = new Date();
@@ -161,7 +161,8 @@ const Tournaments = () => {
             const isEnded = now > endDate;
             const queueOpen = tournament.queueOpen;
             const stageMeta = getStageMeta(tournament);
-            const countdown = formatDate(tournament.startDate);
+            const startsIn = formatRemaining(tournament.startDate);
+            const endsIn = formatRemaining(tournament.endDate);
             const participants = tournament.participants || [];
             const progress = tournament.maxPlayers ? (participants.length / tournament.maxPlayers) * 100 : 0;
 
@@ -228,10 +229,17 @@ const Tournaments = () => {
 
 
 
-                  {countdown && !isEnded && (
+                  {startsIn && !queueOpen && !isEnded && (
                     <div className="tournament-countdown">
                       <i className="fas fa-clock"></i>
-                      {countdown.days ? `${countdown.days}d ${countdown.hours}h` : countdown.hours ? `${countdown.hours}h ${countdown.mins}m` : `${countdown.mins}m`}
+                      Starts in {startsIn.days ? `${startsIn.days}d ${startsIn.hours}h` : startsIn.hours ? `${startsIn.hours}h ${startsIn.mins}m` : `${startsIn.mins}m`}
+                    </div>
+                  )}
+
+                  {queueOpen && !isEnded && (
+                    <div className="tournament-countdown">
+                      <i className="fas fa-flag-checkered"></i>
+                      Ends in {endsIn ? (endsIn.days ? `${endsIn.days}d ${endsIn.hours}h` : endsIn.hours ? `${endsIn.hours}h ${endsIn.mins}m` : `${endsIn.mins}m`) : 'soon'}
                     </div>
                   )}
                 </div>
@@ -244,7 +252,7 @@ const Tournaments = () => {
                   )}
                   {!queueOpen && !isEnded && (
                     <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
-                      <i className="fas fa-hourglass-half"></i> {countdown ? 'Starts Soon' : 'Not Started'}
+                      <i className="fas fa-hourglass-half"></i> {startsIn ? 'Starts Soon' : 'Not Started'}
                     </button>
                   )}
                   {isEnded && (
