@@ -105,6 +105,55 @@
 .tournaments-chat-panel {
   position: sticky;
   top: 14px;
+  width: 72px;
+  justify-self: end;
+  transition: width var(--transition-base);
+}
+
+.tournaments-chat-panel.open {
+  width: 340px;
+}
+
+.lobby-chat-fab {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  border: 1px solid rgba(46, 242, 255, 0.35);
+  background: linear-gradient(145deg, rgba(46, 242, 255, 0.22), rgba(23, 37, 64, 0.95));
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.lobby-chat-fab i {
+  font-size: 1rem;
+  color: var(--cyan);
+}
+
+.lobby-chat-fab span {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.lobby-chat-fab em {
+  font-style: normal;
+  font-size: 0.6rem;
+  color: var(--green);
+}
+
+.tournaments-chat-panel .lobby-chat-card {
+  margin-top: 8px;
+  display: none;
+}
+
+.tournaments-chat-panel.open .lobby-chat-card {
+  display: block;
 }
 
 .lobby-chat-card {
@@ -178,6 +227,9 @@
 .lobby-name {
   font-size: 0.78rem;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .lobby-name.role-admin,
@@ -204,6 +256,51 @@
   margin: 0;
   line-height: 1.4;
   word-break: break-word;
+}
+
+.chat-role-tag {
+  font-size: 0.58rem;
+  border-radius: 999px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  letter-spacing: 0.05em;
+}
+
+.chat-role-tag.role-admin {
+  color: var(--cyan);
+  background: rgba(46, 242, 255, 0.12);
+  border-color: rgba(46, 242, 255, 0.25);
+}
+
+.chat-role-tag.role-owner {
+  color: var(--gold);
+  background: rgba(250, 204, 21, 0.12);
+  border-color: rgba(250, 204, 21, 0.25);
+}
+
+.lobby-row-msg {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.chat-delete-btn {
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--red);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.chat-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.18);
 }
 
 .lobby-empty {
@@ -459,6 +556,18 @@
   }
   .tournaments-chat-panel {
     position: static;
+    width: 100%;
+    justify-self: stretch;
+  }
+  .tournaments-chat-panel.open {
+    width: 100%;
+  }
+  .lobby-chat-fab {
+    width: 100%;
+    height: 46px;
+    border-radius: 10px;
+    flex-direction: row;
+    gap: 8px;
   }
   .lobby-chat-list {
     max-height: 260px;

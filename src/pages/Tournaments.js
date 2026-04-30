@@ -15,6 +15,8 @@ const Tournaments = ({ socket }) => {
   const [chatError, setChatError] = useState('');
   const [chatOnline, setChatOnline] = useState(0);
   const [sending, setSending] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [viewerRole, setViewerRole] = useState('player');
   const chatEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -22,6 +24,13 @@ const Tournaments = ({ socket }) => {
     fetchTournaments();
     const intervalId = setInterval(fetchTournaments, 15000);
     return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || '{}');
+      setViewerRole(u?.role || (u?.isAdmin ? 'admin' : 'player'));
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -37,6 +46,10 @@ const Tournaments = ({ socket }) => {
     const onPresence = ({ online }) => {
       setChatOnline(Number(online) || 0);
     };
+    const onDelete = ({ messageId }) => {
+      if (!messageId) return;
+      setChatMessages((prev) => prev.filter((m) => String(m.id) !== String(messageId)));
+    };
     const onError = (err) => {
       const msg = err?.message || '';
       if (msg) setChatError(msg);
@@ -48,6 +61,7 @@ const Tournaments = ({ socket }) => {
     socket.on('lobbyChatHistory', onHistory);
     socket.on('receiveLobbyMessage', onReceive);
     socket.on('lobbyPresence', onPresence);
+    socket.on('lobbyMessageDeleted', onDelete);
     socket.on('chatError', onError);
     socket.on('chatWarning', onWarning);
 
@@ -55,6 +69,7 @@ const Tournaments = ({ socket }) => {
       socket.off('lobbyChatHistory', onHistory);
       socket.off('receiveLobbyMessage', onReceive);
       socket.off('lobbyPresence', onPresence);
+      socket.off('lobbyMessageDeleted', onDelete);
       socket.off('chatError', onError);
       socket.off('chatWarning', onWarning);
     };
@@ -166,6 +181,12 @@ const Tournaments = ({ socket }) => {
     socket.emit('sendLobbyMessage', { message: text, sender });
     setChatText('');
     setTimeout(() => setSending(false), 250);
+  };
+
+  const canModerate = viewerRole === 'admin' || viewerRole === 'owner';
+  const deleteLobbyMessage = (messageId) => {
+    if (!socket || !messageId || !canModerate) return;
+    socket.emit('deleteLobbyMessage', { messageId });
   };
 
   if (loading) {
@@ -365,12 +386,22 @@ const Tournaments = ({ socket }) => {
           </div>
         </section>
 
-        <aside className="tournaments-chat-panel">
+        <aside className={`tournaments-chat-panel ${chatOpen ? 'open' : ''}`}>
+          <button
+            type="button"
+            className="lobby-chat-fab"
+            onClick={() => setChatOpen((v) => !v)}
+            title={chatOpen ? 'Close lobby chat' : 'Open lobby chat'}
+          >
+            <i className="fas fa-comments"></i>
+            <span>{chatOpen ? 'Close' : 'Chat'}</span>
+            <em>{chatOnline}</em>
+          </button>
           <div className="lobby-chat-card">
             <div className="lobby-chat-head">
               <div>
                 <h3>Lobby Chat</h3>
-                <p>Call players for queue and find opponents fast.</p>
+                <p>Call players for queue and find opponents.</p>
               </div>
               <span className="lobby-online-pill">
                 <i className="fas fa-circle"></i> {chatOnline} online
@@ -383,10 +414,27 @@ const Tournaments = ({ socket }) => {
                 chatMessages.map((m, i) => (
                   <div key={`${m.time || 't'}-${i}`} className="lobby-row">
                     <div className="lobby-row-top">
-                      <span className={`lobby-name role-${m.role || 'player'}`}>{m.sender || 'Player'}</span>
+                      <span className={`lobby-name role-${m.role || 'player'}`}>
+                        {m.sender || 'Player'}
+                        {(m.role === 'admin' || m.role === 'owner') && (
+                          <strong className={`chat-role-tag role-${m.role}`}>{m.role.toUpperCase()}</strong>
+                        )}
+                      </span>
                       <span className="lobby-time">{m.time ? new Date(m.time).toLocaleTimeString() : ''}</span>
                     </div>
-                    <p>{m.message}</p>
+                    <div className="lobby-row-msg">
+                      <p>{m.message}</p>
+                      {canModerate && m.id ? (
+                        <button
+                          type="button"
+                          className="chat-delete-btn"
+                          onClick={() => deleteLobbyMessage(m.id)}
+                          title="Delete message"
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 ))
               )}
