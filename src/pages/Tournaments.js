@@ -226,188 +226,192 @@ const Tournaments = ({ socket }) => {
         </div>
       )}
 
-      <div className="lobby-chat-card">
-        <div className="lobby-chat-head">
-          <div>
-            <h3>Lobby Chat</h3>
-            <p>Use this to call players for queue (boxfight, zonewars, realistic).</p>
-          </div>
-          <span className="lobby-online-pill">
-            <i className="fas fa-circle"></i> {chatOnline} online
-          </span>
-        </div>
-        <div className="lobby-chat-list">
-          {chatMessages.length === 0 ? (
-            <div className="lobby-empty">No messages yet. Start the lobby conversation.</div>
-          ) : (
-            chatMessages.map((m, i) => (
-              <div key={`${m.time || 't'}-${i}`} className="lobby-row">
-                <div className="lobby-row-top">
-                  <span className={`lobby-name role-${m.role || 'player'}`}>{m.sender || 'Player'}</span>
-                  <span className="lobby-time">{m.time ? new Date(m.time).toLocaleTimeString() : ''}</span>
-                </div>
-                <p>{m.message}</p>
+      <div className="tournaments-layout">
+        <section className="tournaments-main-panel">
+          <div className="tournament-grid">
+            {filteredTournaments.length === 0 ? (
+              <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+                <span>🏆</span>
+                <p>No tournaments found for this filter.</p>
               </div>
-            ))
-          )}
-          <div ref={chatEndRef} />
-        </div>
-        {chatError ? (
-          <div className="lobby-chat-error">
-            <i className="fas fa-triangle-exclamation"></i> {chatError}
-          </div>
-        ) : null}
-        <div className="lobby-chat-send">
-          <input
-            type="text"
-            maxLength={300}
-            value={chatText}
-            onChange={(e) => setChatText(e.target.value)}
-            onKeyDown={(e) => (e.key === 'Enter' ? sendLobbyMessage() : null)}
-            placeholder="Anyone join boxfight queue?"
-          />
-          <button className="btn btn-primary" onClick={sendLobbyMessage} disabled={!chatText.trim() || sending}>
-            Send
-          </button>
-        </div>
-      </div>
+            ) : (
+              filteredTournaments.map((tournament, idx) => {
+                const now = new Date();
+                const startDate = new Date(tournament.startDate);
+                const endDate = new Date(tournament.endDate);
+                const isEnded = now > endDate;
+                const queueOpen = tournament.queueOpen;
+                const stageMeta = getStageMeta(tournament);
+                const startsIn = formatRemaining(tournament.startDate);
+                const endsIn = formatRemaining(tournament.endDate);
+                const participants = tournament.participants || [];
+                const progress = tournament.maxPlayers ? (participants.length / tournament.maxPlayers) * 100 : 0;
+                const isBracket = tournament.type === '1v1_bracket';
+                const regDeadline = new Date(tournament.registrationDeadline || tournament.startDate);
+                const regOpen = now < regDeadline;
+                const isRegistered = registeredIds.has(String(tournament._id));
+                const showDefaultWaitingBtn = !queueOpen && !isEnded && (!isBracket || (!regOpen && !isRegistered));
 
-      <div className="tournament-grid">
-        {filteredTournaments.length === 0 ? (
-          <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
-            <span>🏆</span>
-            <p>No tournaments found for this filter.</p>
-          </div>
-        ) : (
-          filteredTournaments.map((tournament, idx) => {
-            const now = new Date();
-            const startDate = new Date(tournament.startDate);
-            const endDate = new Date(tournament.endDate);
-            const isEnded = now > endDate;
-            const queueOpen = tournament.queueOpen;
-            const stageMeta = getStageMeta(tournament);
-            const startsIn = formatRemaining(tournament.startDate);
-            const endsIn = formatRemaining(tournament.endDate);
-            const participants = tournament.participants || [];
-            const progress = tournament.maxPlayers ? (participants.length / tournament.maxPlayers) * 100 : 0;
-            const isBracket = tournament.type === '1v1_bracket';
-            const regDeadline = new Date(tournament.registrationDeadline || tournament.startDate);
-            const regOpen = now < regDeadline;
-            const isRegistered = registeredIds.has(String(tournament._id));
-            const showDefaultWaitingBtn = !queueOpen && !isEnded && (!isBracket || (!regOpen && !isRegistered));
+                return (
+                  <div key={tournament._id} className="tournament-card" style={{ animationDelay: `${idx * 0.06}s` }}>
+                    <div className="tournament-card-glow" />
+                    {tournament.bannerImage ? (
+                      <div className="tournament-banner-wrap">
+                        <img
+                          src={tournament.bannerImage}
+                          alt={tournament.title}
+                          className="tournament-banner"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    ) : null}
+                    <div className="tournament-card-header">
+                      <span className={`tournament-stage-badge ${stageMeta.cls}`}>{stageMeta.label}</span>
+                      {isRegistered && (
+                        <span className="tournament-stage-badge stage-registered"><i className="fas fa-check"></i> Registered</span>
+                      )}
+                      {tournament.prize && <span className="tournament-prize-badge"><i className="fas fa-trophy"></i> {tournament.prize}</span>}
+                    </div>
 
-            return (
-              <div key={tournament._id} className="tournament-card" style={{ animationDelay: `${idx * 0.06}s` }}>
-                <div className="tournament-card-glow" />
-                {tournament.bannerImage ? (
-                  <div className="tournament-banner-wrap">
-                    <img
-                      src={tournament.bannerImage}
-                      alt={tournament.title}
-                      className="tournament-banner"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
+                    <div className="tournament-card-body">
+                      <h3 className="tournament-card-title">{tournament.title || 'Untitled tournament'}</h3>
+                      <p className="tournament-card-desc">{tournament.description || 'No description yet.'}</p>
+
+                      <div className="tournament-card-stats">
+                        <div className="tournament-stat">
+                          <i className="fas fa-map-pin"></i>
+                          <span>{tournament.mapCode || tournament.mapName || 'Map TBA'}</span>
+                        </div>
+                        <div className="tournament-stat">
+                          <i className="fas fa-users"></i>
+                          <span>{participants.length}/{tournament.maxPlayers || '∞'}</span>
+                        </div>
+                        <div className="tournament-stat">
+                          <i className="fas fa-tag"></i>
+                          <span>{tournament.type || '1v1'}</span>
+                        </div>
+                        <div className="tournament-stat">
+                          <i className="fas fa-calendar"></i>
+                          <span>{startDate.toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      {tournament.maxPlayers && (
+                        <div className="tournament-progress-bar">
+                          <div className="tournament-progress-fill" style={{ width: `${Math.min(progress, 100)}%` }} />
+                          <span className="tournament-progress-text">{Math.round(progress)}% full</span>
+                        </div>
+                      )}
+
+                      {tournament.type === '1v1_bracket' && !isEnded && (
+                        <div className="tournament-countdown">
+                          <i className="fas fa-user-clock"></i>
+                          Registration closes: {new Date(tournament.registrationDeadline || tournament.startDate).toLocaleString()}
+                        </div>
+                      )}
+
+                      {startsIn && !queueOpen && !isEnded && (
+                        <div className="tournament-countdown">
+                          <i className="fas fa-clock"></i>
+                          Starts in {startsIn.days ? `${startsIn.days}d ${startsIn.hours}h` : startsIn.hours ? `${startsIn.hours}h ${startsIn.mins}m` : `${startsIn.mins}m`}
+                        </div>
+                      )}
+
+                      {queueOpen && !isEnded && (
+                        <div className="tournament-countdown">
+                          <i className="fas fa-flag-checkered"></i>
+                          Ends in {endsIn ? (endsIn.days ? `${endsIn.days}d ${endsIn.hours}h` : endsIn.hours ? `${endsIn.hours}h ${endsIn.mins}m` : `${endsIn.mins}m`) : 'soon'}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="tournament-card-actions">
+                      {queueOpen && !isEnded && (
+                        <button onClick={() => handleJoinQueue(tournament)} className="btn btn-success" style={{ flex: 1 }}>
+                          <i className="fas fa-right-to-bracket"></i> {['2v2', '3v3', '4v4'].includes(tournament.type) ? 'Select Team & Queue' : isBracket ? 'Join Bracket Match' : 'Join Queue'}
+                        </button>
+                      )}
+                      {isBracket && !queueOpen && !isEnded && regOpen && !isRegistered && (
+                        <button onClick={() => handleRegisterBracket(tournament)} className="btn btn-primary" style={{ flex: 1 }}>
+                          <i className="fas fa-user-plus"></i> Register
+                        </button>
+                      )}
+                      {isBracket && !queueOpen && !isEnded && isRegistered && (
+                        <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
+                          <i className="fas fa-check"></i> Registered
+                        </button>
+                      )}
+                      {showDefaultWaitingBtn && (
+                        <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
+                          <i className="fas fa-hourglass-half"></i> {startsIn ? 'Starts Soon' : 'Not Started'}
+                        </button>
+                      )}
+                      {isEnded && (
+                        <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
+                          <i className="fas fa-ban"></i> Ended
+                        </button>
+                      )}
+                      <button onClick={() => handleViewLeaderboard(tournament._id)} className="btn btn-ghost">
+                        <i className="fas fa-list"></i>
+                      </button>
+                    </div>
                   </div>
-                ) : null}
-                <div className="tournament-card-header">
-                  <span className={`tournament-stage-badge ${stageMeta.cls}`}>{stageMeta.label}</span>
-                  {isRegistered && (
-                    <span className="tournament-stage-badge stage-registered"><i className="fas fa-check"></i> Registered</span>
-                  )}
-                  {tournament.prize && <span className="tournament-prize-badge"><i className="fas fa-trophy"></i> {tournament.prize}</span>}
-                </div>
+                );
+              })
+            )}
+          </div>
+        </section>
 
-                <div className="tournament-card-body">
-                  <h3 className="tournament-card-title">{tournament.title || 'Untitled tournament'}</h3>
-                  <p className="tournament-card-desc">{tournament.description || 'No description yet.'}</p>
-
-                  <div className="tournament-card-stats">
-                    <div className="tournament-stat">
-                      <i className="fas fa-map-pin"></i>
-                      <span>{tournament.mapCode || tournament.mapName || 'Map TBA'}</span>
-                    </div>
-                    <div className="tournament-stat">
-                      <i className="fas fa-users"></i>
-                      <span>{participants.length}/{tournament.maxPlayers || '∞'}</span>
-                    </div>
-                    <div className="tournament-stat">
-                      <i className="fas fa-tag"></i>
-                      <span>{tournament.type || '1v1'}</span>
-                    </div>
-                    <div className="tournament-stat">
-                      <i className="fas fa-calendar"></i>
-                      <span>{startDate.toLocaleDateString()}</span>
-                    </div>
-                  </div>
-
-                  {tournament.maxPlayers && (
-                    <div className="tournament-progress-bar">
-                      <div className="tournament-progress-fill" style={{ width: `${Math.min(progress, 100)}%` }} />
-                      <span className="tournament-progress-text">{Math.round(progress)}% full</span>
-                    </div>
-                  )}
-
-                  {tournament.type === '1v1_bracket' && !isEnded && (
-                    <div className="tournament-countdown">
-                      <i className="fas fa-user-clock"></i>
-                      Registration closes: {new Date(tournament.registrationDeadline || tournament.startDate).toLocaleString()}
-                    </div>
-                  )}
-
-
-
-                  {startsIn && !queueOpen && !isEnded && (
-                    <div className="tournament-countdown">
-                      <i className="fas fa-clock"></i>
-                      Starts in {startsIn.days ? `${startsIn.days}d ${startsIn.hours}h` : startsIn.hours ? `${startsIn.hours}h ${startsIn.mins}m` : `${startsIn.mins}m`}
-                    </div>
-                  )}
-
-                  {queueOpen && !isEnded && (
-                    <div className="tournament-countdown">
-                      <i className="fas fa-flag-checkered"></i>
-                      Ends in {endsIn ? (endsIn.days ? `${endsIn.days}d ${endsIn.hours}h` : endsIn.hours ? `${endsIn.hours}h ${endsIn.mins}m` : `${endsIn.mins}m`) : 'soon'}
-                    </div>
-                  )}
-                </div>
-
-                <div className="tournament-card-actions">
-                  {queueOpen && !isEnded && (
-                    <button onClick={() => handleJoinQueue(tournament)} className="btn btn-success" style={{ flex: 1 }}>
-                      <i className="fas fa-right-to-bracket"></i> {['2v2', '3v3', '4v4'].includes(tournament.type) ? 'Select Team & Queue' : isBracket ? 'Join Bracket Match' : 'Join Queue'}
-                    </button>
-                  )}
-                  {isBracket && !queueOpen && !isEnded && regOpen && !isRegistered && (
-                    <button onClick={() => handleRegisterBracket(tournament)} className="btn btn-primary" style={{ flex: 1 }}>
-                      <i className="fas fa-user-plus"></i> Register
-                    </button>
-                  )}
-                  {isBracket && !queueOpen && !isEnded && isRegistered && (
-                    <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
-                      <i className="fas fa-check"></i> Registered
-                    </button>
-                  )}
-                  {showDefaultWaitingBtn && (
-                    <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
-                      <i className="fas fa-hourglass-half"></i> {startsIn ? 'Starts Soon' : 'Not Started'}
-                    </button>
-                  )}
-                  {isEnded && (
-                    <button className="btn btn-ghost" disabled style={{ flex: 1 }}>
-                      <i className="fas fa-ban"></i> Ended
-                    </button>
-                  )}
-                  <button onClick={() => handleViewLeaderboard(tournament._id)} className="btn btn-ghost">
-                    <i className="fas fa-list"></i>
-                  </button>
-                </div>
+        <aside className="tournaments-chat-panel">
+          <div className="lobby-chat-card">
+            <div className="lobby-chat-head">
+              <div>
+                <h3>Lobby Chat</h3>
+                <p>Call players for queue and find opponents fast.</p>
               </div>
-            );
-          })
-        )}
+              <span className="lobby-online-pill">
+                <i className="fas fa-circle"></i> {chatOnline} online
+              </span>
+            </div>
+            <div className="lobby-chat-list">
+              {chatMessages.length === 0 ? (
+                <div className="lobby-empty">No messages yet. Start the lobby conversation.</div>
+              ) : (
+                chatMessages.map((m, i) => (
+                  <div key={`${m.time || 't'}-${i}`} className="lobby-row">
+                    <div className="lobby-row-top">
+                      <span className={`lobby-name role-${m.role || 'player'}`}>{m.sender || 'Player'}</span>
+                      <span className="lobby-time">{m.time ? new Date(m.time).toLocaleTimeString() : ''}</span>
+                    </div>
+                    <p>{m.message}</p>
+                  </div>
+                ))
+              )}
+              <div ref={chatEndRef} />
+            </div>
+            {chatError ? (
+              <div className="lobby-chat-error">
+                <i className="fas fa-triangle-exclamation"></i> {chatError}
+              </div>
+            ) : null}
+            <div className="lobby-chat-send">
+              <input
+                type="text"
+                maxLength={300}
+                value={chatText}
+                onChange={(e) => setChatText(e.target.value)}
+                onKeyDown={(e) => (e.key === 'Enter' ? sendLobbyMessage() : null)}
+                placeholder="Anyone join boxfight queue?"
+              />
+              <button className="btn btn-primary" onClick={sendLobbyMessage} disabled={!chatText.trim() || sending}>
+                Send
+              </button>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );
