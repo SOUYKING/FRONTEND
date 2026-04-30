@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Login.css';
-import { getDiscordAuthUrl, API_BASE_URL, buildDiscordAvatar, DISCORD_AVATAR_FALLBACK } from '../utils/api';
+import { getDiscordAuthUrl, API_BASE_URL } from '../utils/api';
 
 const DISCORD_INVITE_URL = 'https://discord.gg/hMA23CEPHZ';
 
 const Login = ({ errorMessage = '', errorType = '' }) => {
   const [tournaments, setTournaments] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [stats, setStats] = useState({ tournaments: 0, players: 0, matches: 0 });
   const [loading, setLoading] = useState(true);
   const [loginCooldown, setLoginCooldown] = useState(0);
@@ -31,22 +29,6 @@ const Login = ({ errorMessage = '', errorType = '' }) => {
       setLoading(false);
     };
     fetchPublicData();
-  }, []);
-
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/account/leaderboard/global`);
-        const data = Array.isArray(res.data) ? res.data : [];
-        const sorted = [...data].sort((a, b) => (b.points || 0) - (a.points || 0));
-        setLeaderboard(sorted);
-      } catch (e) {
-        setLeaderboard([]);
-      } finally {
-        setLeaderboardLoading(false);
-      }
-    };
-    fetchLeaderboard();
   }, []);
 
   useEffect(() => {
@@ -233,50 +215,6 @@ const Login = ({ errorMessage = '', errorType = '' }) => {
           <h3>Live Tracking</h3>
           <p>Real-time match updates, live chat, detailed stats, and match history for every battle.</p>
         </div>
-      </div>
-
-      <div className="login-leaderboard-section">
-        <div className="login-leaderboard-header">
-          <h2>Global Ranked Leaderboard</h2>
-          <p>Live ranking of all players by points.</p>
-        </div>
-
-        {leaderboardLoading ? (
-          <div className="login-leaderboard-loading">Loading leaderboard...</div>
-        ) : leaderboard.length === 0 ? (
-          <div className="login-leaderboard-empty">No ranked players yet. Play matches to appear here.</div>
-        ) : (
-          <div className="login-leaderboard-table-wrap">
-            <div className="login-leaderboard-head" aria-hidden="true">
-              <span>#</span>
-              <span>Player</span>
-              <span>W</span>
-              <span>L</span>
-              <span>Points</span>
-            </div>
-            <div className="login-leaderboard-list">
-              {leaderboard.map((entry, index) => (
-                <div key={entry.userId || `${entry.discordId || 'player'}-${index}`} className="login-leaderboard-row">
-                  <div className={`login-lb-rank ${index < 3 ? `top-${index + 1}` : ''}`}>{index + 1}</div>
-                  <div className="login-lb-player">
-                    <img
-                      src={buildDiscordAvatar(entry.discordId, entry.discordAvatar) || DISCORD_AVATAR_FALLBACK}
-                      alt=""
-                      className="login-lb-avatar"
-                    />
-                    <div className="login-lb-name-block">
-                      <span className="login-lb-name">{entry.discordName || 'Player'}</span>
-                      {entry.epicName ? <span className="login-lb-epic">{entry.epicName}</span> : null}
-                    </div>
-                  </div>
-                  <div className="login-lb-stat">{entry.wins ?? 0}</div>
-                  <div className="login-lb-stat">{entry.losses ?? 0}</div>
-                  <div className="login-lb-points">{entry.points ?? 0}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="login-cta-section">

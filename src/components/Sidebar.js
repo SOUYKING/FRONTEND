@@ -67,6 +67,11 @@ const Sidebar = ({ onLogout, liveMatchId }) => {
               {liveMatchId ? <span className="sidebar-live-pill" title="You have a live match">Live</span> : null}
             </NavLink>
           </li>
+          <li>
+            <NavLink to="/leaderboard" className={({ isActive }) => (isActive ? 'active-nav' : '')} onClick={closeMobile}>
+              <i className="fas fa-ranking-star"></i> Rank Leaderboard
+            </NavLink>
+          </li>
         </ul>
 
         <div className="sidebar-divider" />
