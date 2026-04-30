@@ -135,7 +135,7 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
       <div className="main-content">
         <Routes>
           <Route path="/dashboard" element={<Dashboard user={user} />} />
-          <Route path="/tournaments" element={<Tournaments user={user} />} />
+          <Route path="/tournaments" element={<Tournaments user={user} socket={socket} />} />
           <Route path="/account" element={<Account user={user} />} />
           <Route path="/admin-dashboard" element={<AdminDashboard user={user} />} />
           <Route path="/leaderboard" element={<Leaderboard />} />

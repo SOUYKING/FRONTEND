@@ -1,15 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTournaments, getMyRegisteredTournaments, joinTournament } from '../utils/api';
 import './Tournaments.css';
 
-const Tournaments = () => {
+const Tournaments = ({ socket }) => {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stageFilter, setStageFilter] = useState('all');
   const [registeredIds, setRegisteredIds] = useState(() => new Set());
   const [actionError, setActionError] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatText, setChatText] = useState('');
+  const [chatError, setChatError] = useState('');
+  const [chatOnline, setChatOnline] = useState(0);
+  const [sending, setSending] = useState(false);
+  const chatEndRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,6 +23,48 @@ const Tournaments = () => {
     const intervalId = setInterval(fetchTournaments, 15000);
     return () => clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.emit('joinLobbyChat');
+
+    const onHistory = ({ chatLogs }) => {
+      setChatMessages(Array.isArray(chatLogs) ? chatLogs : []);
+    };
+    const onReceive = (msg) => {
+      setChatMessages((prev) => [...prev.slice(-149), msg]);
+    };
+    const onPresence = ({ online }) => {
+      setChatOnline(Number(online) || 0);
+    };
+    const onError = (err) => {
+      const msg = err?.message || '';
+      if (msg) setChatError(msg);
+    };
+    const onWarning = (payload) => {
+      if (payload?.message) setChatError(payload.message);
+    };
+
+    socket.on('lobbyChatHistory', onHistory);
+    socket.on('receiveLobbyMessage', onReceive);
+    socket.on('lobbyPresence', onPresence);
+    socket.on('chatError', onError);
+    socket.on('chatWarning', onWarning);
+
+    return () => {
+      socket.off('lobbyChatHistory', onHistory);
+      socket.off('receiveLobbyMessage', onReceive);
+      socket.off('lobbyPresence', onPresence);
+      socket.off('chatError', onError);
+      socket.off('chatWarning', onWarning);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
 
   const fetchTournaments = async () => {
     try {
@@ -105,6 +153,21 @@ const Tournaments = () => {
     return true;
   });
 
+  const sendLobbyMessage = () => {
+    const text = chatText.trim();
+    if (!text || !socket || sending) return;
+    setSending(true);
+    setChatError('');
+    let sender = 'Player';
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || '{}');
+      sender = u?.discordName || u?.username || sender;
+    } catch {}
+    socket.emit('sendLobbyMessage', { message: text, sender });
+    setChatText('');
+    setTimeout(() => setSending(false), 250);
+  };
+
   if (loading) {
     return (
       <div className="tournaments-page page-wrapper">
@@ -162,6 +225,52 @@ const Tournaments = () => {
           <button onClick={fetchTournaments} className="btn btn-ghost btn-sm">Retry</button>
         </div>
       )}
+
+      <div className="lobby-chat-card">
+        <div className="lobby-chat-head">
+          <div>
+            <h3>Lobby Chat</h3>
+            <p>Use this to call players for queue (boxfight, zonewars, realistic).</p>
+          </div>
+          <span className="lobby-online-pill">
+            <i className="fas fa-circle"></i> {chatOnline} online
+          </span>
+        </div>
+        <div className="lobby-chat-list">
+          {chatMessages.length === 0 ? (
+            <div className="lobby-empty">No messages yet. Start the lobby conversation.</div>
+          ) : (
+            chatMessages.map((m, i) => (
+              <div key={`${m.time || 't'}-${i}`} className="lobby-row">
+                <div className="lobby-row-top">
+                  <span className={`lobby-name role-${m.role || 'player'}`}>{m.sender || 'Player'}</span>
+                  <span className="lobby-time">{m.time ? new Date(m.time).toLocaleTimeString() : ''}</span>
+                </div>
+                <p>{m.message}</p>
+              </div>
+            ))
+          )}
+          <div ref={chatEndRef} />
+        </div>
+        {chatError ? (
+          <div className="lobby-chat-error">
+            <i className="fas fa-triangle-exclamation"></i> {chatError}
+          </div>
+        ) : null}
+        <div className="lobby-chat-send">
+          <input
+            type="text"
+            maxLength={300}
+            value={chatText}
+            onChange={(e) => setChatText(e.target.value)}
+            onKeyDown={(e) => (e.key === 'Enter' ? sendLobbyMessage() : null)}
+            placeholder="Anyone join boxfight queue?"
+          />
+          <button className="btn btn-primary" onClick={sendLobbyMessage} disabled={!chatText.trim() || sending}>
+            Send
+          </button>
+        </div>
+      </div>
 
       <div className="tournament-grid">
         {filteredTournaments.length === 0 ? (
