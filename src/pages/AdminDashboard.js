@@ -730,7 +730,7 @@ const TournamentsTab = ({ tournaments, selectedTournament, onSelectTournament, o
 const CreateTournamentModal = ({ onClose, onSubmit }) => {
 const [form, setForm] = useState({
     title: '', description: '', mapCode: '', mapName: '', type: '1v1',
-    bannerImage: '', startDate: '', endDate: '', maxPlayers: 16, prize: '', rules: '',
+    bannerImage: '', startDate: '', endDate: '', registrationDeadline: '', maxPlayers: 16, prize: '', rules: '',
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -748,6 +748,15 @@ const [form, setForm] = useState({
       const end = new Date(form.endDate);
       if (start >= end) errs.endDate = 'End date must be after start date';
     }
+    if (form.type === '1v1_bracket') {
+      if (!form.registrationDeadline) {
+        errs.registrationDeadline = 'Registration deadline is required for bracket tournaments';
+      } else if (form.startDate) {
+        const reg = new Date(form.registrationDeadline);
+        const start = new Date(form.startDate);
+        if (reg > start) errs.registrationDeadline = 'Registration deadline must be before or at start date';
+      }
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -757,14 +766,13 @@ const [form, setForm] = useState({
     if (!validate()) return;
     setSubmitting(true);
     const fixed = { ...form };
-    ['startDate', 'endDate'].forEach(k => {
+    ['startDate', 'endDate', 'registrationDeadline'].forEach(k => {
       if (fixed[k]) {
         const d = new Date(fixed[k]);
         fixed[k] = d.toISOString();
       }
     });
-    // Backward-compatible with older backend builds that still require this field.
-    fixed.registrationDeadline = fixed.startDate;
+    if (!fixed.registrationDeadline) fixed.registrationDeadline = fixed.startDate;
     try { await onSubmit(fixed); } finally { setSubmitting(false); }
   };
 
@@ -844,6 +852,15 @@ const [form, setForm] = useState({
                   {errors.endDate && <span className="error-msg">{errors.endDate}</span>}
                 </div>
               </div>
+              {form.type === '1v1_bracket' && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Registration Deadline *</label>
+                    <input type="datetime-local" value={form.registrationDeadline} onChange={e => updateField('registrationDeadline', e.target.value)} className={errors.registrationDeadline ? 'error' : ''} />
+                    {errors.registrationDeadline && <span className="error-msg">{errors.registrationDeadline}</span>}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label>Rules *</label>
@@ -876,6 +893,7 @@ const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getSta
     type: '1v1',
     startDate: '',
     endDate: '',
+    registrationDeadline: '',
     maxPlayers: 16,
     minSkillRating: 0,
     maxSkillRating: 3000,
@@ -902,6 +920,7 @@ const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getSta
       type: tournament.type || '1v1',
       startDate: toLocalDatetime(tournament.startDate),
       endDate: toLocalDatetime(tournament.endDate),
+      registrationDeadline: toLocalDatetime(tournament.registrationDeadline || tournament.startDate),
       maxPlayers: tournament.maxPlayers || 16,
       minSkillRating: tournament.minSkillRating || 0,
       maxSkillRating: tournament.maxSkillRating || 3000,
@@ -924,6 +943,7 @@ const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getSta
       ...form,
       startDate: form.startDate ? new Date(form.startDate).toISOString() : tournament.startDate,
       endDate: form.endDate ? new Date(form.endDate).toISOString() : tournament.endDate,
+      registrationDeadline: form.registrationDeadline ? new Date(form.registrationDeadline).toISOString() : (tournament.registrationDeadline || tournament.startDate),
       maxPlayers: Number(form.maxPlayers) || 16,
       minSkillRating: Number(form.minSkillRating) || 0,
       maxSkillRating: Number(form.maxSkillRating) || 3000,
@@ -974,6 +994,11 @@ const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getSta
                 <div className="form-group"><label>Start Date</label><input type="datetime-local" value={form.startDate} onChange={(e) => updateField('startDate', e.target.value)} /></div>
                 <div className="form-group"><label>End Date</label><input type="datetime-local" value={form.endDate} onChange={(e) => updateField('endDate', e.target.value)} /></div>
               </div>
+              {form.type === '1v1_bracket' && (
+                <div className="form-row">
+                  <div className="form-group"><label>Registration Deadline</label><input type="datetime-local" value={form.registrationDeadline} onChange={(e) => updateField('registrationDeadline', e.target.value)} /></div>
+                </div>
+              )}
               <div className="form-row">
                 <div className="form-group"><label>Max Players</label><input type="number" min="2" max="128" value={form.maxPlayers} onChange={(e) => updateField('maxPlayers', e.target.value)} /></div>
                 <div className="form-group"><label>Prize</label><input type="text" value={form.prize} onChange={(e) => updateField('prize', e.target.value)} /></div>
@@ -992,6 +1017,9 @@ const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getSta
                 <div className="detail-item"><label>Prize</label><span>{tournament.prize || 'None'}</span></div>
                 <div className="detail-item"><label>Start</label><span>{new Date(tournament.startDate).toLocaleString()}</span></div>
                 <div className="detail-item"><label>End</label><span>{new Date(tournament.endDate).toLocaleString()}</span></div>
+                {tournament.type === '1v1_bracket' ? (
+                  <div className="detail-item"><label>Registration Deadline</label><span>{new Date(tournament.registrationDeadline || tournament.startDate).toLocaleString()}</span></div>
+                ) : null}
               </div>
               <div className="detail-section"><label>Description</label><p>{tournament.description}</p></div>
               <div className="detail-section"><label>Rules</label><p className="rules">{tournament.rules}</p></div>
