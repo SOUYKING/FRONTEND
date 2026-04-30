@@ -106,6 +106,12 @@ const QueuePage = ({ socket }) => {
     const onSocketError = async (data) => {
       const msg = data?.message || 'Queue error';
       const lowerMsg = msg.toLowerCase();
+      const isBracketWaitMsg = lowerMsg.includes('wait for your next-round opponent') || lowerMsg.includes('qualified');
+      if (isBracketWaitMsg) {
+        setMessage(msg);
+        setStatus('idle');
+        return;
+      }
       // Handle mixed backend deployments by retrying via API for legacy socket errors.
       const shouldRetryViaApi =
         lowerMsg.includes('must register for this tournament') ||

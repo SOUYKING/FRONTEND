@@ -219,6 +219,13 @@ const Tournaments = () => {
                     </div>
                   )}
 
+                  {tournament.type === '1v1_bracket' && !isEnded && (
+                    <div className="tournament-countdown">
+                      <i className="fas fa-user-clock"></i>
+                      Registration closes at start: {startDate.toLocaleString()}
+                    </div>
+                  )}
+
 
 
                   {countdown && !isEnded && (
