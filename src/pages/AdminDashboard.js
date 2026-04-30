@@ -631,9 +631,35 @@ const DashboardTab = ({ stats, prevStats, onNavigate }) => (
 const TournamentsTab = ({ tournaments, selectedTournament, onSelectTournament, onAction, onUpdate, getStatusColor }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [query, setQuery] = useState('');
+  const [sortBy, setSortBy] = useState('start_asc');
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  const filteredTournaments = filter === 'all' ? tournaments : tournaments.filter(t => t.status === filter);
+  const now = Date.now();
+  const statusCounts = tournaments.reduce((acc, t) => {
+    acc[t.status] = (acc[t.status] || 0) + 1;
+    return acc;
+  }, { registration: 0, active: 0, completed: 0, cancelled: 0 });
+
+  const filteredTournaments = tournaments
+    .filter((t) => (filter === 'all' ? true : t.status === filter))
+    .filter((t) => {
+      const q = query.trim().toLowerCase();
+      if (!q) return true;
+      const haystack = [t.title, t.description, t.mapCode, t.mapName, t.type, t.status]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    })
+    .sort((a, b) => {
+      if (sortBy === 'start_asc') return new Date(a.startDate) - new Date(b.startDate);
+      if (sortBy === 'start_desc') return new Date(b.startDate) - new Date(a.startDate);
+      if (sortBy === 'players_desc') return (b.participantCount || 0) - (a.participantCount || 0);
+      if (sortBy === 'players_asc') return (a.participantCount || 0) - (b.participantCount || 0);
+      if (sortBy === 'status') return String(a.status || '').localeCompare(String(b.status || ''));
+      return 0;
+    });
 
   const handleAction = async (id, action) => {
     await onAction(id, action);
@@ -651,17 +677,63 @@ const TournamentsTab = ({ tournaments, selectedTournament, onSelectTournament, o
         </button>
       </div>
 
+      <div className="tournament-admin-overview">
+        <div className="tour-admin-stat registration">
+          <span className="k">Registration</span>
+          <strong>{statusCounts.registration || 0}</strong>
+        </div>
+        <div className="tour-admin-stat active">
+          <span className="k">Active</span>
+          <strong>{statusCounts.active || 0}</strong>
+        </div>
+        <div className="tour-admin-stat completed">
+          <span className="k">Completed</span>
+          <strong>{statusCounts.completed || 0}</strong>
+        </div>
+        <div className="tour-admin-stat cancelled">
+          <span className="k">Cancelled</span>
+          <strong>{statusCounts.cancelled || 0}</strong>
+        </div>
+      </div>
+
+      <div className="tournament-admin-toolbar">
+        <div className="tournament-search">
+          <i className="fas fa-search" aria-hidden="true"></i>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by title, map code, type..."
+          />
+        </div>
+        <div className="tournament-sort">
+          <label htmlFor="tournament-sort-select">Sort</label>
+          <select id="tournament-sort-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="start_asc">Start date (soonest)</option>
+            <option value="start_desc">Start date (latest)</option>
+            <option value="players_desc">Most players</option>
+            <option value="players_asc">Least players</option>
+            <option value="status">Status</option>
+          </select>
+        </div>
+      </div>
+
       <div className="filter-tabs">
         <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All ({tournaments.length})</button>
-        <button className={filter === 'registration' ? 'active' : ''} onClick={() => setFilter('registration')}>Registration</button>
-        <button className={filter === 'active' ? 'active' : ''} onClick={() => setFilter('active')}>Active</button>
-        <button className={filter === 'completed' ? 'active' : ''} onClick={() => setFilter('completed')}>Completed</button>
-        <button className={filter === 'cancelled' ? 'active' : ''} onClick={() => setFilter('cancelled')}>Cancelled</button>
+        <button className={filter === 'registration' ? 'active' : ''} onClick={() => setFilter('registration')}>Registration ({statusCounts.registration || 0})</button>
+        <button className={filter === 'active' ? 'active' : ''} onClick={() => setFilter('active')}>Active ({statusCounts.active || 0})</button>
+        <button className={filter === 'completed' ? 'active' : ''} onClick={() => setFilter('completed')}>Completed ({statusCounts.completed || 0})</button>
+        <button className={filter === 'cancelled' ? 'active' : ''} onClick={() => setFilter('cancelled')}>Cancelled ({statusCounts.cancelled || 0})</button>
       </div>
 
       <div className="tournaments-grid">
-        {filteredTournaments.map(tournament => (
-          <div key={tournament._id} className="tournament-card" onClick={() => { onSelectTournament(tournament._id); setShowDetailModal(true); }}>
+        {filteredTournaments.map(tournament => {
+          const startMs = new Date(tournament.startDate).getTime();
+          const isSoon = tournament.status === 'registration' && startMs > now && startMs - now < (2 * 60 * 60 * 1000);
+          const isOverfilled = (tournament.participantCount || 0) >= (tournament.maxPlayers || 0);
+          const cardClass = isSoon ? 'urgent' : isOverfilled ? 'full' : '';
+          return (
+          <div key={tournament._id} className={`tournament-card ${cardClass}`} onClick={() => { onSelectTournament(tournament._id); setShowDetailModal(true); }}>
             <div className="tcard-top">
               <span className="tcard-status" style={{ background: getStatusColor(tournament.status) }}>{tournament.status}</span>
               <span className="tcard-type">{tournament.type || '1v1'}</span>
@@ -669,10 +741,14 @@ const TournamentsTab = ({ tournaments, selectedTournament, onSelectTournament, o
             <div className="tcard-body">
               <h3>{tournament.title}</h3>
               <p>{tournament.description?.substring(0, 100)}...</p>
+              <div className="tcard-health-row">
+                {isSoon ? <span className="tcard-flag flag-warning">Starts soon</span> : null}
+                {isOverfilled ? <span className="tcard-flag flag-info">Full lobby</span> : null}
+              </div>
               <div className="tcard-meta">
                 <span><span className="meta-icon">📍</span> {tournament.mapCode}</span>
                 <span><span className="meta-icon">👥</span> {tournament.participantCount || 0}/{tournament.maxPlayers}</span>
-                <span><span className="meta-icon">🏁</span> {new Date(tournament.startDate).toLocaleDateString()}</span>
+                <span><span className="meta-icon">🏁</span> {new Date(tournament.startDate).toLocaleString()}</span>
               </div>
             </div>
             <div className="tcard-actions" onClick={e => e.stopPropagation()}>
@@ -693,7 +769,7 @@ const TournamentsTab = ({ tournaments, selectedTournament, onSelectTournament, o
               <button className="btn-sm danger" onClick={() => handleAction(tournament._id, 'delete')}>🗑 Delete</button>
             </div>
           </div>
-        ))}
+        )})}
       </div>
 
       {filteredTournaments.length === 0 && (
