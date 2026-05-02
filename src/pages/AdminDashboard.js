@@ -907,7 +907,7 @@ const [form, setForm] = useState({
               </div>
               <div className="form-group">
                 <label>Max Players</label>
-                <input type="number" value={form.maxPlayers} onChange={e => updateField('maxPlayers', parseInt(e.target.value))} min="2" max="128" />
+                <input type="number" value={form.maxPlayers} onChange={e => updateField('maxPlayers', parseInt(e.target.value))} min="2" max="300" />
               </div>
               <div className="form-group">
                 <label>Prize Pool</label>
@@ -1076,7 +1076,7 @@ const TournamentDetailModal = ({ tournament, onClose, onAction, onUpdate, getSta
                 </div>
               )}
               <div className="form-row">
-                <div className="form-group"><label>Max Players</label><input type="number" min="2" max="128" value={form.maxPlayers} onChange={(e) => updateField('maxPlayers', e.target.value)} /></div>
+                <div className="form-group"><label>Max Players</label><input type="number" min="2" max="300" value={form.maxPlayers} onChange={(e) => updateField('maxPlayers', e.target.value)} /></div>
                 <div className="form-group"><label>Prize</label><input type="text" value={form.prize} onChange={(e) => updateField('prize', e.target.value)} /></div>
               </div>
               <div className="form-row">
