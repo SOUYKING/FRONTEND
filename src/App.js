@@ -11,7 +11,6 @@ import QueuePage from './pages/QueuePage';
 import MatchPage from './pages/MatchPage';
 import CurrentGame from './pages/CurrentGame';
 import MatchHistoryPage from './pages/MatchHistoryPage';
-import NotificationPage from './pages/NotificationPage';
 import Teams from './pages/Teams';
 import AnimatedBackground from './components/GamingIcons';
 
@@ -128,7 +127,6 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
           <Route path="/match/:matchId" element={<MatchPage socket={socket} user={user} />} />
           <Route path="/current-game" element={<CurrentGame user={user} currentMatchId={currentMatchId} />} />
           <Route path="/match-history" element={<MatchHistoryPage user={user} />} />
-          <Route path="/notifications" element={<NotificationPage user={user} />} />
           <Route path="/teams" element={<Teams user={user} />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>

@@ -505,16 +505,6 @@ export const getOAuthErrorFromUrl = () => {
   return messages[error] || { message: `Login failed: ${error}`, type: error };
 };
 
-export const getAnnouncements = async () => {
-  try {
-    const res = await apiClient.get(`/announcements`);
-    return res.data;
-  } catch (error) {
-    console.error("Get announcements error:", error.response?.data || error.message);
-    throw error;
-  }
-};
-
 export const getStaffNotifications = async () => {
   try {
     const res = await apiClient.get(`/staff-notifications`);

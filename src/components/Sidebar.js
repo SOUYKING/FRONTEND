@@ -103,11 +103,6 @@ const Sidebar = ({ onLogout, liveMatchId }) => {
               <i className="fas fa-history"></i> Match History
             </NavLink>
           </li>
-          <li>
-            <NavLink to="/notifications" className={({ isActive }) => (isActive ? 'active-nav' : '')} onClick={closeMobile}>
-              <i className="fas fa-bell"></i> Notifications
-            </NavLink>
-          </li>
         </ul>
 
         {isAdmin && (
