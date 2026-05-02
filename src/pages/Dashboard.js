@@ -4,8 +4,17 @@ import { fetchUserData, getMyRegisteredTournaments, getCurrentMatch, buildDiscor
 import { getRank, getRankProgress, getRankLabel } from '../utils/ranks';
 import './Dashboard.css';
 
+function readStoredUserSafe(user) {
+  if (user) return user;
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}');
+  } catch {
+    return {};
+  }
+}
+
 const Dashboard = ({ user }) => {
-  const storedUser = user || JSON.parse(localStorage.getItem('user') || '{}');
+  const storedUser = readStoredUserSafe(user);
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [currentMatch, setCurrentMatch] = useState(null);

@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
-
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -17,10 +15,9 @@ import NotificationPage from './pages/NotificationPage';
 import Teams from './pages/Teams';
 import AnimatedBackground from './components/GamingIcons';
 
-import { getTokenFromUrl, getOAuthErrorFromUrl, setAuthToken, fetchUserData, verifyToken, getCurrentMatch, SOCKET_BASE_URL } from './utils/api';
+import { getTokenFromUrl, getOAuthErrorFromUrl, setAuthToken, fetchUserData, verifyToken, getCurrentMatch } from './utils/api';
+import { socket, connectGameSocket, disconnectGameSocket } from './utils/gameSocket';
 import './App.css';
-
-const socket = io(SOCKET_BASE_URL, { autoConnect: true, reconnection: true });
 
 const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdmin, currentMatchId, setCurrentMatchId }) => {
   const navigate = useNavigate();
@@ -35,20 +32,7 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
   }, [setCurrentMatchId]);
 
   useEffect(() => {
-    socket.on('connect', () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const u = JSON.parse(storedUser);
-          const uid = u?.discordId || u?.id;
-          if (uid) socket.emit('register', { userId: uid });
-        } catch {}
-      }
-    });
-
-    return () => {
-      socket.off('connect');
-    };
+    connectGameSocket();
   }, []);
 
   useEffect(() => {
@@ -124,7 +108,7 @@ const AuthenticatedApp = ({ user, setUser, setIsAuthenticated, isAdmin, setIsAdm
     setIsAdmin(false);
     setUser(null);
     setCurrentMatchId(null);
-    if (socket.connected) socket.disconnect();
+    disconnectGameSocket();
     navigate('/', { replace: true });
   };
 
@@ -174,17 +158,6 @@ const App = () => {
         setAuthErrorType(oauthError.type || '');
       }
 
-      const registerSocket = () => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            const u = JSON.parse(storedUser);
-            const uid = u?.discordId || u?.id;
-            if (uid) socket.emit('register', { userId: uid });
-          } catch {}
-        }
-      };
-
       const urlToken = getTokenFromUrl();
 
       if (urlToken) {
@@ -195,7 +168,7 @@ const App = () => {
           setIsAdmin(userData.isAdmin || false);
           authenticatedSession = true;
           localStorage.setItem('user', JSON.stringify(userData));
-          registerSocket();
+          connectGameSocket();
         } catch (error) {
           const errMsg = error.response?.data?.message
             || error.authErrorMessage
@@ -217,7 +190,7 @@ const App = () => {
             setIsAuthenticated(true);
             setIsAdmin(userData.isAdmin || false);
             authenticatedSession = true;
-            registerSocket();
+            connectGameSocket();
           } catch (error) {
             const errMsg = error.response?.data?.message || error.message || 'Token validation failed';
             if (errMsg.toLowerCase().includes('banned')) {

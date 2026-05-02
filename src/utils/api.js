@@ -320,6 +320,16 @@ export const leaveMatchmaking = async () => {
   }
 };
 
+export const leaveActiveMatch = async () => {
+  try {
+    const res = await apiClient.post(`/match/leave`);
+    return res.data;
+  } catch (error) {
+    console.error("Leave active match error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
 // MATCH ROUTES
 export const getMatchHistory = async () => {
   try {

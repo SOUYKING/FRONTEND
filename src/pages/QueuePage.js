@@ -29,7 +29,7 @@ const QueuePage = ({ socket }) => {
 
   const attemptApiQueueJoin = async (user, customEpicName) => {
     const res = await joinMatchmaking(tournamentId, customEpicName || user.epicGamesName, isTeamTournament ? selectedTeamId : null);
-    socket.emit('register', { userId: user.discordId || user.id });
+    socket.emit('register');
     setStatus('waiting');
     setQueueSize(res.queueSize || 0);
     setMessage(res.message || 'Waiting for opponent...');
@@ -79,7 +79,7 @@ const QueuePage = ({ socket }) => {
       } catch (e) {}
     }, 3000);
 
-    socket.emit('register', { userId: user.discordId || user.id });
+    socket.emit('register');
 
     const onWaiting = (data) => {
       setStatus('waiting');
@@ -162,13 +162,13 @@ const QueuePage = ({ socket }) => {
       return;
     }
     // Do not hard-block on client-side queueOpen; backend is the source of truth.
-    setStatus('joining');
-    setMessage('Joining queue...');
     if (isTeamTournament && !selectedTeamId) {
       setStatus('error');
       setMessage(`Select your ${requiredTeamSize}v${requiredTeamSize} team first.`);
       return;
     }
+    setStatus('joining');
+    setMessage('Joining queue...');
     // Socket-first join avoids stale API validators on some deployments.
     socket.emit('joinQueue', {
       tournamentId,

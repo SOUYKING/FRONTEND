@@ -23,7 +23,7 @@ const Login = ({ errorMessage = '', errorType = '' }) => {
         setStats({
           tournaments: data.filter(t => t.status === 'active' || t.lifecycleStage === 'active').length || data.length,
           players: totalParticipants || Math.floor(data.length * 4),
-          matches: data.reduce((sum) => sum + Math.floor(Math.random() * 10 + 1), 0),
+          matches: 0,
         });
       } catch (e) {}
       setLoading(false);

@@ -9,10 +9,20 @@ const Sidebar = ({ onLogout, liveMatchId }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
+  const readAdminFromStorage = () => {
+    try {
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      const role = (userData.role || '').toLowerCase();
+      setIsAdmin(userData.isAdmin === true || ['admin', 'owner', 'staff', 'content_creator'].includes(role));
+    } catch {
+      setIsAdmin(false);
+    }
+  };
+
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    const role = (userData.role || '').toLowerCase();
-    setIsAdmin(userData.isAdmin === true || ['admin', 'owner', 'staff', 'content_creator'].includes(role));
+    readAdminFromStorage();
+    window.addEventListener('user-updated', readAdminFromStorage);
+    return () => window.removeEventListener('user-updated', readAdminFromStorage);
   }, []);
 
   const handleLogout = () => {
@@ -91,6 +101,11 @@ const Sidebar = ({ onLogout, liveMatchId }) => {
           <li>
             <NavLink to="/match-history" className={({ isActive }) => (isActive ? 'active-nav' : '')} onClick={closeMobile}>
               <i className="fas fa-history"></i> Match History
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/notifications" className={({ isActive }) => (isActive ? 'active-nav' : '')} onClick={closeMobile}>
+              <i className="fas fa-bell"></i> Notifications
             </NavLink>
           </li>
         </ul>

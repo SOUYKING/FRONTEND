@@ -21,6 +21,7 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [resultMessage, setResultMessage] = useState('');
+  const [chatNotice, setChatNotice] = useState('');
   const [reporting, setReporting] = useState(false);
   const [reported, setReported] = useState(false);
   const [disputed, setDisputed] = useState(false);
@@ -296,11 +297,11 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
     };
 
     const onChatError = (data) => {
-      setResultMessage(data?.message || 'Chat action failed.');
+      setChatNotice(data?.message || 'Chat action failed.');
     };
 
     const onChatWarning = (data) => {
-      setResultMessage(data?.message || 'Message was filtered.');
+      setChatNotice(data?.message || 'Message was filtered.');
     };
 
     const onReportSubmitted = (data) => {
@@ -374,6 +375,12 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
     }, 1000);
     return () => clearInterval(interval);
   }, [autoResolveAt]);
+
+  useEffect(() => {
+    if (!chatNotice) return undefined;
+    const t = setTimeout(() => setChatNotice(''), 7000);
+    return () => clearTimeout(t);
+  }, [chatNotice]);
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
@@ -501,6 +508,16 @@ const MatchPage = ({ socket, user: currentUserFromApp }) => {
             {staffObserverView && <span style={{ marginLeft: 6, opacity: 0.6, fontWeight: 400 }}>· Staff View</span>}
           </span>
         </div>
+
+        {chatNotice && (
+          <div className="match-chat-notice" role="status">
+            <i className="fas fa-comment-dots" aria-hidden />
+            <span>{chatNotice}</span>
+            <button type="button" className="match-chat-notice-dismiss" onClick={() => setChatNotice('')} aria-label="Dismiss">
+              <i className="fas fa-times" aria-hidden />
+            </button>
+          </div>
+        )}
 
         <div className="match-beta-board">
           <section

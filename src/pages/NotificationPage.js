@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../utils/api';
+import { getAnnouncements } from '../utils/api';
 import './NotificationPage.css';
 
 const NotificationPage = () => {
@@ -11,13 +10,18 @@ const NotificationPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/announcements`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        setAnnouncements(res.data);
+        const data = await getAnnouncements();
+        setAnnouncements(Array.isArray(data) ? data : []);
       } catch (err) { console.error('Failed to fetch announcements'); }
       const saved = localStorage.getItem('notifications');
-      if (saved) setLocalNotifications(JSON.parse(saved));
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setLocalNotifications(parsed);
+        } catch {
+          localStorage.removeItem('notifications');
+        }
+      }
       setLoading(false);
     };
     fetchData();
